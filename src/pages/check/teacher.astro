@@ -52,14 +52,52 @@ import Base from '../../layouts/Base.astro';
     return JSON.parse(new TextDecoder().decode(plain));
   }
 
-  // Must stay in step with how students type numbers: "6 N", "20,000", "2x10^4", "0.5"
-  function normNum(raw: string) {
-    const s = raw.replace(/[,\s]/g, '').replace(/[−–]/g, '-').replace(/[×xX*]10\^?\(?(-?\d+)\)?/, 'e$1');
-    const m = s.match(/^-?\d*\.?\d+(e-?\d+)?/i);
-    if (!m) return '';
-    const n = Number(m[0]);
-    return Number.isFinite(n) ? String(Number(n.toPrecision(10))) : '';
+  // Reads what students type: "6 N", "20,000", "2x10^4", "0.5", "3/2", "2√10", "20π²", "√(3)". Returns NaN if it can't.
+  function evalAns(raw: string): number {
+    let s = raw.replace(/[,\s]/g, '').replace(/[−–]/g, '-').replace(/[×xX]/g, '*').replace(/\^2|²/g, '^2');
+    s = (s.match(/^[0-9.+\-*/^()√π]+/)?.[0] ?? '').replace(/[+\-*/^(√]+$/, ''); // drop units like "N" or "m/s"
+    let i = 0;
+    const peek = () => s[i];
+    const num = (): number => {
+      const m = s.slice(i).match(/^\d*\.?\d+/);
+      if (!m) return NaN;
+      i += m[0].length;
+      return Number(m[0]);
+    };
+    const primary = (): number => {
+      const c = peek();
+      if (c === 'π') { i++; return Math.PI; }
+      if (c === '√') { i++; return Math.sqrt(power()); }
+      if (c === '(') { i++; const v = expr(); if (peek() === ')') i++; return v; }
+      return num();
+    };
+    const power = (): number => {
+      const b = primary();
+      if (peek() === '^') { i++; return b ** unary(); }
+      return b;
+    };
+    const unary = (): number => (peek() === '-' ? (i++, -unary()) : power());
+    const term = (): number => {
+      let v = unary();
+      for (;;) {
+        const c = peek();
+        if (c === '*') { i++; v *= unary(); }
+        else if (c === '/') { i++; v /= unary(); }
+        else if (c && /[\dπ√(.]/.test(c)) v *= power(); // 2√10, 20π², 2(3)
+        else return v;
+      }
+    };
+    const expr = (): number => {
+      let v = term();
+      while (peek() === '+' || peek() === '-') v = s[i++] === '+' ? v + term() : v - term();
+      return v;
+    };
+    if (!s) return NaN;
+    const v = expr();
+    return i === s.length ? v : NaN;
   }
+  // Equal within 0.5%, so 2√10 = √40 = 6.32 all count
+  const same = (a: number, b: number) => Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) <= 0.005 * Math.max(Math.abs(b), 1e-9);
 
   const esc = (s: unknown) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
   const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
@@ -86,7 +124,7 @@ import Base from '../../layouts/Base.astro';
   function grade(q: Q, a: string) {
     if (q.kind === 'mc') return a !== '' && Number(a) === q.answer;
     const got = a.split('|');
-    return q.answers!.every((ans, i) => normNum(got[i] ?? '') === normNum(ans));
+    return q.answers!.every((ans, i) => same(evalAns(got[i] ?? ''), evalAns(ans)));
   }
 
   function shown(q: Q, a: string) {

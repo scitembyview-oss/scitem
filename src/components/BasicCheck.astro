@@ -13,9 +13,11 @@ interface Props {
   id: string;
   title: string;
   questions: Question[];
+  /** show √ π π² buttons under every number answer (on all of them, so the buttons don't hint which answers have a root) */
+  symbols?: boolean;
 }
 // Answers are NOT here: they live encrypted in src/data/check-keys.json and are only opened on the teacher page.
-const { id, title, questions } = Astro.props;
+const { id, title, questions, symbols = false } = Astro.props;
 ---
 <section class="quiz" data-id={id}>
   <p class="eyebrow">เช็คพื้นฐานก่อนเรียน</p>
@@ -29,6 +31,7 @@ const { id, title, questions } = Astro.props;
       <button type="submit">เริ่มทำ</button>
     </div>
     <p class="hint">มี {questions.length} ข้อ ทำทีละข้อ ตอบเป็นตัวเลขหรือเลือกตัวเลือก ไม่ต้องแสดงวิธีทำ ไม่ใช้เครื่องคิดเลข ระบบจับเวลาแต่ละข้อ</p>
+    {symbols && <p class="hint">ถ้าคำตอบติดรูทหรือ π ไม่ต้องแปลงเป็นทศนิยม กดปุ่ม √ π π² ใต้ช่องคำตอบ เช่น 2√10 หรือ 20π²</p>}
   </form>
 
   <form id="qs" hidden>
@@ -44,11 +47,19 @@ const { id, title, questions } = Astro.props;
                 {pi > 0 && q.joiner && <span class="joiner" set:html={q.joiner} />}
                 <label class="part">
                   {p.label && <span class="plabel" set:html={p.label} />}
-                  <input inputmode="decimal" autocomplete="off" aria-label={`ข้อ ${qi + 1} ช่องที่ ${pi + 1}`} />
+                  <input inputmode="decimal" autocomplete="off" maxlength="20" aria-label={`ข้อ ${qi + 1} ช่องที่ ${pi + 1}`} />
                   {p.unit && <span class="unit" set:html={p.unit} />}
                 </label>
               </>
             ))}
+            {symbols && (
+              <div class="pad" aria-label="ปุ่มสัญลักษณ์">
+                <button type="button" data-ins="√">√</button>
+                <button type="button" data-ins="π">π</button>
+                <button type="button" data-ins="π²">π²</button>
+                <button type="button" data-del>⌫</button>
+              </div>
+            )}
           </div>
         ) : (
           <div class="opts">
@@ -143,6 +154,28 @@ const { id, title, questions } = Astro.props;
     qs.hidden = false;
     show(0);
   });
+  // Symbol buttons type into the answer box the student last touched (default: the first box of that question).
+  let lastBox: HTMLInputElement | null = null;
+  qs.addEventListener('focusin', (e) => {
+    if (e.target instanceof HTMLInputElement && e.target.type !== 'radio') lastBox = e.target;
+  });
+  qs.querySelectorAll<HTMLButtonElement>('.pad button').forEach((b) => {
+    b.addEventListener('pointerdown', (e) => e.preventDefault()); // keep the keyboard open and the caret in place
+    b.addEventListener('click', () => {
+      const f = b.closest('fieldset')!;
+      const box = lastBox && f.contains(lastBox) ? lastBox : f.querySelector<HTMLInputElement>('input')!;
+      const at = box.selectionStart ?? box.value.length;
+      const end = box.selectionEnd ?? at;
+      if (b.dataset.del !== undefined) {
+        const from = at === end ? Math.max(0, at - 1) : at;
+        box.setRangeText('', from, end, 'end');
+      } else if (box.value.length + b.dataset.ins!.length <= 20) {
+        box.setRangeText(b.dataset.ins!, at, end, 'end');
+      }
+      box.focus();
+    });
+  });
+
   prev.addEventListener('click', () => cur > 0 && show(cur - 1));
   next.addEventListener('click', () => (cur < sets.length - 1 ? show(cur + 1) : finish()));
   qs.addEventListener('submit', (e) => {
@@ -175,6 +208,8 @@ const { id, title, questions } = Astro.props;
   .part input { width: 7.5em; }
   .plabel, .unit { color: var(--muted); font-weight: 600; }
   .joiner { font-size: 1.3rem; }
+  .pad { flex-basis: 100%; display: flex; gap: 8px; }
+  .pad button { flex: 1; max-width: 5em; padding: 10px 0; font-size: 1.15rem; background: var(--brand-soft); color: var(--brand); border: 2px solid var(--brand); }
   .opts { display: grid; gap: 8px; }
   .opt { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; }
   .opt:has(input:checked) { border-color: var(--brand); background: var(--brand-soft); }
