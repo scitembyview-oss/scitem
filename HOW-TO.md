@@ -45,3 +45,11 @@ npm run dev      # แล้วเปิด http://localhost:4321
 หน้า `src/pages/vault.astro` (เปิดที่ scitem.net/vault) เก็บเฉลยแบบเข้ารหัสไว้ในรายการ `VAULT`
 การเพิ่มเฉลยของชีทใหม่ต้องเข้ารหัสก่อน ให้ขอ Claude ทำให้ (ส่งเฉลยกับรหัส Code Breaker ไป) แล้วเอาข้อความที่ได้มาเพิ่มเป็นบรรทัดใหม่ในรายการ `VAULT`
 รหัสปัจจุบัน: `LAYERS` = Year 7 Rocks
+
+## เช็คพื้นฐานก่อนเรียน (scitem.net/check/...)
+
+- หน้านักเรียน: `src/pages/check/circular.astro`, `src/pages/check/buoyancy.astro` (มีแต่โจทย์ ไม่มีเฉลย)
+- นักเรียนทำเสร็จจะได้รหัส `SC1-...` ส่งให้ครูทาง LINE
+- หน้าครู: scitem.net/check/teacher/ ใส่รหัสผ่านครู แล้ววางรหัสนักเรียน เพื่อดูคะแนน เวลาต่อข้อ และเฉลย
+- เฉลยเก็บแบบเข้ารหัสใน `src/data/check-keys.json` ไฟล์เฉลยตัวจริงกับรหัสผ่านอยู่นอก repo นี้ (ในไฟล์โปรเจกต์ของ Claude)
+  เพิ่มหรือแก้ชุดใหม่ ให้ขอ Claude ทำให้ แล้วเข้ารหัสใหม่ด้วย `node tools/encrypt-check-keys.mjs <keys.json> <รหัสผ่าน>`
