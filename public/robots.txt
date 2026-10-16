@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://scitem.net/sitemap-index.xml
