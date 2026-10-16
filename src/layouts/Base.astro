@@ -1,0 +1,97 @@
+---
+interface Props {
+  title: string;
+  description: string;
+}
+const { title, description } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content="th_TH" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="site-header">
+      <a href="/" class="logo">sci<span>tem</span></a>
+      <nav>
+        <a href="/#sheets">ชีท</a>
+        <a href="/#parents">สำหรับผู้ปกครอง</a>
+        <a href="/#contact">ติดต่อ</a>
+      </nav>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <p>© {new Date().getFullYear()} scitem · ชีทวิทย์สองภาษา สำหรับเด็ก EP/Inter</p>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --bg: #fffdf7;
+    --surface: #ffffff;
+    --text: #1f2a2e;
+    --muted: #5b6b70;
+    --brand: #0f766e;
+    --brand-soft: #ccfbf1;
+    --accent: #f59e0b;
+    --border: #e7e2d6;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans Thai', system-ui, sans-serif;
+    line-height: 1.7;
+  }
+  a { color: var(--brand); }
+  main { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+  .site-header {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .logo {
+    font-weight: 700;
+    font-size: 1.5rem;
+    text-decoration: none;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  .logo span { color: var(--brand); }
+  nav { display: flex; gap: 16px; flex-wrap: wrap; }
+  nav a { text-decoration: none; color: var(--muted); font-weight: 600; }
+  nav a:hover { color: var(--brand); }
+  .site-footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+    padding: 40px 16px;
+  }
+</style>

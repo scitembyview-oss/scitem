@@ -1,0 +1,128 @@
+---
+import Base from '../layouts/Base.astro';
+
+const sheets = [
+  {
+    level: 'ป.6 / Grade 6',
+    title: 'Solar System Vocabulary',
+    th: 'ระบบสุริยะ',
+    note: 'คำศัพท์ 15 คำ แบบฝึกหัด 3 ชุด และมุมผู้ปกครอง',
+  },
+  {
+    level: 'Year 7',
+    title: 'Rocks & the Rock Cycle',
+    th: 'หินและวัฏจักรหิน',
+    note: 'English only พร้อม Self-Check และ Code Breaker',
+  },
+];
+---
+<Base
+  title="scitem · ชีทวิทย์สองภาษา สำหรับเด็ก EP/Inter"
+  description="ชีทวิทยาศาสตร์ไทย-อังกฤษ สำหรับนักเรียน EP และ International ป.5 ถึง ม.3 พร้อมคำแปลและคู่มือให้ผู้ปกครองช่วยทบทวนลูกได้"
+>
+  <section class="hero">
+    <p class="eyebrow">Bilingual Science · ป.5 – ม.3</p>
+    <h1>ชีทวิทย์สองภาษา<br />สำหรับเด็ก EP/Inter</h1>
+    <p class="lead">
+      ลูกเรียนวิทย์เป็นภาษาอังกฤษ แต่พ่อแม่ช่วยทบทวนไม่ถนัด? ชีทของ scitem มีศัพท์ภาษาอังกฤษพร้อมคำแปลไทย
+      แบบฝึกหัดตามหลักสูตรจริง และมุมผู้ปกครองที่บอกว่าควรถามลูกอะไร
+    </p>
+    <a class="btn" href="#contact">ขอชีทตัวอย่างฟรี</a>
+  </section>
+
+  <section class="features">
+    <div class="card">
+      <h3>🔤 ศัพท์สองภาษา</h3>
+      <p>คำศัพท์วิทยาศาสตร์ที่ใช้ในห้องเรียน EP พร้อมคำแปลและคำอธิบายภาษาไทย</p>
+    </div>
+    <div class="card">
+      <h3>🧩 Code Breaker</h3>
+      <p>ทำแบบฝึกหัดครบ จะได้รหัสลับไว้ปลดล็อกเฉลย เด็กอยากทำจนจบเอง</p>
+    </div>
+    <div class="card">
+      <h3>👪 มุมผู้ปกครอง</h3>
+      <p>คำถามง่ายๆ ที่พ่อแม่ใช้ทบทวนลูกได้ แม้ไม่เก่งภาษาอังกฤษ</p>
+    </div>
+  </section>
+
+  <section id="sheets">
+    <h2>ชีทที่มีแล้ว</h2>
+    <div class="sheets">
+      {sheets.map((s) => (
+        <article class="sheet">
+          <p class="level">{s.level}</p>
+          <h3>{s.title}</h3>
+          <p class="th">{s.th}</p>
+          <p class="note">{s.note}</p>
+        </article>
+      ))}
+    </div>
+    <p class="muted">กำลังทำเพิ่มทุกสัปดาห์ ครอบคลุม ป.5 ถึง ม.3</p>
+  </section>
+
+  <section id="parents" class="panel">
+    <h2>สำหรับผู้ปกครอง</h2>
+    <p>
+      scitem ทำโดยติวเตอร์ที่สอนวิทยาศาสตร์ให้นักเรียน EP, International และห้องเรียนพิเศษ (Gifted)
+      ทุกชีทผ่านการใช้สอนจริงกับนักเรียนก่อน
+    </p>
+    <ul>
+      <li>ตรงกับเนื้อหาที่ลูกเรียนในโรงเรียน</li>
+      <li>ลูกทำเองได้ พ่อแม่ตรวจได้ด้วยเฉลยและคำแปล</li>
+      <li>พิมพ์ได้ หรือใช้บนแท็บเล็ตก็ได้</li>
+    </ul>
+  </section>
+
+  <section id="contact" class="panel contact">
+    <h2>ติดต่อ / ขอชีทตัวอย่าง</h2>
+    <p>อยากลองชีทฟรี หรือสนใจเรียนวิทย์กับ scitem ส่งข้อความมาได้เลย</p>
+    <p class="email"><a href="mailto:hello@scitem.net">hello@scitem.net</a></p>
+  </section>
+</Base>
+
+<style>
+  .hero { padding: 48px 0 32px; }
+  .eyebrow { color: var(--brand); font-weight: 600; margin: 0 0 8px; }
+  h1 { font-size: clamp(2rem, 6vw, 3.2rem); line-height: 1.25; margin: 0 0 16px; }
+  .lead { font-size: 1.1rem; color: var(--muted); max-width: 640px; }
+  .btn {
+    display: inline-block;
+    margin-top: 12px;
+    background: var(--brand);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .btn:hover { background: #115e59; }
+  section { margin-bottom: 48px; }
+  .features, .sheets {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  .card, .sheet, .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+  }
+  .card h3, .sheet h3 { margin: 0 0 8px; }
+  .card p { margin: 0; color: var(--muted); }
+  .level {
+    display: inline-block;
+    background: var(--brand-soft);
+    color: var(--brand);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 2px 10px;
+    border-radius: 999px;
+    margin: 0 0 8px;
+  }
+  .th { margin: 0; font-weight: 600; }
+  .note { margin: 4px 0 0; color: var(--muted); }
+  .muted { color: var(--muted); }
+  .contact { text-align: center; }
+  .email { font-size: 1.3rem; font-weight: 700; }
+</style>
