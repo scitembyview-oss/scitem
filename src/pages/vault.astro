@@ -1,0 +1,104 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base
+  title="Answer Vault · scitem"
+  description="ใส่รหัสจาก Code Breaker ท้ายชีท scitem เพื่อปลดล็อกเฉลย / Enter your Code Breaker code to unlock the answer key."
+>
+  <section class="vault">
+    <p class="eyebrow">scitem</p>
+    <h1>Answer Vault</h1>
+    <p class="lead">
+      Finished every exercise on your worksheet? Enter the code from your Code Breaker to unlock the answers, then mark your own work.
+      <br />ทำแบบฝึกหัดครบแล้ว? ใส่รหัสจาก Code Breaker ท้ายชีทเพื่อเปิดเฉลย
+    </p>
+
+    <form class="card" id="vault-form" autocomplete="off">
+      <label for="code">Your code / รหัสของคุณ</label>
+      <div class="row">
+        <input id="code" name="code" maxlength="20" placeholder="••••••" aria-describedby="hint" />
+        <button type="submit">Unlock answers</button>
+      </div>
+      <p class="hint" id="hint">The code is the circled letters from your Code Breaker, read from clue 1 to the last clue.</p>
+      <p class="msg" id="msg" role="alert" hidden></p>
+    </form>
+
+    <article class="card key" id="key" hidden></article>
+  </section>
+</Base>
+
+<script is:inline>
+  // Each entry is one sheet's answer key, XOR-obfuscated with its unlock code.
+  // Not real security: it only stops kids from reading answers in the page source.
+  const VAULT = [
+    "Hx0uTGuFzOODJg1yVLfJroAODW9evdjMyyUeYkO8j/LAmo7ZMGOmnfiEbVYhFKiW8cJ1UjxkqNTixzcCYU212q7kgWIgZk24l//cNUYxHhJeqvE/FGlb7I78z2QqaUK2n8Ko0H1WSlb9neiGOx5qR7HB3o4lD3FIt7q9nmocZx60u4vj0XpffhSGxrvPaFwtUKfJtNIxWGRQtJW2lCBFQg4DsMK5kSQDKgqjmbjTOxRgR7mQ9IpvDiR89sv/mGxdYHcZ5ILhiC8Ec1CuneDCOgU8Hq7LyoR1BjgD75r5kHwVEzJLopXw1SUKOgivyMGecwwpFPGU75ZtDn0IrIfryyElBnVKsMi21mgoLAmiwKyGJhUgHKaastw7GXdUqtCuzoAERCFK6MSu3i1YJF6iyu/VLAlnT7TauMRhJSofrN6ltcAnTiYMs4a6hnsec0O2leHZdiJ2GruU4cA/B2wF+JrfrPk9G3pJvYXqkHRA3IfprPPSLAVkDK6c74QPCXNZ7J2e+8ItSjdJ4dra1m4EeBzgjuWLIxl9SafDr9o5UDxVU/KN4sMwCGtIqcii2ilcIEK+1undJxx5R6af5sVnS35lDOCJ95YvBnlcuYnugn8FYwLijOONKB9kRbeU8tk9AkIoVKfWqtQoTHdDvJvm0SwIY16s0rfWLVgjTL/O/tI8KR97Qr/fs8YtRChBv97v2SIDewL3iuGPflt5RPzHq8HJMQhsUabUyNhzA2NDqpnmxGJCaBntqeLROAd0VbXSv75l705bWaqVstAuHTJ5u4H30XBaZgvkuOiDJBowTayYif+TDFhwU7iQxpZzSmRLqtCrzCpGT0+/h/vDO140QKbyzvjBYA94VbiG5MNsXnJIuZ3y1GZTfE+5g+fYel92SAD71+rBIEY9Vq2Qpo4vADxvp4j8wz0UcEetmaqfKhQnJkiqzunCMg53TruD84xiD2ZWpJu0hiQYb1GlnO3VIU5Ddlj7wqfOPQAxDKKJ6I51DmgAjY/nzTcbeFS1j/OOYzoTJhKskqbMMxZkVLfHtNEwA3hQ4tjr0ScNdEy5muWFlSgKLgbsmOPSZEgiUqzcwMBrGCAEpNbSyjUaZEe1g/e2jnMHIAiDk/jKPxNzHqKG6dd+BmVBoYm0zDYSaxCkiYz+mCYHYhisl+jSPRYrRq2f6YB1HXcapcbzySAZYEf5roTn3j1Da0WxlvCNNBVwUu6Y+p41A2RF4pbzzi0JYRJFptzm0T0GcBatlabQLBV6T66I5c5zDWkUq8T7ySMBZXIJ5MH4iGROYUGljPvEOlxATPCG69suDWlR/sr4nX46FWhL8Ljx2SsPf0bx2eiRYjJ5FLGUuJQ9Cyp6ibTamH0gGyIZsoG0+RcoXWf80fzAdEBySfSw3uMHPkVx+t/+xYB7FGcWk6rO4Q0pVg7kmOuCfgB8EJWzyuMNIVoM4YzwpJAiGSRwma7N9xEjQhztkOeJdFF3Svat7IgmVkFStpGA99hlEm1eoJP9w3xAUhALXbz/YKikDIPUSBN9IzDwe/61uGz/Vksd/ZS4hH0YcUGoi+PbcFpn",
+  ];
+
+  function dec(code, b64) {
+    const bin = atob(b64);
+    const k = new TextEncoder().encode(code);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i) ^ k[i % k.length] ^ ((i * 31) & 255);
+    try {
+      const s = new TextDecoder('utf-8', { fatal: true }).decode(out);
+      return s.startsWith('SCITEM:') ? JSON.parse(s.slice(7)) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  const form = document.getElementById('vault-form');
+  const msg = document.getElementById('msg');
+  const key = document.getElementById('key');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const code = document.getElementById('code').value.replace(/[^a-z]/gi, '').toUpperCase();
+    let hit = null;
+    if (code) for (const b of VAULT) { hit = dec(code, b); if (hit) break; }
+    if (!hit) {
+      key.hidden = true;
+      msg.hidden = false;
+      msg.textContent = code
+        ? "That code doesn't open an answer key. Check your circled letters and try again."
+        : 'Type your code first.';
+      return;
+    }
+    msg.hidden = true;
+    key.innerHTML = `<p class="well">Unlocked. Well done for finishing every exercise.</p><h2>${hit.title}</h2>${hit.html}<p class="hint">Got some wrong? That's fine. Read that word in the word list again and try it tomorrow.</p>`;
+    key.hidden = false;
+    key.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+</script>
+
+<style>
+  .vault { max-width: 620px; margin: 0 auto; padding: 32px 0 16px; }
+  .eyebrow { color: var(--brand); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin: 0; }
+  h1 { font-size: clamp(2rem, 6vw, 2.6rem); line-height: 1.2; margin: 4px 0 12px; }
+  .lead { color: var(--muted); margin: 0 0 24px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 24px; }
+  label { display: block; font-weight: 700; margin-bottom: 8px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  input {
+    flex: 1 1 200px; min-width: 0;
+    font: 600 1.4rem ui-monospace, Menlo, monospace; letter-spacing: 0.3em; text-transform: uppercase;
+    padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text);
+  }
+  input:focus { outline: none; border-color: var(--brand); }
+  button {
+    font: 700 1rem inherit; font-family: inherit; padding: 12px 22px; border: 0; border-radius: 999px;
+    background: var(--brand); color: #fff; cursor: pointer;
+  }
+  .hint { color: var(--muted); font-size: 0.9rem; margin: 12px 0 0; }
+  .msg { margin: 12px 0 0; font-weight: 700; color: #a6402a; }
+  .well { color: var(--brand); font-weight: 700; }
+  .key :global(h2) { margin: 0 0 4px; }
+  .key :global(section) { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 16px; }
+  .key :global(h3) { margin: 0 0 8px; }
+  .key :global(ol) { margin: 0; padding-left: 1.4em; }
+  .key :global(.pairs b) { font-family: ui-monospace, Menlo, monospace; color: var(--brand); margin-left: 6px; }
+  .key :global(.sort) { display: grid; gap: 8px; margin: 0 0 10px; }
+  .key :global(.sort div) { display: grid; grid-template-columns: 120px 1fr; gap: 10px; }
+  .key :global(.sort dt) { font-weight: 700; }
+  .key :global(.sort dd) { margin: 0; }
+  @media (max-width: 420px) { .key :global(.sort div) { grid-template-columns: 1fr; gap: 0; } }
+</style>
