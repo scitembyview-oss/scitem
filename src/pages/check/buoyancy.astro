@@ -1,0 +1,36 @@
+---
+import Base from '../../layouts/Base.astro';
+import DiagQuiz, { type Question } from '../../components/DiagQuiz.astro';
+
+const questions: Question[] = [
+  {
+    text: 'ไม้มวล 2 kg ปริมาตร 4 L มีความหนาแน่นเท่าใด',
+    kind: 'num',
+    parts: [{ unit: 'kg/m³', answer: '500' }],
+  },
+  {
+    text: '250 cm³ เท่ากับกี่ m³',
+    kind: 'mc',
+    options: ['2.5 × 10⁻¹ m³', '2.5 × 10⁻² m³', '2.5 × 10⁻⁴ m³', '2.5 × 10⁻⁶ m³'],
+    answer: 2,
+  },
+  {
+    text: 'ความดันของน้ำที่ความลึก 2 m เป็นเท่าใด (ไม่คิดความดันบรรยากาศ, g = 10 m/s², ความหนาแน่นน้ำ 1000 kg/m³)',
+    kind: 'num',
+    parts: [{ unit: 'Pa', answer: '20000' }],
+  },
+  {
+    text: 'กล่องมวล 3 kg วางนิ่งบนพื้น มีเชือกดึงกล่องขึ้นด้วยแรง 10 N พื้นดันกล่องด้วยแรงเท่าใด (g = 10 m/s²)',
+    kind: 'num',
+    parts: [{ unit: 'N', answer: '20' }],
+  },
+  {
+    text: 'ความดัน 5000 Pa กระทำบนพื้นที่ 0.02 m² เกิดแรงเท่าใด',
+    kind: 'num',
+    parts: [{ unit: 'N', answer: '100' }],
+  },
+];
+---
+<Base title="ชุดวินิจฉัย: แรงลอยตัว · scitem" description="แบบทดสอบก่อนเรียนเรื่องแรงลอยตัว 5 ข้อ" noindex>
+  <DiagQuiz id="buoyancy-1" title="แรงลอยตัว" subtitle="ทำก่อนคาบ เพื่อให้ครูรู้ว่าต้องทวนพื้นฐานตรงไหน ไม่มีผลกับคะแนน ตอบตามที่คิดได้เลย" questions={questions} />
+</Base>
