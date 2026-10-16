@@ -39,3 +39,9 @@ npm run dev      # แล้วเปิด http://localhost:4321
 
 - `public/CNAME` (ทำให้ scitem.net ชี้มาที่เว็บนี้)
 - `.github/workflows/deploy.yml` (ตัวที่เอาเว็บขึ้นอัตโนมัติ)
+
+## Answer Vault (หน้าปลดล็อกเฉลย)
+
+หน้า `src/pages/vault.astro` (เปิดที่ scitem.net/vault) เก็บเฉลยแบบเข้ารหัสไว้ในรายการ `VAULT`
+การเพิ่มเฉลยของชีทใหม่ต้องเข้ารหัสก่อน ให้ขอ Claude ทำให้ (ส่งเฉลยกับรหัส Code Breaker ไป) แล้วเอาข้อความที่ได้มาเพิ่มเป็นบรรทัดใหม่ในรายการ `VAULT`
+รหัสปัจจุบัน: `LAYERS` = Year 7 Rocks
