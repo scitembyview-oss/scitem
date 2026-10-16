@@ -1,0 +1,195 @@
+---
+export interface Question {
+  /** shown above the question, e.g. "พื้นฐาน" or "แนว 1.2" */
+  label: string;
+  text: string;
+  /** 'num': one or more number boxes; 'mc': pick one option */
+  kind: 'num' | 'mc';
+  parts?: { label?: string; unit?: string }[];
+  joiner?: string;
+  options?: string[];
+}
+interface Props {
+  id: string;
+  title: string;
+  questions: Question[];
+}
+// Answers are NOT here: they live encrypted in src/data/check-keys.json and are only opened on the teacher page.
+const { id, title, questions } = Astro.props;
+---
+<section class="quiz" data-id={id}>
+  <p class="eyebrow">เช็คพื้นฐานก่อนเรียน</p>
+  <h1>{title}</h1>
+  <p class="lead">ทำก่อนเรียน เพื่อให้ครูรู้ว่าต้องทวนพื้นฐานตรงไหน ไม่มีผลกับคะแนน ตอบตามที่คิดได้เลย ทำไม่ได้ก็ข้ามได้</p>
+
+  <form class="card" id="start">
+    <label for="name">ชื่อเล่น</label>
+    <div class="row">
+      <input id="name" class="name" maxlength="30" autocomplete="off" required />
+      <button type="submit">เริ่มทำ</button>
+    </div>
+    <p class="hint">มี {questions.length} ข้อ ทำทีละข้อ ตอบเป็นตัวเลขหรือเลือกตัวเลือก ไม่ต้องแสดงวิธีทำ ไม่ใช้เครื่องคิดเลข ระบบจับเวลาแต่ละข้อ</p>
+  </form>
+
+  <form id="qs" hidden>
+    <div class="progress"><div class="bar" id="bar"></div></div>
+    {questions.map((q, qi) => (
+      <fieldset class="card q" data-kind={q.kind} hidden>
+        <legend><span class="num">ข้อ {qi + 1}/{questions.length}</span> <span class="lab">{q.label}</span></legend>
+        <p class="qt" set:html={q.text} />
+        {q.kind === 'num' ? (
+          <div class="parts">
+            {q.parts!.map((p, pi) => (
+              <>
+                {pi > 0 && q.joiner && <span class="joiner" set:html={q.joiner} />}
+                <label class="part">
+                  {p.label && <span class="plabel" set:html={p.label} />}
+                  <input inputmode="decimal" autocomplete="off" aria-label={`ข้อ ${qi + 1} ช่องที่ ${pi + 1}`} />
+                  {p.unit && <span class="unit" set:html={p.unit} />}
+                </label>
+              </>
+            ))}
+          </div>
+        ) : (
+          <div class="opts">
+            {q.options!.map((o, oi) => (
+              <label class="opt"><input type="radio" name={`q${qi}`} value={oi} /> <span><b>{'กขคง'[oi]}.</b> <Fragment set:html={o} /></span></label>
+            ))}
+          </div>
+        )}
+      </fieldset>
+    ))}
+    <div class="nav">
+      <button type="button" class="ghost" id="prev">ย้อนกลับ</button>
+      <button type="button" id="next">ข้อถัดไป</button>
+    </div>
+  </form>
+
+  <article class="card result" id="result" hidden>
+    <h2>ทำเสร็จแล้ว 🎉</h2>
+    <p>ส่งรหัสนี้ให้ครู ครูจะเป็นคนเปิดดูคะแนนและเฉลย</p>
+    <pre id="code"></pre>
+    <div class="row">
+      <a class="btn line" id="line" target="_blank" rel="noopener">ส่งทาง LINE</a>
+      <button type="button" id="copy" class="ghost">คัดลอกรหัส</button>
+    </div>
+    <p class="hint">ถ้าปุ่มไม่ทำงาน ให้กดค้างที่รหัสแล้วคัดลอกเอง ส่งให้ครูทั้งก้อน</p>
+  </article>
+</section>
+
+<script>
+  import { encodeCheck } from '../lib/check-code.js';
+
+  const root = document.querySelector<HTMLElement>('.quiz')!;
+  const id = root.dataset.id!;
+  const start = document.getElementById('start') as HTMLFormElement;
+  const qs = document.getElementById('qs') as HTMLFormElement;
+  const sets = [...qs.querySelectorAll<HTMLFieldSetElement>('fieldset.q')];
+  const prev = document.getElementById('prev') as HTMLButtonElement;
+  const next = document.getElementById('next') as HTMLButtonElement;
+  const bar = document.getElementById('bar')!;
+  const ms = sets.map(() => 0);
+  let cur = 0;
+  let since = 0;
+  let name = '';
+
+  function show(i: number) {
+    if (since) ms[cur] += Date.now() - since;
+    cur = i;
+    since = Date.now();
+    sets.forEach((f, k) => (f.hidden = k !== i));
+    prev.style.visibility = i === 0 ? 'hidden' : 'visible';
+    next.textContent = i === sets.length - 1 ? 'ส่งคำตอบ' : 'ข้อถัดไป';
+    bar.style.width = `${(100 * i) / sets.length}%`;
+    sets[i].querySelector<HTMLInputElement>('input:not([type=radio])')?.focus();
+  }
+
+  function answerOf(f: HTMLFieldSetElement) {
+    if (f.dataset.kind === 'mc') return f.querySelector<HTMLInputElement>('input:checked')?.value ?? '';
+    return [...f.querySelectorAll<HTMLInputElement>('input')].map((i) => i.value.trim().slice(0, 20)).join('|');
+  }
+
+  function finish() {
+    ms[cur] += Date.now() - since;
+    const blanks = sets.filter((f) => !answerOf(f).replace(/\|/g, '')).length;
+    if (blanks && !confirm(`ยังไม่ได้ตอบ ${blanks} ข้อ ส่งเลยไหม`)) {
+      since = Date.now();
+      return;
+    }
+    qs.hidden = true;
+    const code = encodeCheck([1, id, name, sets.map(answerOf), ms.map((m) => Math.round(m / 1000)), Math.round(Date.now() / 60000)]);
+    document.getElementById('code')!.textContent = code;
+    (document.getElementById('line') as HTMLAnchorElement).href =
+      'https://line.me/R/share?text=' + encodeURIComponent(`รหัสเช็คพื้นฐานของ ${name}\n${code}`);
+    const copy = document.getElementById('copy') as HTMLButtonElement;
+    copy.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(code);
+        copy.textContent = 'คัดลอกแล้ว';
+      } catch {
+        copy.textContent = 'คัดลอกไม่ได้ กดค้างที่รหัสแทน';
+      }
+    };
+    const res = document.getElementById('result')!;
+    res.hidden = false;
+    res.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  start.addEventListener('submit', (e) => {
+    e.preventDefault();
+    name = (document.getElementById('name') as HTMLInputElement).value.trim();
+    if (!name) return;
+    start.hidden = true;
+    qs.hidden = false;
+    show(0);
+  });
+  prev.addEventListener('click', () => cur > 0 && show(cur - 1));
+  next.addEventListener('click', () => (cur < sets.length - 1 ? show(cur + 1) : finish()));
+  qs.addEventListener('submit', (e) => {
+    e.preventDefault();
+    next.click();
+  });
+</script>
+
+<style>
+  .quiz { max-width: 640px; margin: 0 auto; padding: 32px 0 16px; }
+  .eyebrow { color: var(--brand); font-weight: 700; letter-spacing: 0.08em; margin: 0; }
+  h1 { font-size: clamp(1.8rem, 6vw, 2.4rem); line-height: 1.2; margin: 4px 0 12px; }
+  .lead { color: var(--muted); margin: 0 0 24px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin: 0 0 18px; }
+  fieldset.card { min-width: 0; }
+  legend { padding: 0 6px; }
+  .num { background: var(--brand); color: #fff; font-weight: 700; border-radius: 8px; padding: 2px 10px; }
+  .lab { color: var(--muted); font-size: 0.9rem; margin-left: 4px; }
+  .qt { margin: 0 0 14px; font-size: 1.1rem; }
+  label { font-weight: 600; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  input:not([type='radio']) {
+    font: inherit; font-size: 1.1rem; padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px;
+    background: var(--bg); color: var(--text); min-width: 0;
+  }
+  input:focus { outline: none; border-color: var(--brand); }
+  .name { flex: 1 1 200px; }
+  .parts { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  .part { display: flex; align-items: center; gap: 8px; }
+  .part input { width: 7.5em; }
+  .plabel, .unit { color: var(--muted); font-weight: 600; }
+  .joiner { font-size: 1.3rem; }
+  .opts { display: grid; gap: 8px; }
+  .opt { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; }
+  .opt:has(input:checked) { border-color: var(--brand); background: var(--brand-soft); }
+  .opt input { margin-top: 0.45em; accent-color: var(--brand); }
+  button, .btn {
+    font: inherit; font-weight: 700; padding: 12px 22px; border: 0; border-radius: 999px;
+    background: var(--brand); color: #fff; cursor: pointer; text-decoration: none; display: inline-block;
+  }
+  .ghost { background: transparent; color: var(--brand); border: 2px solid var(--brand); }
+  .line { background: #06c755; }
+  .nav { display: flex; justify-content: space-between; gap: 10px; }
+  .nav #next { flex: 1; max-width: 60%; margin-left: auto; }
+  .progress { height: 6px; background: var(--border); border-radius: 99px; margin: 0 0 14px; overflow: hidden; }
+  .bar { height: 100%; width: 0; background: var(--brand); transition: width 0.2s; }
+  .hint { color: var(--muted); font-size: 0.92rem; margin: 10px 0 0; }
+  .result h2 { margin: 0 0 6px; color: var(--brand); }
+  pre { white-space: pre-wrap; word-break: break-all; background: var(--bg); border: 2px dashed var(--brand); border-radius: 10px; padding: 12px; font: 600 0.95rem ui-monospace, Menlo, monospace; user-select: all; }
+</style>
