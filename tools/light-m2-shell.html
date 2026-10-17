@@ -25,6 +25,17 @@
   #bar button.sw.on { box-shadow: 0 0 0 3px var(--on); }
   #bar button.size { display: flex; align-items: center; justify-content: center; padding: 0; width: 38px; }
   #bar button.size i { display: block; background: currentColor; border-radius: 50%; }
+  /* phones: icons only and smaller buttons, so the toolbar takes two rows instead of four */
+  @media (max-width: 600px), (max-height: 500px) {
+    #bar { gap: 3px; padding: 4px 6px; padding-top: max(4px, env(safe-area-inset-top)); }
+    #bar .sep { display: none; }
+    #bar .grp { gap: 3px; }
+    #bar .lbl { display: none; }
+    #bar button { min-height: 32px; min-width: 32px; padding: 0 6px; font-size: 14px; border-radius: 8px; }
+    #bar button.sw { width: 26px; min-width: 26px; }
+    #bar button.size { width: 30px; }
+    #pageNo { min-width: 3.2em; font-size: 14px; }
+  }
 
   /* one worksheet page at a time, scaled to the screen width; it scrolls up/down if taller than the screen.
      touch-action none: a resting palm can't drag the page while writing (finger panning is done in JS) */
@@ -43,9 +54,9 @@
 <body>
 <div id="bar">
   <div class="grp">
-    <button id="mPen" class="on" title="ปากกา (แตะสั้นๆ บนรูปเพื่อเล่นอนิเมชั่น)">✏️ เขียน</button>
-    <button id="mErase" title="ยางลบ">🧽 ลบ</button>
-    <button id="mHand" title="แตะรูปและเลื่อนหน้า ไม่เขียน">👆 แตะ</button>
+    <button id="mPen" class="on" title="ปากกา (แตะสั้นๆ บนรูปเพื่อเล่นอนิเมชั่น)">✏️<span class="lbl"> เขียน</span></button>
+    <button id="mErase" title="ยางลบ">🧽<span class="lbl"> ลบ</span></button>
+    <button id="mHand" title="แตะรูปและเลื่อนหน้า ไม่เขียน">👆<span class="lbl"> แตะ</span></button>
   </div>
   <div class="sep"></div>
   <div class="grp" id="colors"></div>
@@ -53,12 +64,12 @@
   <div class="grp" id="sizes"></div>
   <div class="sep"></div>
   <div class="grp">
-    <button id="palm" title="เปิด: เขียนได้เฉพาะ Apple Pencil นิ้วใช้แตะและเลื่อนหน้า · ปิด: ปากกาทั่วไปหรือนิ้วก็เขียนได้ (กันฝ่ามือจากขนาดการแตะ)">🖐 กันมือ</button>
+    <button id="palm" title="เปิด: เขียนได้เฉพาะ Apple Pencil นิ้วใช้แตะและเลื่อนหน้า · ปิด: ปากกาทั่วไปหรือนิ้วก็เขียนได้ (กันฝ่ามือจากขนาดการแตะ)">🖐<span class="lbl"> กันมือ</span></button>
   </div>
   <div class="sep"></div>
   <div class="grp">
     <button id="undo" title="ย้อนกลับ">↶</button>
-    <button id="clear" title="ลบทั้งหมดในหน้านี้">🗑 ล้าง</button>
+    <button id="clear" title="ลบทั้งหมดในหน้านี้">🗑<span class="lbl"> ล้าง</span></button>
   </div>
   <div class="sep"></div>
   <div class="grp">
