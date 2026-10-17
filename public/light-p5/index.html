@@ -19,6 +19,7 @@
   #bar .sep { width: 1px; height: 26px; background: var(--barline); margin: 0 4px; }
   #pageNo { font-size: 15px; min-width: 3.6em; text-align: center; font-variant-numeric: tabular-nums; color: var(--ink); }
   #bar button { font: inherit; font-size: 15px; border: 1px solid var(--barline); background: #fff; color: var(--ink); border-radius: 10px; min-height: 38px; min-width: 38px; padding: 0 10px; cursor: pointer; touch-action: manipulation; }
+  #bar a.home { display: inline-flex; align-items: center; font-size: 15px; text-decoration: none; border: 1px solid var(--barline); background: #fff; color: var(--ink); border-radius: 10px; min-height: 38px; padding: 0 10px; box-sizing: border-box; }
   #bar button:disabled { opacity: .35; }
   #bar button.on { background: var(--on); color: #fff; border-color: var(--on); }
   #bar button.sw { width: 34px; min-width: 34px; padding: 0; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--barline); }
@@ -31,7 +32,7 @@
     #bar .sep { display: none; }
     #bar .grp { gap: 3px; }
     #bar .lbl { display: none; }
-    #bar button { min-height: 32px; min-width: 32px; padding: 0 6px; font-size: 14px; border-radius: 8px; }
+    #bar button, #bar a.home { min-height: 32px; min-width: 32px; padding: 0 6px; font-size: 14px; border-radius: 8px; }
     #bar button.sw { width: 26px; min-width: 26px; }
     #bar button.size { width: 30px; }
     #pageNo { min-width: 3.2em; font-size: 14px; }
@@ -180,6 +181,8 @@ svg.casting .shadow, svg.casting .rays, svg.casting .wshade { opacity: 0 }
 </head>
 <body>
 <div id="bar">
+  <a class="home" href="/" title="กลับหน้าหลัก">🏠<span class="lbl"> หน้าหลัก</span></a>
+  <div class="sep"></div>
   <div class="grp">
     <button id="mPen" class="on" title="ปากกา (แตะสั้นๆ บนรูปเพื่อเล่นอนิเมชั่น)">✏️<span class="lbl"> เขียน</span></button>
     <button id="mErase" title="ยางลบ">🧽<span class="lbl"> ลบ</span></button>
