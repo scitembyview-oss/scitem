@@ -3,11 +3,11 @@ import Base from '../layouts/Base.astro';
 import { items, kinds } from '../data/catalog';
 const share = items.filter((it) => it.href && it.kind !== 'tool');
 ---
-<Base title="ครู · scitem" description="หน้าครู ตรวจรหัสเช็คพื้นฐาน" noindex>
+<Base title="ครู · scitem" description="หน้าครู ดูผลเช็คพื้นฐาน" noindex>
   <section class="t">
     <header class="head">
       <h1>หน้าครู</h1>
-      <p>ใส่รหัสผ่านเพื่อตรวจรหัสเช็คของนักเรียน และคัดลอกลิงก์ส่งให้นักเรียนทาง LINE</p>
+      <p>ใส่รหัสผ่านเพื่อดูผลเช็คของนักเรียน และคัดลอกลิงก์ส่งให้นักเรียนทาง LINE</p>
     </header>
 
     <form class="card" id="login" autocomplete="off">
@@ -20,17 +20,23 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
       <p class="msg" id="loginMsg" hidden></p>
     </form>
 
-    <form class="card" id="paste" hidden>
-      <label for="codes">วางรหัสจากนักเรียน (วางทั้งข้อความจาก LINE ได้เลย ใส่หลายคนพร้อมกันได้)</label>
-      <textarea id="codes" rows="5" placeholder="SC1-..."></textarea>
-      <div class="row">
-        <button type="submit">ตรวจ</button>
+    <section class="card" id="list" hidden>
+      <div class="bar">
+        <h2>ผลที่นักเรียนส่งมา</h2>
+        <button type="button" class="ghost" id="reload">โหลดใหม่</button>
         <button type="button" class="ghost" id="logout">ออกจากระบบ</button>
       </div>
-      <p class="msg" id="pasteMsg" hidden></p>
-    </form>
+      <p class="msg" id="listMsg" hidden></p>
+      <div id="rows"></div>
+      <details class="paste">
+        <summary>วางรหัส SC1- (นักเรียนที่ส่งเข้าชีทไม่ได้)</summary>
+        <textarea id="codes" rows="4" placeholder="SC1-..."></textarea>
+        <div class="row"><button type="button" id="addCodes">เพิ่มในรายการ</button></div>
+        <p class="msg" id="pasteMsg" hidden></p>
+      </details>
+    </section>
 
-    <div id="out"></div>
+    <section class="card" id="detail" hidden></section>
 
     <section class="card" id="tools" hidden>
       <h2>ลิงก์ส่งนักเรียน</h2>
@@ -49,6 +55,8 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
 <script>
   import { decodeCheck } from '../lib/check-code.js';
   import blob from '../data/check-keys.json';
+  import { checks, type Question } from '../data/checks';
+  import { SHEET_URL } from '../data/catalog';
 
   type Q = { label: string; kind: 'num' | 'mc'; answers?: string[]; answer?: number; solution: string };
   type Keys = Record<string, { title: string; questions: Q[] }>;
@@ -118,9 +126,10 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
   const esc = (s: unknown) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
   const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
-  async function login(pw: string, quiet = false) {
+  let pw = '';
+  async function login(pass: string, quiet = false) {
     try {
-      keys = await unlock(pw);
+      keys = await unlock(pass);
     } catch {
       if (!quiet) {
         $('loginMsg').textContent = 'รหัสผ่านไม่ถูกต้อง';
@@ -128,79 +137,147 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
       }
       return;
     }
+    pw = pass;
     try {
-      if (($('keep') as HTMLInputElement).checked) localStorage.setItem(STORE, pw);
+      if (($('keep') as HTMLInputElement).checked) localStorage.setItem(STORE, pass);
     } catch {}
     $('login').hidden = true;
-    $('paste').hidden = false;
+    $('list').hidden = false;
     $('tools').hidden = false;
+    load();
   }
 
-  type Row = { name: string; at: number; answers: string[]; secs: number[]; marks: boolean[] };
+  type Row = { quiz: string; name: string; at: number; answers: string[]; secs: number[]; code?: boolean };
+  let sheetRows: Row[] = [];
+  let codeRows: Row[] = [];
+  let all: Row[] = [];
+
+  async function load() {
+    const msg = $('listMsg');
+    if (!SHEET_URL) {
+      msg.textContent = 'ยังไม่ได้ตั้งค่า Google Sheet (SHEET_URL ใน src/data/catalog.ts) ใช้ช่องวางรหัสด้านล่างไปก่อน';
+      msg.hidden = false;
+      return draw();
+    }
+    msg.textContent = 'กำลังโหลด…';
+    msg.hidden = false;
+    try {
+      const r = await (await fetch(SHEET_URL, { method: 'POST', body: JSON.stringify({ action: 'list', pw }) })).json();
+      if (!r.ok) throw new Error(r.error === 'pw' ? 'รหัสผ่านใน Apps Script ไม่ตรงกับรหัสผ่านครู' : 'โหลดไม่สำเร็จ');
+      sheetRows = r.rows;
+      msg.hidden = true;
+    } catch (e) {
+      msg.textContent = e instanceof Error && e.message.startsWith('รหัส') ? e.message : 'โหลดผลจาก Google Sheet ไม่สำเร็จ ลองกดโหลดใหม่';
+    }
+    draw();
+  }
 
   function grade(q: Q, a: string) {
     if (q.kind === 'mc') return a !== '' && Number(a) === q.answer;
     const got = a.split('|');
     return q.answers!.every((ans, i) => same(evalAns(got[i] ?? ''), evalAns(ans)));
   }
+  const score = (r: Row) => keys![r.quiz].questions.filter((q, i) => grade(q, r.answers[i] ?? '')).length;
+  const when = (ms: number) => new Date(ms).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
 
-  function shown(q: Q, a: string) {
-    if (!a.replace(/\|/g, '')) return '—';
-    return q.kind === 'mc' ? `ตัวเลือก ${'กขคง'[Number(a)] ?? a}` : a.split('|').join(', ');
+  // List: one group per quiz, newest first. Tap a row to open it.
+  function draw() {
+    all = [...sheetRows, ...codeRows].filter((r) => keys![r.quiz]).sort((a, b) => b.at - a.at);
+    const order = [...new Set([...Object.keys(checks), ...all.map((r) => r.quiz)])];
+    const html = order.map((quiz) => {
+      const rows = all.map((r, i) => [r, i] as const).filter(([r]) => r.quiz === quiz);
+      if (!rows.length) return '';
+      const n = keys![quiz].questions.length;
+      return `<h3>${esc(checks[quiz]?.title ?? keys![quiz].title)} <span class="cnt">${rows.length} คน</span></h3><ul class="who">${rows.map(([r, i]) =>
+        `<li><button type="button" data-i="${i}"><b>${esc(r.name)}</b><span>${when(r.at)}${r.code ? ' · จากรหัส' : ''}</span><em>${score(r)}/${n}</em></button></li>`).join('')}</ul>`;
+    }).join('');
+    $('rows').innerHTML = html || '<p class="hint">ยังไม่มีใครส่ง</p>';
   }
 
-  function render(text: string) {
+  // Student answer or key, laid out like the question's boxes: "แนวราบ 8 N, แนวดิ่ง 6 N", "10√3"
+  function fmt(m: Question | undefined, vals: string[], escape: boolean) {
+    const v = (x: string) => (escape ? esc(x) : x);
+    if (!m?.parts) return vals.map(v).join(', ');
+    if (m.joiner) return vals.map(v).join(m.joiner);
+    return m.parts.map((p, i) => [p.label, vals[i] ? `<b>${v(vals[i])}</b>` : '—', p.unit].filter(Boolean).join(' ')).join(', ');
+  }
+
+  function open(i: number) {
+    const r = all[i];
+    const { title, questions } = keys![r.quiz];
+    const meta = checks[r.quiz]?.questions;
+    const total = r.secs.reduce((a, b) => a + (b || 0), 0);
+    const blocks = questions.map((q, k) => {
+      const m = meta?.[k];
+      const a = r.answers[k] ?? '';
+      const ok = grade(q, a);
+      const blank = !a.replace(/\|/g, '');
+      let body = m ? `<p class="qt">${m.text}</p>` : '';
+      if (q.kind === 'mc') {
+        body += m?.options
+          ? `<ul class="opts">${m.options.map((o, oi) => `<li class="${oi === q.answer ? 'right' : ''}${String(oi) === a ? ' picked' : ''}"><b>${'กขคง'[oi]}.</b> ${o}${String(oi) === a ? ' <em>← นักเรียนตอบ</em>' : ''}${oi === q.answer ? ' <em>✓ เฉลย</em>' : ''}</li>`).join('')}</ul>`
+          : `<p>นักเรียนตอบ: ${blank ? '—' : 'กขคง'[Number(a)]} · เฉลย: ${'กขคง'[q.answer!]}</p>`;
+        if (blank) body += '<p class="you">นักเรียนไม่ได้ตอบ</p>';
+      } else {
+        body += `<p class="you">นักเรียนตอบ: ${blank ? '—' : fmt(m, a.split('|'), true)}</p><p class="key">เฉลย: ${fmt(m, q.answers!, false)}</p>`;
+      }
+      return `<div class="qa ${ok ? 'ok' : 'no'}">
+        <p class="qh"><span class="mk">${ok ? '✓' : '✗'}</span> ข้อ ${k + 1} · ${esc(q.label)} <small>${mmss(r.secs[k] ?? 0)}</small></p>
+        ${body}<div class="sol"><p class="sh">วิธีทำ</p>${q.solution}</div></div>`;
+    }).join('');
+    $('detail').innerHTML = `<button type="button" class="ghost" id="back">← กลับไปรายการ</button>
+      <h2>${esc(r.name)} <span class="cnt">${score(r)}/${questions.length} · ${mmss(total)}</span></h2>
+      <p class="hint">${esc(title)} · ส่งเมื่อ ${when(r.at)} · ข้อที่ใช้เวลาเกิน 1 นาทีครึ่งเวลาเป็นสีส้ม</p>${blocks}`;
+    $('detail').querySelectorAll('.qa small').forEach((el, k) => (r.secs[k] ?? 0) > 90 && el.classList.add('slow'));
+    $('back').addEventListener('click', close);
+    $('list').hidden = true;
+    $('tools').hidden = true;
+    $('detail').hidden = false;
+    window.scrollTo(0, 0);
+  }
+
+  function close() {
+    $('detail').hidden = true;
+    $('list').hidden = false;
+    $('tools').hidden = false;
+  }
+
+  $('rows').addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-i]');
+    if (b) open(Number(b.dataset.i));
+  });
+  $('reload').addEventListener('click', load);
+  $('addCodes').addEventListener('click', () => {
+    const text = ($('codes') as HTMLTextAreaElement).value;
     const codes = [...new Set(text.match(/SC1-[A-Za-z0-9_-]+/g) ?? [])];
     const bad: string[] = [];
-    const groups: Record<string, Row[]> = {};
     for (const c of codes) {
       const p = decodeCheck(c);
       if (!p || !keys![p[1]]) { bad.push(c.slice(0, 14) + '…'); continue; }
       const [, quiz, name, answers, secs, at] = p;
-      const qs = keys![quiz].questions;
-      (groups[quiz] ||= []).push({ name, at, answers, secs, marks: qs.map((q, i) => grade(q, answers[i] ?? '')) });
+      if (!codeRows.some((r) => r.quiz === quiz && r.name === name && r.at === at * 60000))
+        codeRows.push({ quiz, name, answers, secs, at: at * 60000, code: true });
     }
     const msg = $('pasteMsg');
     msg.hidden = !(bad.length || !codes.length);
     msg.textContent = !codes.length ? 'ไม่พบรหัสในข้อความ (รหัสขึ้นต้นด้วย SC1-)' : `มี ${bad.length} รหัสที่อ่านไม่ได้ อาจคัดลอกมาไม่ครบ: ${bad.join(', ')}`;
-
-    $('out').innerHTML = Object.entries(groups).map(([quiz, rows]) => {
-      const { title, questions } = keys![quiz];
-      rows.sort((a, b) => a.name.localeCompare(b.name, 'th'));
-      const n = questions.length;
-      const head = questions.map((q, i) => `<th title="${esc(q.label)}">${i + 1}<small>${esc(q.label)}</small></th>`).join('');
-      const body = rows.map((r) => {
-        const score = r.marks.filter(Boolean).length;
-        const total = r.secs.reduce((a, b) => a + b, 0);
-        const cells = questions.map((q, i) =>
-          `<td class="${r.marks[i] ? 'ok' : 'no'}${r.secs[i] > 90 ? ' slow' : ''}">${r.marks[i] ? '✓' : '✗'}<small>${esc(shown(q, r.answers[i] ?? ''))}</small><small class="tm">${mmss(r.secs[i] ?? 0)}</small></td>`).join('');
-        return `<tr><td class="nm"><b>${esc(r.name)}</b><small>${new Date(r.at * 60000).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}</small></td><td><b>${score}/${n}</b><small>${mmss(total)}</small></td>${cells}</tr>`;
-      }).join('');
-      const pct = questions.map((_, i) => Math.round((100 * rows.filter((r) => r.marks[i]).length) / rows.length));
-      const avg = questions.map((_, i) => Math.round(rows.reduce((a, r) => a + (r.secs[i] ?? 0), 0) / rows.length));
-      const foot = `<tr><td colspan="2">ทำถูก</td>${pct.map((p) => `<td class="${p < 50 ? 'low' : ''}">${p}%</td>`).join('')}</tr>
-        <tr><td colspan="2">เวลาเฉลี่ย</td>${avg.map((s) => `<td>${mmss(s)}</td>`).join('')}</tr>`;
-      const sols = questions.map((q, i) => `<div class="sol"><p class="sh">ข้อ ${i + 1} · ${esc(q.label)}</p>${q.solution}</div>`).join('');
-      return `<div class="card"><h2>${esc(title)} <span class="cnt">${rows.length} คน</span></h2>
-        <div class="scroll"><table><thead><tr><th>ชื่อ</th><th>คะแนน</th>${head}</tr></thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table></div>
-        <p class="hint">ช่องสีส้มเข้ม = ใช้เวลาเกิน 1 นาทีครึ่ง · ตัวเลขใต้เครื่องหมายคือคำตอบของนักเรียนและเวลาที่ใช้</p>
-        <details><summary>เฉลยและวิธีทำ</summary>${sols}</details></div>`;
-    }).join('');
-  }
-
+    ($('codes') as HTMLTextAreaElement).value = '';
+    draw();
+  });
   $('login').addEventListener('submit', (e) => {
     e.preventDefault();
     login(($('pw') as HTMLInputElement).value);
   });
-  $('paste').addEventListener('submit', (e) => {
-    e.preventDefault();
-    render(($('codes') as HTMLTextAreaElement).value);
-  });
   $('logout').addEventListener('click', () => {
     try { localStorage.removeItem(STORE); } catch {}
     keys = null;
-    $('out').innerHTML = '';
-    $('paste').hidden = true;
+    pw = '';
+    sheetRows = [];
+    codeRows = [];
+    $('rows').innerHTML = '';
+    $('detail').innerHTML = '';
+    $('detail').hidden = true;
+    $('list').hidden = true;
     $('tools').hidden = true;
     $('login').hidden = false;
   });
@@ -241,24 +318,41 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
   .ghost { background: transparent; color: var(--brand); border: 2px solid var(--brand); }
   .msg { margin: 12px 0 0; font-weight: 700; color: #a6402a; }
   .hint { color: var(--muted); font-size: 0.85rem; margin: 10px 0; }
-  #out :global(h2) { margin: 0 0 12px; font-size: 1.3rem; }
-  #out :global(.cnt) { color: var(--muted); font-size: 0.95rem; font-weight: 400; }
-  #out :global(.scroll) { overflow-x: auto; margin: 0 -8px; }
-  #out :global(table) { border-collapse: collapse; font-size: 0.9rem; }
-  #out :global(th), #out :global(td) { border-bottom: 1px solid var(--border); padding: 6px 8px; text-align: center; vertical-align: top; white-space: nowrap; }
-  #out :global(th small) { display: block; font-weight: 400; color: var(--muted); font-size: 0.68rem; max-width: 6.5em; white-space: normal; line-height: 1.25; }
-  #out :global(td small) { display: block; color: var(--muted); font-size: 0.72rem; font-weight: 400; }
-  #out :global(td.nm), #out :global(th:first-child) { text-align: left; position: sticky; left: 0; background: var(--surface); }
-  #out :global(td.ok) { background: #e7f8ef; }
-  #out :global(td.no) { background: #fdecea; }
-  #out :global(td.slow .tm) { color: #b45309; font-weight: 700; }
-  #out :global(tfoot td) { font-weight: 700; }
-  #out :global(tfoot td.low) { color: #a6402a; }
-  #out :global(details) { margin-top: 8px; }
-  #out :global(summary) { font-weight: 700; color: var(--brand); cursor: pointer; padding: 6px 0; }
-  #out :global(.sol) { border-top: 1px solid var(--border); padding: 10px 0; }
-  #out :global(.sol p) { margin: 2px 0; }
-  #out :global(.sh) { font-weight: 700; }
-  #out :global(.ans) { font-weight: 700; color: var(--brand); }
-  #out :global(.flag) { color: #a6402a; font-size: 0.9rem; }
+  .bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .bar h2 { margin: 0 auto 0 0; font-size: 1.3rem; }
+  .bar button { padding: 6px 16px; min-height: 40px; font-size: 0.9rem; }
+  .cnt { color: var(--muted); font-size: 0.95rem; font-weight: 400; }
+  #rows :global(h3) { margin: 20px 0 6px; font-size: 1.1rem; }
+  #rows :global(.who) { list-style: none; margin: 0; padding: 0; }
+  #rows :global(.who button) {
+    width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 0 12px; text-align: left; align-items: center;
+    background: transparent; color: var(--ink); border: 0; border-top: 1px solid var(--border); border-radius: 0; padding: 10px 4px; font-weight: 400;
+  }
+  #rows :global(.who button:hover) { background: var(--brand-soft); }
+  #rows :global(.who span) { grid-column: 1; color: var(--muted); font-size: 0.88rem; }
+  #rows :global(.who em) { grid-column: 2; grid-row: 1 / span 2; font-style: normal; font-weight: 700; color: var(--brand); font-size: 1.1rem; }
+  .paste { margin-top: 18px; }
+  .paste summary { color: var(--muted); cursor: pointer; padding: 6px 0; }
+  #detail h2 { margin: 16px 0 4px; font-size: 1.5rem; }
+  #detail :global(.qa) { border-top: 1px solid var(--border); padding: 14px 0 6px; }
+  #detail :global(.qh) { margin: 0 0 6px; font-weight: 700; }
+  #detail :global(.qh small) { color: var(--muted); font-weight: 400; margin-left: 6px; }
+  #detail :global(.qh small.slow) { color: #b45309; font-weight: 700; }
+  #detail :global(.mk) { display: inline-block; width: 1.6em; text-align: center; border-radius: 6px; color: #fff; }
+  #detail :global(.ok .mk) { background: #16a34a; }
+  #detail :global(.no .mk) { background: #a6402a; }
+  #detail :global(.qt) { margin: 0 0 8px; font-size: 1.05rem; }
+  #detail :global(.opts) { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 4px; }
+  #detail :global(.opts li) { padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; }
+  #detail :global(.opts li.picked) { background: #fdecea; border-color: #a6402a; }
+  #detail :global(.opts li.right) { background: #e7f8ef; border-color: #16a34a; }
+  #detail :global(.opts em) { font-style: normal; font-weight: 700; font-size: 0.85rem; }
+  #detail :global(.you), #detail :global(.key) { margin: 4px 0; }
+  #detail :global(.no .you) { color: #a6402a; }
+  #detail :global(.key) { color: #15803d; }
+  #detail :global(.sol) { background: var(--bg); border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
+  #detail :global(.sol p) { margin: 2px 0; }
+  #detail :global(.sh) { font-weight: 700; }
+  #detail :global(.ans) { font-weight: 700; color: var(--brand); }
+  #detail :global(.flag) { color: #a6402a; font-size: 0.9rem; }
 </style>

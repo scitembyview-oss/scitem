@@ -1,24 +1,11 @@
 ---
 import Base from '../../layouts/Base.astro';
-import BasicCheck, { type Question } from '../../components/BasicCheck.astro';
+import BasicCheck from '../../components/BasicCheck.astro';
+import { checks } from '../../data/checks';
 
-// Answer key + solutions: encrypted in src/data/check-keys.json under "circular-1" (same order).
-const questions: Question[] = [
-  { label: 'พื้นฐาน', kind: 'num', text: 'แรง 10 N ทำมุม 37° กับแนวราบ จงแตกเป็นองค์ประกอบแนวราบและแนวดิ่ง',
-    parts: [{ label: 'แนวราบ', unit: 'N' }, { label: 'แนวดิ่ง', unit: 'N' }] },
-  { label: 'พื้นฐาน', kind: 'num', text: 'แรงลัพธ์ 10 N กระทำต่อมวล 2 kg ความเร่งเท่าใด', parts: [{ unit: 'm/s²' }] },
-  { label: 'พื้นฐาน', kind: 'num', text: 'ปล่อยลูกบอลจากที่สูง 5 m อัตราเร็วขณะถึงพื้นเท่าใด (g = 10 m/s²)', parts: [{ unit: 'm/s' }] },
-  { label: 'พื้นฐาน', kind: 'mc', text: 'วัตถุเคลื่อนที่เป็นวงกลมด้วยอัตราเร็วคงตัว ข้อใดถูกต้อง',
-    options: ['ไม่มีความเร่ง เพราะอัตราเร็วคงตัว', 'มีความเร่ง เพราะทิศของความเร็วเปลี่ยนตลอดเวลา', 'มีความเร่ง เพราะมีแรงหนีศูนย์กลางกระทำ', 'ไม่มีความเร่ง เพราะแรงที่กระทำสมดุลกัน'] },
-  { label: 'พื้นฐาน', kind: 'num', text: 'จงทำ √300 ให้อยู่ในรูปอย่างง่าย a√b', joiner: '√', parts: [{}, {}] },
-  { label: 'คาบและความถี่', kind: 'num', text: 'ล้อหมุน 120 รอบต่อนาที คาบของการหมุนเท่าใด', parts: [{ unit: 's' }] },
-  { label: 'วงกลมแนวราบ', kind: 'num', text: 'ลูกบอลมวล 0.2 kg ผูกเชือกยาว 0.5 m แกว่งเป็นวงกลมบนโต๊ะลื่นในแนวราบด้วยอัตราเร็ว 5 m/s แรงตึงเชือกเท่าใด', parts: [{ unit: 'N' }] },
-  { label: 'จุดบนสุด/ล่างสุด', kind: 'num', text: 'รถมวล 1000 kg วิ่งข้ามยอดเนินที่มีรัศมีความโค้ง 20 m ด้วยอัตราเร็ว 10 m/s ถนนดันรถขึ้นด้วยแรงเท่าใด (g = 10 m/s²)', parts: [{ unit: 'N' }] },
-  { label: 'ทางโค้งเอียง', kind: 'mc', text: 'รถเลี้ยวบนทางโค้งที่ยกขอบเอียง และถนนลื่นสนิท (ไม่มีแรงเสียดทาน) แรงใดทำหน้าที่เป็นแรงสู่ศูนย์กลาง',
-    options: ['แรงเสียดทานระหว่างยางกับถนน', 'น้ำหนักของรถ', 'องค์ประกอบแนวราบของแรงที่ถนนดันรถ (ตั้งฉากกับถนน)', 'แรงหนีศูนย์กลาง'] },
-  { label: 'วงกลมแนวดิ่ง + พลังงาน', kind: 'num', text: 'ลูกตุ้มผูกเชือกยาว 0.8 m ดึงให้เชือกตึงในแนวราบแล้วปล่อยจากหยุดนิ่ง ที่จุดต่ำสุดลูกตุ้มมีอัตราเร็วเท่าใด (g = 10 m/s²)', parts: [{ unit: 'm/s' }] },
-];
+// Questions: src/data/checks.ts · answer key + solutions: encrypted in src/data/check-keys.json under "circular-1".
+const { title, questions } = checks['circular-1'];
 ---
 <Base title="เช็คพื้นฐานก่อนเรียน: การเคลื่อนที่แบบวงกลม · scitem" description="เช็คพื้นฐานก่อนเรียนเรื่องการเคลื่อนที่แบบวงกลม 10 ข้อ" noindex>
-  <BasicCheck id="circular-1" title="การเคลื่อนที่แบบวงกลม" questions={questions} />
+  <BasicCheck id="circular-1" title={title} questions={questions} />
 </Base>

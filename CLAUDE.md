@@ -17,7 +17,7 @@ push ขึ้น `main` แล้ว GitHub Actions (`.github/workflows/deploy.
 | ชีท PDF | `public/sheets/*.pdf` |
 | สไลด์เดโมการเคลื่อนที่แบบวงกลม (canvas, ปากกา) | `public/demo/index.html` (เขียนมือ ไฟล์เดียว) |
 | สไลด์ Light Explorer · Mission 2 (14 หน้า) | `public/light-p5/index.html` **สร้างจากสคริปต์ ห้ามแก้ตรง** |
-| เช็คพื้นฐานก่อนเรียน | `src/pages/check/*.astro` + `src/components/BasicCheck.astro` + `src/lib/check-code.js` |
+| เช็คพื้นฐานก่อนเรียน | โจทย์ `src/data/checks.ts` + `src/pages/check/*.astro` + `src/components/BasicCheck.astro`; ผลส่งเข้า Google Sheet ผ่าน `tools/check-sheet.gs` (URL = `SHEET_URL` ใน catalog.ts) สำรองด้วยรหัส `src/lib/check-code.js` |
 | เฉลยเช็ค (เข้ารหัส) | `src/data/check-keys.json` ← `node tools/encrypt-check-keys.mjs <keys.json> <รหัสผ่าน>` |
 | Answer Vault | `src/pages/vault.astro` (รายการ `VAULT` เข้ารหัสแล้ว) |
 

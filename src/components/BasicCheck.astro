@@ -1,14 +1,8 @@
 ---
-export interface Question {
-  /** shown above the question, e.g. "พื้นฐาน" or "แนว 1.2" */
-  label: string;
-  text: string;
-  /** 'num': one or more number boxes; 'mc': pick one option */
-  kind: 'num' | 'mc';
-  parts?: { label?: string; unit?: string }[];
-  joiner?: string;
-  options?: string[];
-}
+import type { Question } from '../data/checks';
+import { SHEET_URL } from '../data/catalog';
+export type { Question };
+
 interface Props {
   id: string;
   title: string;
@@ -19,7 +13,7 @@ interface Props {
 // Answers are NOT here: they live encrypted in src/data/check-keys.json and are only opened on the teacher page.
 const { id, title, questions, symbols = false } = Astro.props;
 ---
-<section class="quiz" data-id={id}>
+<section class="quiz" data-id={id} data-sheet={SHEET_URL}>
   <a class="crumb" href="/students/">← สำหรับนักเรียน · เช็คพื้นฐานก่อนเรียน</a>
   <h1>{title}</h1>
   <p class="lead">ทำก่อนเรียน เพื่อให้ครูรู้ว่าต้องทวนพื้นฐานตรงไหน ไม่มีผลกับคะแนน ตอบตามที่คิดได้เลย ทำไม่ได้ก็ข้ามได้</p>
@@ -78,13 +72,17 @@ const { id, title, questions, symbols = false } = Astro.props;
 
   <article class="card result" id="result" hidden>
     <h2>ทำเสร็จแล้ว 🎉</h2>
-    <p>ส่งรหัสนี้ให้ครู ครูจะเป็นคนเปิดดูคะแนนและเฉลย</p>
-    <pre id="code"></pre>
-    <div class="row">
-      <a class="btn line" id="line" target="_blank" rel="noopener">ส่งทาง LINE</a>
-      <button type="button" id="copy" class="ghost">คัดลอกรหัส</button>
+    <p class="status" id="status"></p>
+    <button type="button" id="retry" hidden>ลองส่งอีกครั้ง</button>
+    <div id="backup" hidden>
+      <p>หรือส่งรหัสนี้ให้ครูทาง LINE ครูจะเป็นคนเปิดดูคะแนนและเฉลย</p>
+      <pre id="code"></pre>
+      <div class="row">
+        <a class="btn line" id="line" target="_blank" rel="noopener">ส่งทาง LINE</a>
+        <button type="button" id="copy" class="ghost">คัดลอกรหัส</button>
+      </div>
+      <p class="hint">ถ้าปุ่มไม่ทำงาน ให้กดค้างที่รหัสแล้วคัดลอกเอง ส่งให้ครูทั้งก้อน</p>
     </div>
-    <p class="hint">ถ้าปุ่มไม่ทำงาน ให้กดค้างที่รหัสแล้วคัดลอกเอง ส่งให้ครูทั้งก้อน</p>
   </article>
 </section>
 
@@ -128,7 +126,9 @@ const { id, title, questions, symbols = false } = Astro.props;
       return;
     }
     qs.hidden = true;
-    const code = encodeCheck([1, id, name, sets.map(answerOf), ms.map((m) => Math.round(m / 1000)), Math.round(Date.now() / 60000)]);
+    const answers = sets.map(answerOf);
+    const secs = ms.map((m) => Math.round(m / 1000));
+    const code = encodeCheck([1, id, name, answers, secs, Math.round(Date.now() / 60000)]);
     document.getElementById('code')!.textContent = code;
     (document.getElementById('line') as HTMLAnchorElement).href =
       'https://line.me/R/share?text=' + encodeURIComponent(`รหัสเช็คพื้นฐานของ ${name}\n${code}`);
@@ -144,6 +144,33 @@ const { id, title, questions, symbols = false } = Astro.props;
     const res = document.getElementById('result')!;
     res.hidden = false;
     res.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Send straight to the teacher's Google Sheet; the LINE code is only the backup if that fails.
+    const sid = Math.random().toString(36).slice(2, 10); // lets the sheet drop a resend of the same result
+    const status = document.getElementById('status')!;
+    const retry = document.getElementById('retry') as HTMLButtonElement;
+    const backup = document.getElementById('backup')!;
+    const url = root.dataset.sheet;
+    if (!url) {
+      status.textContent = 'ส่งรหัสด้านล่างให้ครู';
+      backup.hidden = false;
+      return;
+    }
+    const send = async () => {
+      retry.hidden = true;
+      status.textContent = 'กำลังส่งคำตอบให้ครู…';
+      try {
+        const r = await fetch(url, { method: 'POST', body: JSON.stringify({ action: 'submit', id: sid, quiz: id, name, answers, secs }) });
+        if (!(await r.json()).ok) throw new Error();
+        status.textContent = 'ส่งคำตอบให้ครูแล้ว ✓ ปิดหน้านี้ได้เลย';
+        backup.hidden = true;
+      } catch {
+        status.textContent = 'ส่งไม่สำเร็จ เช็คอินเทอร์เน็ตแล้วกดลองส่งอีกครั้ง';
+        retry.hidden = false;
+        backup.hidden = false;
+      }
+    };
+    retry.onclick = send;
+    send();
   }
 
   start.addEventListener('submit', (e) => {
@@ -227,5 +254,7 @@ const { id, title, questions, symbols = false } = Astro.props;
   .bar { height: 100%; width: 0; background: var(--brand); transition: width 0.2s; }
   .hint { color: var(--muted); font-size: 0.92rem; margin: 10px 0 0; }
   .result h2 { margin: 0 0 6px; color: var(--brand); }
+  .status { font-weight: 700; font-size: 1.1rem; }
+  #retry { margin-bottom: 14px; }
   pre { white-space: pre-wrap; word-break: break-all; background: var(--bg); border: 2px dashed var(--brand); border-radius: 10px; padding: 12px; font: 600 0.95rem ui-monospace, Menlo, monospace; user-select: all; }
 </style>

@@ -62,3 +62,7 @@ export const items: Item[] = [
 ];
 
 export const LINE_URL = 'https://lin.ee/NO52k1Y';
+
+// Google Apps Script web app that stores "เช็คพื้นฐาน" results in the teacher's Google Sheet (setup: tools/check-sheet.gs).
+// Empty = students get the old SC1- code to send on LINE instead.
+export const SHEET_URL = '';

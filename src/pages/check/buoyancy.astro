@@ -1,22 +1,11 @@
 ---
 import Base from '../../layouts/Base.astro';
-import BasicCheck, { type Question } from '../../components/BasicCheck.astro';
+import BasicCheck from '../../components/BasicCheck.astro';
+import { checks } from '../../data/checks';
 
-// Answer key + solutions: encrypted in src/data/check-keys.json under "buoyancy-1" (same order).
-const questions: Question[] = [
-  { label: 'พื้นฐาน', kind: 'num', text: 'ไม้มวล 2 kg ปริมาตร 4 L มีความหนาแน่นเท่าใด', parts: [{ unit: 'kg/m³' }] },
-  { label: 'พื้นฐาน', kind: 'mc', text: '250 cm³ เท่ากับกี่ m³', options: ['2.5 × 10⁻¹ m³', '2.5 × 10⁻² m³', '2.5 × 10⁻⁴ m³', '2.5 × 10⁻⁶ m³'] },
-  { label: 'พื้นฐาน', kind: 'num', text: 'ความดันของน้ำที่ความลึก 2 m เป็นเท่าใด (ไม่คิดความดันบรรยากาศ, g = 10 m/s², ความหนาแน่นน้ำ 1000 kg/m³)', parts: [{ unit: 'Pa' }] },
-  { label: 'พื้นฐาน', kind: 'num', text: 'กล่องมวล 3 kg วางนิ่งบนพื้น มีเชือกดึงกล่องขึ้นด้วยแรง 10 N พื้นดันกล่องด้วยแรงเท่าใด (g = 10 m/s²)', parts: [{ unit: 'N' }] },
-  { label: 'พื้นฐาน', kind: 'num', text: 'ความดัน 5000 Pa กระทำบนพื้นที่ 0.02 m² เกิดแรงเท่าใด', parts: [{ unit: 'N' }] },
-  { label: 'วัตถุจมมิด', kind: 'num', text: 'วัตถุปริมาตร 500 cm³ จมมิดในน้ำ แรงลอยตัวเท่าใด (g = 10 m/s²)', parts: [{ unit: 'N' }] },
-  { label: 'วัตถุลอย', kind: 'num', text: 'ไม้ความหนาแน่น 800 kg/m³ ลอยนิ่งในน้ำ ส่วนที่จมคิดเป็นร้อยละเท่าใดของปริมาตรทั้งก้อน', parts: [{ unit: '%' }] },
-  { label: 'เชือกและเครื่องชั่งสปริง', kind: 'num', text: 'ก้อนโลหะหนัก 30 N ปริมาตร 1 L แขวนด้วยเครื่องชั่งสปริงแล้วหย่อนให้จมมิดในน้ำ เครื่องชั่งสปริงอ่านได้เท่าใด', parts: [{ unit: 'N' }] },
-  { label: 'ระดับน้ำเปลี่ยน', kind: 'num', text: 'ภาชนะทรงกระบอกพื้นที่ก้น 100 cm² มีน้ำอยู่ ใส่ก้อนหินปริมาตร 200 cm³ ลงไปจนจมก้น ระดับน้ำสูงขึ้นกี่เซนติเมตร', parts: [{ unit: 'cm' }] },
-  { label: 'ภาชนะที่มีความเร่ง', kind: 'mc', text: 'ถังน้ำมีไม้ลอยอยู่ วางในลิฟต์ เมื่อลิฟต์เริ่มเร่งขึ้น ไม้จะเป็นอย่างไร',
-    options: ['จมมากขึ้น', 'จมน้อยลง', 'จมเท่าเดิม', 'จมมิดน้ำ'] },
-];
+// Questions: src/data/checks.ts · answer key + solutions: encrypted in src/data/check-keys.json under "buoyancy-1".
+const { title, questions } = checks['buoyancy-1'];
 ---
 <Base title="เช็คพื้นฐานก่อนเรียน: แรงลอยตัว · scitem" description="เช็คพื้นฐานก่อนเรียนเรื่องแรงลอยตัว 10 ข้อ" noindex>
-  <BasicCheck id="buoyancy-1" title="แรงลอยตัว" questions={questions} />
+  <BasicCheck id="buoyancy-1" title={title} questions={questions} />
 </Base>

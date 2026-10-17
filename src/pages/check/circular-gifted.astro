@@ -1,25 +1,11 @@
 ---
 import Base from '../../layouts/Base.astro';
-import BasicCheck, { type Question } from '../../components/BasicCheck.astro';
+import BasicCheck from '../../components/BasicCheck.astro';
+import { checks } from '../../data/checks';
 
-// Answer key + solutions: encrypted in src/data/check-keys.json under "circular-2" (same order).
-const g = 'ใช้ g = 10 m/s², sin 37° = 0.6, cos 37° = 0.8';
-const questions: Question[] = [
-  { label: 'สกิล: เวกเตอร์ความเร็วเปลี่ยนทิศ', kind: 'num', text: 'วัตถุวิ่งเป็นวงกลมด้วยอัตราเร็วคงตัว 5 m/s เมื่อวิ่งไปได้ ¼ รอบ ความเร็วเปลี่ยนไป (|Δv|) เท่าใด', parts: [{ unit: 'm/s' }] },
-  { label: 'สกิล: แตกแรง ΣF = ma ในแนวราบ', kind: 'num', text: `แขวนลูกตุ้ม 0.5 kg ไว้กับเพดานรถที่กำลังเร่งในแนวราบ เชือกเอียงนิ่งทำมุม 37° กับแนวดิ่ง จงหาแรงตึงเชือกและความเร่งของรถ (${g})`,
-    parts: [{ label: 'T =', unit: 'N' }, { label: 'a =', unit: 'm/s²' }] },
-  { label: 'สกิล: ทิศของแรงลัพธ์', kind: 'mc', text: 'แกว่งลูกตุ้มเป็นวงกลมในแนวดิ่ง ขณะที่เชือกอยู่ในแนวราบพอดี แรงลัพธ์บนลูกตุ้มมีทิศใด',
-    options: ['ชี้เข้าหาศูนย์กลางพอดี', 'ชี้ลงในแนวดิ่ง', 'เฉียงลงและเข้าหาศูนย์กลาง', 'ชี้ไปตามทิศการเคลื่อนที่'] },
-  { label: 'สกิล: ความสูงจากมุมเชือก + พลังงาน', kind: 'num', text: 'ลูกตุ้มผูกเชือกยาว 1 m ดึงให้เชือกทำมุม 60° กับแนวดิ่งแล้วปล่อยจากหยุดนิ่ง ที่จุดต่ำสุดลูกตุ้มมีอัตราเร็วเท่าใด (g = 10 m/s²)', parts: [{ unit: 'm/s' }] },
-  { label: 'แนว 1.1 คาบ ความถี่ อัตราเร็ว', kind: 'num', text: 'จานหมุน 300 รอบต่อนาที จุดที่ห่างแกน 0.2 m มีอัตราเร็วและความเร่งสู่ศูนย์กลางเท่าใด',
-    parts: [{ label: 'v =', unit: 'm/s' }, { label: 'a =', unit: 'm/s²' }] },
-  { label: 'แนว 1.2 สองมวลบนเชือกเส้นเดียว', kind: 'num', text: 'ลูกบอลมวลเท่ากัน 2 ลูกร้อยบนเชือกเส้นเดียว ลูกแรกห่างจุดหมุน r ลูกที่สองห่าง 2r แกว่งเป็นวงกลมบนโต๊ะลื่น แรงตึงเชือกช่วงใน (จุดหมุนถึงลูกแรก) เป็นกี่เท่าของแรงตึงช่วงนอก', parts: [{ unit: 'เท่า' }] },
-  { label: 'แนว 2.1 จุดบนสุด', kind: 'num', text: 'รถวิ่งข้ามยอดเนินที่มีรัศมีความโค้ง 40 m (ก) ต้องวิ่งเร็วเท่าใดคนในรถจึงรู้สึกตัวลอย (เบาะไม่ดันเลย) (ข) ถ้าวิ่งด้วยอัตราเร็วครึ่งหนึ่งของข้อ (ก) เบาะดันคนด้วยแรงกี่เปอร์เซ็นต์ของน้ำหนัก (g = 10 m/s²)',
-    parts: [{ label: '(ก)', unit: 'm/s' }, { label: '(ข)', unit: '%' }] },
-  { label: 'แนว 3.1 วงกลมแนวดิ่ง + พลังงาน', kind: 'num', text: 'ลูกบอล 0.2 kg ผูกเชือกยาว 0.5 m แกว่งเป็นวงกลมในแนวดิ่ง เร็วพอให้ผ่านจุดบนสุดได้พอดี (เชือกเกือบหย่อน) ที่จุดต่ำสุดลูกบอลมีอัตราเร็วเท่าใด และแรงตึงเชือกเท่าใด (g = 10 m/s²)',
-    parts: [{ label: 'v =', unit: 'm/s' }, { label: 'T =', unit: 'N' }] },
-];
+// Questions: src/data/checks.ts · answer key + solutions: encrypted in src/data/check-keys.json under "circular-2".
+const { title, questions } = checks['circular-2'];
 ---
 <Base title="ทดสอบความรู้เรื่องการเคลื่อนที่วงกลม · scitem" description="ทดสอบความรู้เรื่องการเคลื่อนที่วงกลม" noindex>
-  <BasicCheck id="circular-2" title="ทดสอบความรู้เรื่องการเคลื่อนที่วงกลม" questions={questions} symbols />
+  <BasicCheck id="circular-2" title={title} questions={questions} symbols />
 </Base>
