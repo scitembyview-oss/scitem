@@ -1,94 +1,244 @@
 ---
+import { existsSync } from 'node:fs';
 import Base from '../layouts/Base.astro';
-import Tile from '../components/Tile.astro';
-import { families, numbered, LINE_URL, type Family } from '../data/catalog';
+import Pages from '../components/Pages.astro';
+import Viewer from '../components/Viewer.astro';
+import { courses, items, kinds, LINE_URL, type CourseId } from '../data/catalog';
 
-const keys = Object.entries(families) as [Family, (typeof families)[Family]][];
+const hasPhoto = existsSync('public/img/teacher.jpg');
+const sheets = items.filter((it) => it.kind === 'sheet');
+const courseList = (Object.entries(courses) as [CourseId, (typeof courses)[CourseId]][]).map(([id, c]) => ({
+  id, ...c, items: items.filter((it) => it.course === id),
+}));
+const inSheet = [
+  ['ศัพท์สองภาษา', 'คำศัพท์ที่ใช้ในห้องเรียน EP พร้อมคำแปลและคำอธิบายภาษาไทยทุกคำ'],
+  ['ตรงหลักสูตร', 'เนื้อหาตามที่ลูกเรียนในโรงเรียนจริง ทุกชีทใช้สอนนักเรียนจริงก่อน'],
+  ['Code Breaker', 'ทำแบบฝึกหัดครบได้รหัสลับไว้ปลดล็อกเฉลย เด็กอยากทำจนจบเอง'],
+  ['มุมผู้ปกครอง', 'คำถามง่ายๆ ให้พ่อแม่ทบทวนลูกได้ แม้ไม่ถนัดภาษาอังกฤษ'],
+];
 ---
 <Base
-  title="scitem · ชีทวิทย์สองภาษา สำหรับเด็ก EP/Inter"
-  description="ชีทวิทยาศาสตร์ไทย-อังกฤษ สำหรับนักเรียน EP และ International ป.5 ถึง ม.3 พร้อมคำแปลและคู่มือให้ผู้ปกครองช่วยทบทวนลูกได้"
+  title="scitem · เรียนวิทย์สองภาษากับครูวิว สำหรับเด็ก EP/Inter"
+  description="ครูวิวสอนวิทยาศาสตร์สองภาษาไทย-อังกฤษ สำหรับนักเรียน EP และ International ป.5 ถึง ม.3 ด้วยสไลด์ที่แตะแล้วขยับได้ และชีทที่มีคำแปลไทยให้ผู้ปกครองช่วยทบทวนได้"
 >
-  <section class="table" aria-label="ทุกบทเรียนของ scitem">
-    <div class="key">
-      <div class="intro">
-        <h1>ชีทและบทเรียน<br />วิทย์สองภาษา</h1>
-        <p>สำหรับเด็ก EP/Inter ป.5–ม.3 ทุกช่องในตารางคือบทเรียนหนึ่งเรื่อง แตะเพื่อเปิด</p>
-        <a class="btn line" href={LINE_URL} target="_blank" rel="noopener">ขอชีทตัวอย่างฟรีทาง LINE</a>
+  <section class="hero full">
+    <div class="wrap hero-in">
+      <div class="copy">
+        <h1>
+          ห้องเรียน <ruby>Science<rt>วิทยาศาสตร์</rt></ruby><br />
+          ที่ลูกได้<span class="mark">แตะ</span> ได้<span class="mark">ลอง</span><br />แล้ว<span class="mark">เข้าใจ</span>จริง
+        </h1>
+        <p class="lead">
+          ครูวิวสอนวิทย์สองภาษาสำหรับเด็ก EP/Inter ป.5–ม.3 เรียนบน iPad ด้วยสไลด์ที่แตะแล้วขยับได้
+          คู่กับชีทที่มีคำแปลไทย พ่อแม่ช่วยทบทวนที่บ้านได้
+        </p>
+        <div class="cta">
+          <a class="btn line" href={LINE_URL} target="_blank" rel="noopener">ทักไลน์คุยกับครูวิว</a>
+          <a class="btn ghost" href="#sheets">ดูตัวอย่างชีท</a>
+        </div>
       </div>
-      <ul class="legend" aria-label="กลุ่มสี">
-        {keys.map(([f, v]) => (
-          <li>
-            <a href={v.href} data-f={f} data-key={f}>
-              <i aria-hidden="true"></i>
-              <span><b>{v.th}</b> <span class="en">{v.en}</span><small>{v.blurb}</small></span>
-            </a>
-          </li>
-        ))}
-      </ul>
+
+      <figure class="ipad">
+        <div class="screen" id="live">
+          <img src="/img/slides/light-5.jpg" alt="สไลด์ Light Explorer ฉายไฟฉายให้เกิดเงา" width="1194" height="834" fetchpriority="high" />
+          <button type="button" id="try" class="try">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" /></svg>
+            ลองแตะสไลด์จริง
+          </button>
+        </div>
+        <figcaption><span class="hand">นี่คือสไลด์ที่ใช้สอนจริง ลองแตะไฟฉายดู</span></figcaption>
+      </figure>
     </div>
-    {numbered.map((it) => <Tile item={it} />)}
-    <Tile ghost />
   </section>
+
+  <section class="courses" id="courses">
+    <div class="sec-head">
+      <h2>เรียนอะไรกับครูวิว</h2>
+      <a href="/lessons/">ดูบทเรียนทั้งหมด →</a>
+    </div>
+    <div class="course-grid">
+      {courseList.map((c) => (
+        <article class="course">
+          <img src={c.cover} alt="" loading="lazy" width="1194" height="834" />
+          <div class="course-body">
+            <p class="where">{c.where}</p>
+            <h3>{c.name} <span>{c.th}</span></h3>
+            <p>{c.blurb}</p>
+            <ul>
+              {c.items.map((it) => (
+                <li><a href={it.href}>{it.title}</a> <small>{kinds[it.kind]} · {it.meta}</small></li>
+              ))}
+            </ul>
+          </div>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="sheets full" id="sheets">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>ตัวอย่างชีทสองภาษา</h2>
+        <p class="muted">แตะชีทเพื่อเปิดดูทีละหน้า อยากได้ชีทเต็มทักไลน์มาได้เลย</p>
+      </div>
+      <div class="sheet-row">
+        {sheets.map((s) => (
+          <article class="sheet">
+            {s.pages ? <Pages pages={s.pages} title={s.title} /> : (
+              <div class="soon"><b>{s.title}</b><span>กำลังทำ</span></div>
+            )}
+            <h3>{s.title}</h3>
+            <p class="th">{s.th} · {s.grade}</p>
+            <p class="muted">{s.note}</p>
+          </article>
+        ))}
+        <dl class="inside">
+          <h3>ในชีทมีอะไร</h3>
+          {inSheet.map(([k, v]) => (<div><dt>{k}</dt><dd>{v}</dd></div>))}
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="teacher" id="teacher">
+    {hasPhoto && <img class="photo" src="/img/teacher.jpg" alt="ครูวิว" width="600" height="640" loading="lazy" />}
+    <div>
+      <h2>สวัสดีค่ะ ครูวิวเอง</h2>
+      <p>
+        ครูวิวสอนวิทยาศาสตร์ให้นักเรียน EP, International และห้องเรียนพิเศษ (Gifted)
+        ทำชีทและสไลด์เองทุกเรื่อง และใช้สอนนักเรียนจริงก่อนทุกครั้ง
+      </p>
+      <p>
+        เด็ก EP เรียนวิทย์เป็นภาษาอังกฤษ บางคนเข้าใจเนื้อหาแต่ติดศัพท์ บางคนท่องศัพท์ได้แต่ไม่เข้าใจจริง
+        ครูเลยสอนทั้งสองภาษาควบคู่กัน และให้ลูกได้ลงมือแตะ ลองเอง จนเห็นภาพ
+      </p>
+      <a class="btn line" href={LINE_URL} target="_blank" rel="noopener">ทักไลน์คุยกับครูวิว</a>
+    </div>
+  </section>
+
+  <section class="start full">
+    <div class="wrap start-in">
+      <h2>เริ่มยังไง</h2>
+      <ol>
+        <li><b>ทักไลน์ scitem</b><span>บอกชั้น โรงเรียน และเรื่องที่ลูกกำลังเรียน</span></li>
+        <li><b>รับชีทตัวอย่างฟรี</b><span>ลองให้ลูกทำดูก่อน ว่าเข้ากับลูกไหม</span></li>
+        <li><b>คุยเรื่องเรียนกับครู</b><span>ถามได้ทุกเรื่อง ไม่ต้องตัดสินใจทันที</span></li>
+      </ol>
+      <a class="btn line big" href={LINE_URL} target="_blank" rel="noopener">ทักไลน์ scitem</a>
+    </div>
+  </section>
+
+  <Viewer />
 </Base>
 
+<script>
+  // Swap the poster for the live slide deck only when asked, so the page stays light and scrolls freely on phones.
+  const live = document.getElementById('live')!;
+  document.getElementById('try')!.addEventListener('click', () => {
+    const f = document.createElement('iframe');
+    f.src = '/light-p5/#p5';
+    f.title = 'สไลด์ Light Explorer';
+    live.replaceChildren(f);
+    const fit = () => f.style.setProperty('--s', String(live.clientWidth / 1194));
+    fit();
+    new ResizeObserver(fit).observe(live);
+  });
+</script>
+
 <style>
-  .table {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    grid-auto-flow: row dense;
-    gap: 10px;
-    padding: 12px 0 0;
+  .full { max-width: none !important; padding-left: 0 !important; padding-right: 0 !important; }
+  .hero {
+    background-color: var(--tint);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 28px 28px;
+    border-bottom: 1px solid var(--rule);
   }
-  .key {
-    grid-column: 2 / 6;
-    grid-row: 1 / 3;
-    display: grid;
-    grid-template-columns: 1.1fr 1fr;
-    gap: 20px 28px;
-    align-items: center;
-    padding: 4px 8px;
+  .hero-in { display: grid; grid-template-columns: 1fr 1.15fr; gap: 40px; align-items: center; padding-top: 56px; padding-bottom: 64px; }
+  h1 { font-size: clamp(2.2rem, 4.6vw, 3.6rem); line-height: 1.35; margin: 0 0 18px; letter-spacing: -0.02em; }
+  h1 ruby rt { font-size: 0.3em; color: var(--blue); }
+  .lead { font-size: 1.12rem; color: var(--muted); margin: 0 0 28px; max-width: 46ch; }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; }
+  .ipad { margin: 0; }
+  .screen {
+    position: relative; aspect-ratio: 1194 / 834; overflow: hidden;
+    border: 14px solid #1c2230; border-radius: 30px; background: #1c2230;
+    box-shadow: 0 30px 60px -30px rgb(20 33 61 / 0.55), 0 0 0 1px #3a4255 inset;
   }
-  h1 { font-size: clamp(1.9rem, 3.6vw, 3rem); margin: 0 0 10px; letter-spacing: -0.02em; }
-  .intro p { margin: 0 0 18px; color: var(--muted); max-width: 34ch; }
-  .legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-  .legend a {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 8px 10px;
-    min-height: 48px;
-    border-radius: 6px;
-    color: var(--ink);
-    text-decoration: none;
-    line-height: 1.35;
-    transition: background-color 0.2s;
+  .screen img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+  .screen :global(iframe) { position: absolute; top: 0; left: 0; width: 1194px; height: 834px; border: 0; transform: scale(var(--s, 0.5)); transform-origin: 0 0; background: #fff; }
+  .try {
+    position: absolute; left: 50%; top: 50%; translate: -50% -50%;
+    display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 10px 22px 10px 16px;
+    border: 0; border-radius: 999px; background: var(--ink); color: #fff; font: inherit; font-weight: 700; cursor: pointer;
+    box-shadow: 0 10px 24px -10px rgb(0 0 0 / 0.6);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .legend a:hover, .legend a:focus-visible { background: var(--surface); }
-  .legend i { flex: none; width: 22px; height: 22px; margin-top: 1px; border: 2px solid var(--ink); border-radius: 4px; background: var(--f-fill); }
-  .legend .en { color: var(--muted); font-size: 0.85rem; }
-  .legend small { display: block; color: var(--muted); font-size: 0.82rem; }
+  .try:hover { transform: scale(1.05); }
+  .try svg { width: 24px; height: 24px; }
+  figcaption { margin: 14px 0 0 18px; }
+  .hand { display: inline-block; font-weight: 600; color: var(--blue); rotate: -2deg; }
+  .hand::before { content: ''; display: inline-block; width: 26px; height: 2px; margin: 0 8px 0.3em 0; background: currentColor; vertical-align: middle; }
 
-  /* pointing at a family in the key lights up its tiles, like an interactive periodic table */
-  .table:has([data-key='lessons']:is(:hover, :focus-visible)) :global(.tile:not([data-f='lessons'])),
-  .table:has([data-key='students']:is(:hover, :focus-visible)) :global(.tile:not([data-f='students'])),
-  .table:has([data-key='parents']:is(:hover, :focus-visible)) :global(.tile:not([data-f='parents'])),
-  .table:has([data-key='teacher']:is(:hover, :focus-visible)) :global(.tile:not([data-f='teacher'])) {
-    opacity: 0.18;
-  }
+  .sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px 20px; flex-wrap: wrap; margin-bottom: 24px; }
+  .sec-head h2 { margin: 0; font-size: clamp(1.6rem, 3.4vw, 2.2rem); }
+  .sec-head p { margin: 0; }
+  .sec-head a { font-weight: 700; text-decoration: none; }
 
-  @media (max-width: 900px) {
-    .key { grid-template-columns: 1fr; gap: 14px; }
-    .legend small { display: none; }
+  .courses { padding-top: 72px; padding-bottom: 72px; }
+  .course-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .course { border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; background: var(--paper); }
+  .course > img { width: 100%; aspect-ratio: 16 / 8; object-fit: cover; object-position: top; border-bottom: 1px solid var(--rule); }
+  .course-body { padding: 20px 24px 24px; }
+  .where { margin: 0; color: var(--blue); font-weight: 700; font-size: 0.92rem; }
+  .course h3 { margin: 2px 0 8px; font-size: 1.4rem; }
+  .course h3 span { color: var(--muted); font-weight: 400; font-size: 1rem; }
+  .course p { margin: 0 0 14px; }
+  .course ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+  .course li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+  .course li a { font-weight: 600; text-decoration: none; }
+  .course li small { color: var(--muted); white-space: nowrap; }
+
+  .sheets { background: var(--tint); padding: 72px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .sheet-row { display: grid; grid-template-columns: 1fr 1fr 1.1fr; gap: 32px; align-items: start; }
+  .sheet h3 { margin: 18px 0 0; font-size: 1.2rem; }
+  .sheet .th { margin: 0; font-weight: 600; }
+  .sheet .muted { margin: 4px 0 0; font-size: 0.95rem; }
+  .soon { aspect-ratio: 1 / 1.18; display: grid; place-content: center; gap: 4px; text-align: center; border: 2px dashed var(--rule); border-radius: var(--radius); color: var(--muted); }
+  .inside { margin: 0; padding: 24px; background: var(--paper); border-radius: var(--radius); border: 1px solid var(--rule); }
+  .inside h3 { margin: 0 0 8px; font-size: 1.2rem; }
+  .inside div { padding: 12px 0; border-top: 1px solid var(--rule); }
+  .inside dt { font-weight: 700; }
+  .inside dd { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+  .teacher { display: flex; gap: 48px; align-items: center; padding-top: 88px; padding-bottom: 40px; }
+  .teacher .photo { width: min(340px, 40%); aspect-ratio: 15 / 16; object-fit: cover; border-radius: 24px; rotate: -2deg; box-shadow: 0 24px 48px -24px rgb(20 33 61 / 0.5); }
+  .teacher h2 { margin: 0 0 12px; font-size: clamp(1.6rem, 3.4vw, 2.2rem); }
+  .teacher p { margin: 0 0 14px; max-width: 60ch; }
+  .teacher .btn { margin-top: 8px; }
+
+  .start { margin-top: 48px; background: var(--blue); color: #fff; }
+  .start-in { display: grid; grid-template-columns: auto 1fr auto; gap: 24px 40px; align-items: center; padding-top: 48px; padding-bottom: 48px; }
+  .start h2 { margin: 0; font-size: clamp(1.6rem, 3.4vw, 2.2rem); }
+  .start ol { list-style: none; counter-reset: s; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .start li { counter-increment: s; display: grid; gap: 2px; }
+  .start li::before { content: counter(s); display: grid; place-items: center; width: 32px; height: 32px; margin-bottom: 6px; border-radius: 50%; background: var(--marker); color: var(--ink); font-weight: 700; }
+  .start li span { color: #dbe5ff; font-size: 0.95rem; }
+  .btn.big { min-height: 56px; padding: 12px 32px; font-size: 1.1rem; }
+
+  @media (max-width: 960px) {
+    .hero-in { grid-template-columns: 1fr; padding-top: 36px; gap: 32px; }
+    .sheet-row { grid-template-columns: 1fr 1fr; }
+    .inside { grid-column: 1 / -1; }
+    .start-in { grid-template-columns: 1fr; }
   }
   @media (max-width: 700px) {
-    .table { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .key { grid-column: 1 / -1; grid-row: auto; padding: 8px 0 12px; }
-    .legend { grid-template-columns: 1fr 1fr; }
-    .legend small { display: block; }
-    .table > :global(.ghost) { display: none; }
+    .course-grid { grid-template-columns: 1fr; }
+    .teacher { flex-direction: column; align-items: flex-start; gap: 28px; }
+    .teacher .photo { width: 72%; }
+    .start ol { grid-template-columns: 1fr; }
+    .screen { border-width: 9px; border-radius: 20px; }
   }
-  @media (max-width: 420px) {
-    .legend { grid-template-columns: 1fr; }
+  @media (max-width: 480px) {
+    .sheet-row { grid-template-columns: 1fr; }
   }
 </style>

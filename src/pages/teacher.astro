@@ -1,16 +1,13 @@
 ---
 import Base from '../layouts/Base.astro';
-import { numbered, families } from '../data/catalog';
-const share = numbered.filter((it) => it.family !== 'teacher' && it.href);
+import { items, kinds } from '../data/catalog';
+const share = items.filter((it) => it.href && it.kind !== 'tool');
 ---
-<Base title="ครู · scitem" description="หน้าครู ตรวจรหัสเช็คพื้นฐาน" noindex family="teacher">
+<Base title="ครู · scitem" description="หน้าครู ตรวจรหัสเช็คพื้นฐาน" noindex>
   <section class="t">
-    <header class="fam-head">
-      <div class="fam-sym"><small>ครู</small><span>Te</span></div>
-      <div>
-        <h1>หน้าครู</h1>
-        <p>ใส่รหัสผ่านเพื่อตรวจรหัสเช็คของนักเรียน และคัดลอกลิงก์ส่งให้นักเรียนทาง LINE</p>
-      </div>
+    <header class="head">
+      <h1>หน้าครู</h1>
+      <p>ใส่รหัสผ่านเพื่อตรวจรหัสเช็คของนักเรียน และคัดลอกลิงก์ส่งให้นักเรียนทาง LINE</p>
     </header>
 
     <form class="card" id="login" autocomplete="off">
@@ -39,9 +36,8 @@ const share = numbered.filter((it) => it.family !== 'teacher' && it.href);
       <h2>ลิงก์ส่งนักเรียน</h2>
       <ul class="share">
         {share.map((it) => (
-          <li data-f={it.family}>
-            <i aria-hidden="true">{it.sym}</i>
-            <a href={it.href}>{it.en}<small>{it.th} · {families[it.family].th}</small></a>
+          <li>
+            <a href={it.href}>{it.title}<small>{kinds[it.kind]} · {it.th}</small></a>
             <button type="button" class="ghost copy" data-url={`https://scitem.net${it.href}`}>คัดลอกลิงก์</button>
           </li>
         ))}
@@ -225,12 +221,14 @@ const share = numbered.filter((it) => it.family !== 'teacher' && it.href);
 </script>
 
 <style>
-  .t { max-width: 1000px; margin: 0 auto; padding: 0 0 16px; }
-  .card { background: var(--surface); border: 2px solid var(--ink); border-radius: 6px; padding: 20px; margin: 0 0 18px; }
+  .t { max-width: 1000px; margin: 0 auto; padding: 0 20px 16px; }
+  .head { padding: 40px 0 20px; }
+  .head h1 { font-size: clamp(2rem, 5vw, 2.8rem); margin: 0 0 6px; }
+  .head p { margin: 0; color: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); padding: 20px; margin: 0 0 18px; }
   #tools h2 { margin: 0 0 12px; font-size: 1.3rem; }
   .share { list-style: none; margin: 0; padding: 0; }
-  .share li { display: grid; grid-template-columns: 44px 1fr auto; gap: 14px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); }
-  .share i { display: grid; place-items: center; width: 44px; height: 44px; border: 2px solid var(--ink); border-radius: 4px; background: var(--f-fill); color: var(--f-ink); font-style: normal; font-weight: 700; }
+  .share li { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); }
   .share a { color: var(--ink); font-weight: 700; text-decoration: none; line-height: 1.35; }
   .share a small { display: block; color: var(--muted); font-weight: 400; }
   .share .copy { padding: 8px 14px; font-size: 0.9rem; }
@@ -239,7 +237,7 @@ const share = numbered.filter((it) => it.family !== 'teacher' && it.href);
   .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
   input[type='password'], textarea { flex: 1 1 200px; min-width: 0; width: 100%; font: inherit; font-size: 1rem; padding: 10px 12px; border: 2px solid var(--border); border-radius: 6px; background: var(--surface); }
   textarea { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; }
-  button { font: inherit; font-weight: 700; min-height: 44px; padding: 10px 22px; border: 2px solid var(--brand); border-radius: 6px; background: var(--brand); color: #fff; cursor: pointer; }
+  button { font: inherit; font-weight: 700; min-height: 44px; padding: 10px 22px; border: 2px solid var(--brand); border-radius: 999px; background: var(--brand); color: #fff; cursor: pointer; }
   .ghost { background: transparent; color: var(--brand); border: 2px solid var(--brand); }
   .msg { margin: 12px 0 0; font-weight: 700; color: #a6402a; }
   .hint { color: var(--muted); font-size: 0.85rem; margin: 10px 0; }

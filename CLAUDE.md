@@ -8,11 +8,12 @@ push ขึ้น `main` แล้ว GitHub Actions (`.github/workflows/deploy.
 
 | อะไร | ไฟล์ |
 |---|---|
-| **รายการทุกอย่างบนเว็บ** (สไลด์ เช็ค ชีท เครื่องมือ = ช่องธาตุ 1 ช่อง) กลุ่มสี และคอร์ส | `src/data/catalog.ts` |
-| หน้าแรก (ตารางธาตุ) / ผู้ปกครอง / นักเรียน / ชีทสอน (แยกคอร์ส) / ครู (รหัสผ่าน + ตรวจรหัส) | `src/pages/index.astro`, `parents.astro`, `students.astro`, `lessons.astro`, `teacher.astro` |
-| ช่องธาตุ | `src/components/Tile.astro` |
-| หน้าตา (ตารางธาตุ, สี 4 กลุ่ม, ฟอนต์ Anuphan ใน `public/fonts/`) | `DESIGN.md` |
-| เมนู, footer, สี, ฟอนต์ (`family=` ระบายสีทั้งหน้า) | `src/layouts/Base.astro` |
+| **รายการทุกอย่างบนเว็บ** (สไลด์ เช็ค ชีท) + คอร์ส + ลิงก์ LINE | `src/data/catalog.ts` |
+| หน้าแรก (ขายผู้ปกครอง ดึงคนทักไลน์) / บทเรียน (แยกคอร์ส) / นักเรียน / ครู (รหัสผ่าน + ตรวจรหัส) | `src/pages/index.astro`, `lessons.astro`, `students.astro`, `teacher.astro` |
+| ตัวอย่างชีทแบบกองกระดาษ + หน้าต่างดูทีละหน้า | `src/components/Pages.astro`, `Viewer.astro` |
+| รูปตัวอย่าง: หน้าชีท `public/img/sheets/`, ภาพสไลด์ `public/img/slides/`, รูปครู `public/img/teacher.jpg` | `pdftoppm -f 1 -l 3 -jpeg -scale-to 1000 <pdf> public/img/sheets/<ชื่อ>` (ห้ามรวมหน้าเฉลย) |
+| หน้าตา (สมุดวิทย์: กระดาษกราฟ, ปากกาเน้น, iPad สไลด์จริง) | `DESIGN.md` |
+| เมนู, footer, สี, ฟอนต์ | `src/layouts/Base.astro` |
 | ชีท PDF | `public/sheets/*.pdf` |
 | สไลด์เดโมการเคลื่อนที่แบบวงกลม (canvas, ปากกา) | `public/demo/index.html` (เขียนมือ ไฟล์เดียว) |
 | สไลด์ Light Explorer · Mission 2 (14 หน้า) | `public/light-p5/index.html` **สร้างจากสคริปต์ ห้ามแก้ตรง** |

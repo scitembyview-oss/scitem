@@ -1,0 +1,38 @@
+---
+// A fanned stack of sample pages. Tapping it opens every page in the viewer (needs <Viewer /> on the page).
+interface Props {
+  pages: string[];
+  title: string;
+  /** 'sheet' = portrait A4, 'slide' = landscape iPad */
+  shape?: 'sheet' | 'slide';
+}
+const { pages, title, shape = 'sheet' } = Astro.props;
+const shown = pages.slice(0, 3);
+---
+<button type="button" class:list={['stack', shape]} data-pages={JSON.stringify(pages)} data-title={title} aria-label={`ดูตัวอย่าง ${title} (${pages.length} หน้า)`}>
+  {shown.map((src, i) => (
+    <img src={src} alt="" loading="lazy" decoding="async" style={`--i:${shown.length - 1 - i}`} />
+  )).reverse()}
+  <span class="zoom">ดูตัวอย่าง {pages.length > 1 ? `${pages.length} หน้า` : ''}</span>
+</button>
+
+<style>
+  .stack { position: relative; display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; font: inherit; }
+  .stack.sheet { aspect-ratio: 1 / 1.18; }
+  .stack.slide { aspect-ratio: 1194 / 834; }
+  img {
+    position: absolute; inset: 0; margin: auto; height: auto; max-height: 100%;
+    border-radius: 6px; background: #fff;
+    box-shadow: 0 1px 2px rgb(20 33 61 / 0.12), 0 10px 24px -12px rgb(20 33 61 / 0.35);
+    transform: translateX(calc(var(--i) * 9%)) rotate(calc(var(--i) * 3deg)) scale(calc(1 - var(--i) * 0.06));
+    transform-origin: 50% 100%;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .sheet img { width: 72%; }
+  .slide img { width: 100%; border-radius: 10px; }
+  .stack:hover img, .stack:focus-visible img { transform: translateX(calc(var(--i) * 14%)) rotate(calc(var(--i) * 5deg)) scale(calc(1 - var(--i) * 0.06)); }
+  .zoom {
+    position: absolute; left: 12px; bottom: 12px; padding: 4px 12px; border-radius: 999px;
+    background: var(--ink); color: #fff; font-size: 0.85rem; font-weight: 600;
+  }
+</style>

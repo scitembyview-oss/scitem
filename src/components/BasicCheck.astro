@@ -20,7 +20,7 @@ interface Props {
 const { id, title, questions, symbols = false } = Astro.props;
 ---
 <section class="quiz" data-id={id}>
-  <a class="crumb" href="/students/">← นักเรียน · เช็คพื้นฐานก่อนเรียน</a>
+  <a class="crumb" href="/students/">← สำหรับนักเรียน · เช็คพื้นฐานก่อนเรียน</a>
   <h1>{title}</h1>
   <p class="lead">ทำก่อนเรียน เพื่อให้ครูรู้ว่าต้องทวนพื้นฐานตรงไหน ไม่มีผลกับคะแนน ตอบตามที่คิดได้เลย ทำไม่ได้ก็ข้ามได้</p>
 
@@ -190,10 +190,10 @@ const { id, title, questions, symbols = false } = Astro.props;
   .crumb:hover { color: var(--ink); }
   h1 { font-size: clamp(1.8rem, 6vw, 2.4rem); line-height: 1.2; margin: 4px 0 12px; }
   .lead { color: var(--muted); margin: 0 0 24px; }
-  .card { background: var(--surface); border: 2px solid var(--ink); border-radius: 6px; padding: 20px; margin: 0 0 18px; }
+  .card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); padding: 20px; margin: 0 0 18px; }
   fieldset.card { min-width: 0; }
   legend { padding: 0 6px; }
-  .num { background: var(--f-fill); color: var(--f-ink); border: 1.5px solid var(--ink); font-weight: 700; border-radius: 8px; padding: 2px 10px; }
+  .num { background: var(--blue); color: #fff; font-weight: 700; border-radius: 8px; padding: 2px 10px; }
   .lab { color: var(--muted); font-size: 0.9rem; margin-left: 4px; }
   .qt { margin: 0 0 14px; font-size: 1.1rem; }
   label { font-weight: 600; }
@@ -216,15 +216,15 @@ const { id, title, questions, symbols = false } = Astro.props;
   .opt:has(input:checked) { border-color: var(--brand); background: var(--brand-soft); }
   .opt input { margin-top: 0.45em; accent-color: var(--brand); }
   button, .btn {
-    font: inherit; font-weight: 700; min-height: 44px; padding: 10px 22px; border: 2px solid var(--ink); border-radius: 6px;
+    font: inherit; font-weight: 700; min-height: 44px; padding: 10px 22px; border: 1px solid var(--rule); border-radius: var(--radius);
     background: var(--ink); color: #fff; cursor: pointer; text-decoration: none; display: inline-block;
   }
   .ghost { background: transparent; color: var(--brand); border: 2px solid var(--brand); }
-  .line { background: #06c755; color: #08240f; }
+  .line { background: var(--line); color: #fff; }
   .nav { display: flex; justify-content: space-between; gap: 10px; }
   .nav #next { flex: 1; max-width: 60%; margin-left: auto; }
   .progress { height: 6px; background: var(--border); border-radius: 99px; margin: 0 0 14px; overflow: hidden; }
-  .bar { height: 100%; width: 0; background: var(--f-fill, var(--brand)); transition: width 0.2s; }
+  .bar { height: 100%; width: 0; background: var(--brand); transition: width 0.2s; }
   .hint { color: var(--muted); font-size: 0.92rem; margin: 10px 0 0; }
   .result h2 { margin: 0 0 6px; color: var(--brand); }
   pre { white-space: pre-wrap; word-break: break-all; background: var(--bg); border: 2px dashed var(--brand); border-radius: 10px; padding: 12px; font: 600 0.95rem ui-monospace, Menlo, monospace; user-select: all; }

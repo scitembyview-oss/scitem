@@ -4,10 +4,10 @@ import Base from '../layouts/Base.astro';
 <Base
   title="Answer Vault · scitem"
   description="ใส่รหัสจาก Code Breaker ท้ายชีท scitem เพื่อปลดล็อกเฉลย / Enter your Code Breaker code to unlock the answer key."
-  family="students"
+ 
 >
   <section class="vault">
-    <a class="crumb" href="/students/">← นักเรียน</a>
+    <a class="crumb" href="/students/">← สำหรับนักเรียน</a>
     <h1>Answer Vault</h1>
     <p class="lead">
       Finished every exercise on your worksheet? Enter the code from your Code Breaker to unlock the answers, then mark your own work.
@@ -77,7 +77,7 @@ import Base from '../layouts/Base.astro';
   .crumb:hover { color: var(--ink); }
   h1 { font-size: clamp(2rem, 6vw, 2.6rem); line-height: 1.2; margin: 4px 0 12px; }
   .lead { color: var(--muted); margin: 0 0 24px; }
-  .card { background: var(--surface); border: 2px solid var(--ink); border-radius: 6px; padding: 20px; margin-bottom: 24px; }
+  .card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
   label { display: block; font-weight: 700; margin-bottom: 8px; }
   .row { display: flex; gap: 10px; flex-wrap: wrap; }
   input {
@@ -87,7 +87,7 @@ import Base from '../layouts/Base.astro';
   }
   input:focus { outline: none; border-color: var(--brand); }
   button {
-    font: inherit; font-weight: 700; min-height: 48px; padding: 10px 22px; border: 2px solid var(--ink); border-radius: 6px;
+    font: inherit; font-weight: 700; min-height: 48px; padding: 10px 22px; border: 1px solid var(--rule); border-radius: var(--radius);
     background: var(--ink); color: #fff; cursor: pointer;
   }
   .hint { color: var(--muted); font-size: 0.9rem; margin: 12px 0 0; }
