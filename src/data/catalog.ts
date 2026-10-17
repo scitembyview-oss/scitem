@@ -57,8 +57,6 @@ export const items: Item[] = [
     pages: ['/img/sheets/solar-1.jpg', '/img/sheets/solar-2.jpg', '/img/sheets/solar-3.jpg'] },
   { title: 'Rocks & the Rock Cycle', th: 'หินและวัฏจักรหิน', kind: 'sheet', grade: 'Year 7',
     meta: 'English only', note: 'พร้อม Self-Check และ Code Breaker' },
-  { title: 'Answer Vault', th: 'ปลดล็อกเฉลยชีท', kind: 'tool', grade: 'ทุกชั้น',
-    meta: 'ใช้รหัส Code Breaker', href: '/vault/', note: 'ใส่รหัสจาก Code Breaker ท้ายชีทเพื่อเปิดเฉลย' },
 ];
 
 export const LINE_URL = 'https://lin.ee/NO52k1Y';
