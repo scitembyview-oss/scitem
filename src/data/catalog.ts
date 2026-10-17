@@ -19,7 +19,7 @@ export const courses: Record<CourseId, { name: string; th: string; where: string
   },
   'physics-lower': {
     name: 'ฟิสิกส์ ม.ต้น', th: 'แรง การเคลื่อนที่ ของไหล', where: 'Lower secondary physics',
-    blurb: 'การเคลื่อนที่แบบวงกลม แรงลอยตัว และพื้นฐานที่ต้องแม่นก่อนขึ้น ม.ปลาย มีเช็คพื้นฐานก่อนเรียนทุกเรื่อง',
+    blurb: 'การเคลื่อนที่แบบวงกลม แรงลอยตัว และพื้นฐานที่ต้องแม่นก่อนขึ้น ม.ปลาย มี Circular Motion เป็นเดโมสไลด์สอน และเช็คพื้นฐานก่อนเรียนทุกเรื่อง',
     cover: '/img/slides/demo.jpg',
   },
 };
@@ -43,7 +43,7 @@ export const items: Item[] = [
     note: 'แตะรูปให้ขยับได้ ฉายแสงให้เกิดเงา พร้อมปากกาเขียนบนสไลด์',
     pages: ['/img/slides/light-1.jpg', '/img/slides/light-5.jpg'] },
   { title: 'Circular Motion', th: 'การเคลื่อนที่แบบวงกลม', kind: 'slides', grade: 'ม.ต้น',
-    meta: '2 หน้า', href: '/demo/', course: 'physics-lower',
+    meta: 'เดโมสไลด์สอน', href: '/demo/', course: 'physics-lower',
     note: 'ภาพเคลื่อนไหวปรับค่าได้ พร้อมปากกาเขียนบนสไลด์', pages: ['/img/slides/demo.jpg'] },
   { title: 'เช็คพื้นฐาน: วงกลม', th: 'การเคลื่อนที่แบบวงกลม', kind: 'check', grade: 'ม.ต้น',
     meta: '10 ข้อ', href: '/check/circular/', course: 'physics-lower', note: 'ทำก่อนเรียน' },

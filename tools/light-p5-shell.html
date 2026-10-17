@@ -427,6 +427,8 @@
     document.body.classList.toggle('hand', m === 'hand');
   }
   for (const k in modeBtns) modeBtns[k].onclick = () => setMode(k);
+  // ?tap opens in 👆 mode, for the try-it preview on the home page
+  if (new URLSearchParams(location.search).has('tap')) setMode('hand');
   const cwrap = $('colors');
   COLORS.forEach((c, i) => {
     const b = document.createElement('button');

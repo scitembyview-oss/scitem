@@ -1,41 +1,32 @@
 ---
 import { existsSync } from 'node:fs';
 import Base from '../layouts/Base.astro';
-import Pages from '../components/Pages.astro';
-import Viewer from '../components/Viewer.astro';
 import { courses, items, kinds, LINE_URL, type CourseId } from '../data/catalog';
 
 // any of these names works, so a photo uploaded straight from a phone shows up without renaming the type
 const photo = ['วิวถือไมค์.jpeg', 'teacher.jpg', 'teacher.jpeg', 'teacher.png', 'teacher.webp', 'teacher.JPG', 'teacher.PNG'].find((f) => existsSync(`public/img/${f}`));
-const sheets = items.filter((it) => it.kind === 'sheet');
 const courseList = (Object.entries(courses) as [CourseId, (typeof courses)[CourseId]][]).map(([id, c]) => ({
   id, ...c, items: items.filter((it) => it.course === id),
 }));
-const inSheet = [
-  ['ศัพท์สองภาษา', 'คำศัพท์ที่ใช้ในห้องเรียน EP พร้อมคำแปลและคำอธิบายภาษาไทยทุกคำ'],
-  ['ตรงหลักสูตร', 'เนื้อหาตามที่ลูกเรียนในโรงเรียนจริง ทุกชีทใช้สอนนักเรียนจริงก่อน'],
-  ['Code Breaker', 'ทำแบบฝึกหัดครบได้รหัสลับไว้ปลดล็อกเฉลย เด็กอยากทำจนจบเอง'],
-  ['มุมผู้ปกครอง', 'คำถามง่ายๆ ให้พ่อแม่ทบทวนลูกได้ แม้ไม่ถนัดภาษาอังกฤษ'],
-];
 ---
 <Base
   title="scitem · เรียนวิทย์สองภาษากับครูวิว สำหรับเด็ก EP/Inter"
-  description="ครูวิวสอนวิทยาศาสตร์สองภาษาไทย-อังกฤษ สำหรับนักเรียน EP และ International ป.5 ถึง ม.3 ด้วยสไลด์ที่แตะแล้วขยับได้ และชีทที่มีคำแปลไทยให้ผู้ปกครองช่วยทบทวนได้"
+  description="ครูวิวสอนวิทยาศาสตร์สองภาษาไทย-อังกฤษ สำหรับนักเรียน EP, International และ Gifted ป.5 ถึง ม.3 เรียนบนกระดาษ iPad หรือคอมก็ได้ ด้วยสไลด์ที่แตะแล้วขยับได้"
 >
   <section class="hero full">
     <div class="wrap hero-in">
       <div class="copy">
         <h1>
-          ห้องเรียน <ruby>Science<rt>วิทยาศาสตร์</rt></ruby><br />
+          ห้องเรียน Science<br />
           ที่ลูกได้<span class="mark">แตะ</span> ได้<span class="mark">ลอง</span><br />แล้ว<span class="mark">เข้าใจ</span>จริง
         </h1>
         <p class="lead">
-          ครูวิวสอนวิทย์สองภาษาสำหรับเด็ก EP/Inter ป.5–ม.3 เรียนบน iPad ด้วยสไลด์ที่แตะแล้วขยับได้
-          คู่กับชีทที่มีคำแปลไทย พ่อแม่ช่วยทบทวนที่บ้านได้
+          ครูวิวสอนวิทย์สองภาษา ป.5–ม.3 ได้ทั้งเด็ก EP, Inter และ Gifted
+          เรียนบนกระดาษ บน iPad หรือในคอมก็ได้ ด้วยสไลด์ที่แตะแล้วขยับได้
         </p>
         <div class="cta">
           <a class="btn line" href={LINE_URL} target="_blank" rel="noopener">ทักไลน์คุยกับครูวิว</a>
-          <a class="btn ghost" href="#sheets">ดูตัวอย่างชีท</a>
+          <a class="btn ghost" href="#courses">ดูบทเรียน</a>
         </div>
       </div>
 
@@ -47,7 +38,7 @@ const inSheet = [
             ลองแตะสไลด์จริง
           </button>
         </div>
-        <figcaption><span class="hand">นี่คือสไลด์ที่ใช้สอนจริง ลองแตะไฟฉายดู</span></figcaption>
+        <figcaption><span class="hand">สไลด์ที่ใช้สอนจริง ลองแตะที่หิ่งห้อย หรือโคมไฟดู</span></figcaption>
       </figure>
     </div>
   </section>
@@ -76,42 +67,17 @@ const inSheet = [
     </div>
   </section>
 
-  <section class="sheets full" id="sheets">
-    <div class="wrap">
-      <div class="sec-head">
-        <h2>ตัวอย่างชีทสองภาษา</h2>
-        <p class="muted">แตะชีทเพื่อเปิดดูทีละหน้า อยากได้ชีทเต็มทักไลน์มาได้เลย</p>
-      </div>
-      <div class="sheet-row">
-        {sheets.map((s) => (
-          <article class="sheet">
-            {s.pages ? <Pages pages={s.pages} title={s.title} /> : (
-              <div class="soon"><b>{s.title}</b><span>กำลังทำ</span></div>
-            )}
-            <h3>{s.title}</h3>
-            <p class="th">{s.th} · {s.grade}</p>
-            <p class="muted">{s.note}</p>
-          </article>
-        ))}
-        <dl class="inside">
-          <h3>ในชีทมีอะไร</h3>
-          {inSheet.map(([k, v]) => (<div><dt>{k}</dt><dd>{v}</dd></div>))}
-        </dl>
-      </div>
-    </div>
-  </section>
-
   <section class="teacher" id="teacher">
     {photo && <img class="photo" src={`/img/${photo}`} alt="ครูวิว" width="549" height="611" loading="lazy" />}
     <div>
       <h2>สวัสดีค่ะ ครูวิวเอง</h2>
       <p>
-        ครูวิวสอนวิทยาศาสตร์ให้นักเรียน EP, International และห้องเรียนพิเศษ (Gifted)
-        ทำชีทและสไลด์เองทุกเรื่อง และใช้สอนนักเรียนจริงก่อนทุกครั้ง
+        ครูวิวจบจากโรงเรียนมหิดลวิทยานุสรณ์ และวิศวกรรมศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย (เกียรตินิยม)
+        ติววิทยาศาสตร์มา 5 ปี มีลูกศิษย์สอบติดเตรียมอุดมศึกษา และ พสวท. บดินทรเดชา
       </p>
       <p>
         เด็ก EP เรียนวิทย์เป็นภาษาอังกฤษ บางคนเข้าใจเนื้อหาแต่ติดศัพท์ บางคนท่องศัพท์ได้แต่ไม่เข้าใจจริง
-        ครูเลยสอนทั้งสองภาษาควบคู่กัน และให้ลูกได้ลงมือแตะ ลองเอง จนเห็นภาพ
+        ครูเลยสอนทั้งสองภาษาควบคู่กัน ได้ทั้งนักเรียน EP, International และห้องเรียนพิเศษ (Gifted)
       </p>
       <a class="btn line" href={LINE_URL} target="_blank" rel="noopener">ทักไลน์คุยกับครูวิว</a>
     </div>
@@ -120,16 +86,11 @@ const inSheet = [
   <section class="start full">
     <div class="wrap start-in">
       <h2>เริ่มยังไง</h2>
-      <ol>
-        <li><b>ทักไลน์ scitem</b><span>บอกชั้น โรงเรียน และเรื่องที่ลูกกำลังเรียน</span></li>
-        <li><b>รับชีทตัวอย่างฟรี</b><span>ลองให้ลูกทำดูก่อน ว่าเข้ากับลูกไหม</span></li>
-        <li><b>คุยเรื่องเรียนกับครู</b><span>ถามได้ทุกเรื่อง ไม่ต้องตัดสินใจทันที</span></li>
-      </ol>
+      <p>ทักไลน์มาคุยกับครูวิวได้เลย บอกชั้นและโรงเรียนของลูก</p>
       <a class="btn line big" href={LINE_URL} target="_blank" rel="noopener">ทักไลน์ scitem</a>
     </div>
   </section>
 
-  <Viewer />
 </Base>
 
 <script>
@@ -137,7 +98,7 @@ const inSheet = [
   const live = document.getElementById('live')!;
   document.getElementById('try')!.addEventListener('click', () => {
     const f = document.createElement('iframe');
-    f.src = '/light-p5/#p5';
+    f.src = '/light-p5/?tap#p5';
     f.title = 'สไลด์ Light Explorer';
     live.replaceChildren(f);
     const fit = () => f.style.setProperty('--s', String(live.clientWidth / 1194));
@@ -156,7 +117,6 @@ const inSheet = [
   }
   .hero-in { display: grid; grid-template-columns: 1fr 1.15fr; gap: 40px; align-items: center; padding-top: 56px; padding-bottom: 64px; }
   h1 { font-size: clamp(2.2rem, 4.6vw, 3.6rem); line-height: 1.35; margin: 0 0 18px; letter-spacing: -0.02em; }
-  h1 ruby rt { font-size: 0.3em; color: var(--blue); }
   .lead { font-size: 1.12rem; color: var(--muted); margin: 0 0 28px; max-width: 46ch; }
   .cta { display: flex; gap: 12px; flex-wrap: wrap; }
   .ipad { margin: 0; }
@@ -199,18 +159,6 @@ const inSheet = [
   .course li a { font-weight: 600; text-decoration: none; }
   .course li small { color: var(--muted); white-space: nowrap; }
 
-  .sheets { background: var(--tint); padding: 72px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
-  .sheet-row { display: grid; grid-template-columns: 1fr 1fr 1.1fr; gap: 32px; align-items: start; }
-  .sheet h3 { margin: 18px 0 0; font-size: 1.2rem; }
-  .sheet .th { margin: 0; font-weight: 600; }
-  .sheet .muted { margin: 4px 0 0; font-size: 0.95rem; }
-  .soon { aspect-ratio: 1 / 1.18; display: grid; place-content: center; gap: 4px; text-align: center; border: 2px dashed var(--rule); border-radius: var(--radius); color: var(--muted); }
-  .inside { margin: 0; padding: 24px; background: var(--paper); border-radius: var(--radius); border: 1px solid var(--rule); }
-  .inside h3 { margin: 0 0 8px; font-size: 1.2rem; }
-  .inside div { padding: 12px 0; border-top: 1px solid var(--rule); }
-  .inside dt { font-weight: 700; }
-  .inside dd { margin: 0; color: var(--muted); font-size: 0.95rem; }
-
   .teacher { display: flex; gap: 48px; align-items: center; padding-top: 88px; padding-bottom: 40px; }
   .teacher .photo { width: min(340px, 40%); aspect-ratio: 15 / 16; object-fit: cover; border-radius: 24px; rotate: -2deg; box-shadow: 0 24px 48px -24px rgb(20 33 61 / 0.5); }
   .teacher h2 { margin: 0 0 12px; font-size: clamp(1.6rem, 3.4vw, 2.2rem); }
@@ -220,26 +168,17 @@ const inSheet = [
   .start { margin-top: 48px; background: var(--blue); color: #fff; }
   .start-in { display: grid; grid-template-columns: auto 1fr auto; gap: 24px 40px; align-items: center; padding-top: 48px; padding-bottom: 48px; }
   .start h2 { margin: 0; font-size: clamp(1.6rem, 3.4vw, 2.2rem); }
-  .start ol { list-style: none; counter-reset: s; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-  .start li { counter-increment: s; display: grid; gap: 2px; }
-  .start li::before { content: counter(s); display: grid; place-items: center; width: 32px; height: 32px; margin-bottom: 6px; border-radius: 50%; background: var(--marker); color: var(--ink); font-weight: 700; }
-  .start li span { color: #dbe5ff; font-size: 0.95rem; }
+  .start p { margin: 0; color: #dbe5ff; font-size: 1.05rem; }
   .btn.big { min-height: 56px; padding: 12px 32px; font-size: 1.1rem; }
 
   @media (max-width: 960px) {
     .hero-in { grid-template-columns: 1fr; padding-top: 36px; gap: 32px; }
-    .sheet-row { grid-template-columns: 1fr 1fr; }
-    .inside { grid-column: 1 / -1; }
     .start-in { grid-template-columns: 1fr; }
   }
   @media (max-width: 700px) {
     .course-grid { grid-template-columns: 1fr; }
     .teacher { flex-direction: column; align-items: flex-start; gap: 28px; }
     .teacher .photo { width: 72%; }
-    .start ol { grid-template-columns: 1fr; }
     .screen { border-width: 9px; border-radius: 20px; }
-  }
-  @media (max-width: 480px) {
-    .sheet-row { grid-template-columns: 1fr; }
   }
 </style>
