@@ -157,13 +157,16 @@ const { id, title, questions, symbols = false } = Astro.props;
     }
     const send = async () => {
       retry.hidden = true;
-      status.textContent = 'กำลังส่งคำตอบให้ครู…';
+      status.dataset.s = 'wait';
+      status.textContent = '⏳ กำลังส่งผลให้ครู… อย่าเพิ่งปิดหน้านี้หรือกดอะไรนะ';
       try {
         const r = await fetch(url, { method: 'POST', body: JSON.stringify({ action: 'submit', id: sid, quiz: id, name, answers, secs }) });
         if (!(await r.json()).ok) throw new Error();
+        status.dataset.s = 'ok';
         status.textContent = 'ส่งคำตอบให้ครูแล้ว ✓ ปิดหน้านี้ได้เลย';
         backup.hidden = true;
       } catch {
+        status.dataset.s = 'fail';
         status.textContent = 'ส่งไม่สำเร็จ เช็คอินเทอร์เน็ตแล้วกดลองส่งอีกครั้ง';
         retry.hidden = false;
         backup.hidden = false;
@@ -255,6 +258,12 @@ const { id, title, questions, symbols = false } = Astro.props;
   .hint { color: var(--muted); font-size: 0.92rem; margin: 10px 0 0; }
   .result h2 { margin: 0 0 6px; color: var(--brand); }
   .status { font-weight: 700; font-size: 1.1rem; }
+  .status[data-s] { font-size: 1.25rem; padding: 16px 18px; border-radius: 12px; border: 3px solid; }
+  .status[data-s='wait'] { background: #fff4d6; border-color: #e0a100; color: #7a4d00; animation: blink 1.2s ease-in-out infinite; }
+  .status[data-s='ok'] { background: #e7f8ef; border-color: #16a34a; color: #15803d; }
+  .status[data-s='fail'] { background: #fdecea; border-color: #a6402a; color: #a6402a; }
+  @keyframes blink { 50% { opacity: 0.6; } }
+  @media (prefers-reduced-motion: reduce) { .status[data-s='wait'] { animation: none; } }
   #retry { margin-bottom: 14px; }
   pre { white-space: pre-wrap; word-break: break-all; background: var(--bg); border: 2px dashed var(--brand); border-radius: 10px; padding: 12px; font: 600 0.95rem ui-monospace, Menlo, monospace; user-select: all; }
 </style>

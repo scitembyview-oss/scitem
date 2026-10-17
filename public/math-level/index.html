@@ -131,6 +131,12 @@ td.qq { min-width: 220px; }
   .opts { grid-template-columns: 1fr; } .sumgrid { grid-template-columns: 1fr 1fr; } .hero { grid-template-columns: 1fr; } .hero .bigladder { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+.sendst { display: block; font-size: 20px; padding: 16px 18px; border-radius: 12px; border: 3px solid; }
+.sendst[data-s=wait] { background: #fff4d6; border-color: #e0a100; color: #7a4d00; animation: blink 1.2s ease-in-out infinite; }
+.sendst[data-s=ok] { background: var(--good-bg); border-color: var(--good); color: var(--good); }
+.sendst[data-s=fail] { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+@keyframes blink { 50% { opacity: .6 } }
+@media (prefers-reduced-motion: reduce) { .sendst { animation: none !important; } }
 </style>
 
 <div class="wrap" id="app"></div>
@@ -485,7 +491,7 @@ function renderDone(code) {
   <h1 style="font-size:clamp(30px,6vw,44px);margin:6px 0 10px">Well done${S.name ? ", " + esc(S.name) : ""}.</h1>
   <p style="margin:0 0 18px;color:var(--muted)">You answered ${S.log.length} questions.</p>
   <div class="panel stack">
-    <b id="status" aria-live="polite">Sending your answers to your teacher…</b>
+    <b id="status" class="sendst" aria-live="polite"></b>
     <button class="btn" id="retry" hidden>Try again</button>
     <p style="margin:0">Message Teacher View on LINE to get your results.<br><span class="small">ทักไลน์ครูวิวเพื่อขอผลสอบ</span></p>
     <a class="btn" style="background:#06C755;color:#fff;text-decoration:none;text-align:center" href="https://lin.ee/NO52k1Y" target="_blank" rel="noopener">ทักไลน์ครูวิว · Message on LINE</a>
@@ -506,14 +512,14 @@ function renderDone(code) {
   const id = (S.started || "") + Math.random().toString(36).slice(2, 6);
   const status = document.getElementById("status"), retry = document.getElementById("retry");
   const send = async () => {
-    retry.hidden = true; status.textContent = "Sending your answers to your teacher…";
+    retry.hidden = true; status.dataset.s = "wait"; status.innerHTML = "⏳ Sending your results… Do not close this page or press anything.<br>กำลังส่งผลให้ครู อย่าเพิ่งปิดหน้านี้หรือกดอะไรนะ";
     try {
       const r = await fetch(SHEET_URL, { method: "POST", body: JSON.stringify({ action: "submit", id: id.slice(-20), quiz: "math-r2", name: S.name || "No name", answers: parts, secs: [] }) });
       if (!(await r.json()).ok) throw new Error();
-      status.textContent = "Sent to your teacher ✓";
+      status.dataset.s = "ok"; status.innerHTML = "Sent to your teacher ✓<br>ส่งผลให้ครูแล้ว";
       document.getElementById("backup").hidden = true;
     } catch (e) {
-      status.textContent = "Could not send. Check the internet, then press Try again.";
+      status.dataset.s = "fail"; status.innerHTML = "Could not send. Check the internet, then press Try again.<br>ส่งไม่สำเร็จ เช็คอินเทอร์เน็ตแล้วกด Try again";
       retry.hidden = false; document.getElementById("backup").hidden = false;
     }
   };
