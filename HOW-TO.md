@@ -59,11 +59,11 @@ npm run dev      # แล้วเปิด http://localhost:4321
 - เฉลยเก็บแบบเข้ารหัสใน `src/data/check-keys.json` ไฟล์เฉลยตัวจริงกับรหัสผ่านอยู่นอก repo นี้ (ในไฟล์โปรเจกต์ของ Claude)
   เพิ่มหรือแก้ชุดใหม่ ให้ขอ Claude ทำให้ แล้วเข้ารหัสใหม่ด้วย `node tools/encrypt-check-keys.mjs <keys.json> <รหัสผ่าน>`
 
-## สไลด์ Light Explorer · Mission 2 (scitem.net/light-m2/)
+## สไลด์ Light Explorer · Mission 2 (scitem.net/light-p5/)
 
-หน้าเว็บ `public/light-m2/index.html` สร้างจากสคริปต์ ห้ามแก้ไฟล์นี้ตรงๆ
-- เนื้อหา รูป และอนิเมชั่นแตะ: `tools/build-light-m2.py`
-- แถบเครื่องมือ ปากกา และการเปลี่ยนหน้า: `tools/light-m2-shell.html`
+หน้าเว็บ `public/light-p5/index.html` สร้างจากสคริปต์ ห้ามแก้ไฟล์นี้ตรงๆ
+- เนื้อหา รูป และอนิเมชั่นแตะ: `tools/build-light-p5.py`
+- แถบเครื่องมือ ปากกา และการเปลี่ยนหน้า: `tools/light-p5-shell.html`
 
-แก้เสร็จแล้วรัน `python3 tools/build-light-m2.py` เพื่อสร้างหน้าเว็บใหม่
+แก้เสร็จแล้วรัน `python3 tools/build-light-p5.py` เพื่อสร้างหน้าเว็บใหม่
 ใช้งาน: โหมด ✏️ เขียนได้ และแตะสั้นๆ บนรูปเพื่อเล่นอนิเมชั่น · โหมด 👆 แตะอย่างเดียว ไม่เขียน · ปุ่ม ◀ ▶ หรือลูกศรซ้าย/ขวาเพื่อเปลี่ยนหน้า

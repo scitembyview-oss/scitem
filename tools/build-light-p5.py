@@ -1,12 +1,12 @@
-"""Builds public/light-m2/index.html: Light Explorer · Mission 2 as web pages.
+"""Builds public/light-p5/index.html: Light Explorer · Mission 2 as web pages.
 
 Drawings, CSS and text come from the worksheet generator (build_m2.py), student
 version only (no answers, no teacher notes). The page chrome (pen, eraser, paging,
-palm rejection) follows public/demo/. Run: python3 tools/build-light-m2.py
+palm rejection) follows public/demo/. Run: python3 tools/build-light-p5.py
 """
 import json, math, pathlib
 
-OUT = pathlib.Path(__file__).resolve().parent.parent / "public" / "light-m2" / "index.html"
+OUT = pathlib.Path(__file__).resolve().parent.parent / "public" / "light-p5" / "index.html"
 TOTAL = 14
 
 # ---------- drawings ----------
@@ -509,7 +509,7 @@ svg.casting .shadow, svg.casting .rays, svg.casting .wshade { opacity: 0 }
 @keyframes ask { 75% { opacity: 0 } to { opacity: 1 } }
 """
 
-SHELL = (pathlib.Path(__file__).resolve().parent / "light-m2-shell.html").read_text(encoding="utf-8")
+SHELL = (pathlib.Path(__file__).resolve().parent / "light-p5-shell.html").read_text(encoding="utf-8")
 html = (SHELL.replace("/*SHEET_CSS*/", CSS + CSS_M2 + CSS_ANIM)
              .replace("<!--PAGES-->", "\n".join(f'<div class="sheet">{p}<canvas class="ink"></canvas></div>' for p in pages)))
 OUT.parent.mkdir(parents=True, exist_ok=True)
