@@ -91,6 +91,10 @@
   </div>
   <div class="sep"></div>
   <div class="grp">
+    <button id="palm" title="เปิด: เขียนได้เฉพาะ Apple Pencil นิ้ว/ฝ่ามือไม่เป็นเส้น · ปิด: ปากกาทั่วไปหรือนิ้วก็เขียนได้ (กันฝ่ามือจากขนาดการแตะ)">🖐 กันมือ</button>
+  </div>
+  <div class="sep"></div>
+  <div class="grp">
     <button id="prev" title="สไลด์ก่อนหน้า">▲</button>
     <span id="pageNo">1/2</span>
     <button id="next" title="สไลด์ถัดไป">▼</button>
@@ -416,14 +420,20 @@
   const COLORS = ['#111827', '#dc2626', '#2563eb', '#16a34a', '#f59e0b', '#9333ea'];
   const SIZES = [1, 2, 4];
   let mode = 'pen', color = COLORS[0], size = 2, penSeen = false, penDown = 0, penUpAt = 0;
-  // Palm rejection: once a stylus (Apple Pencil) has been used, touches never draw — only the pen does.
-  // Remember that across reloads so the very first palm on the next visit doesn't draw either.
+  // Palm rejection, two levels:
+  //  - "pencil only" (penSeen): turned on by itself the first time a real stylus (Apple Pencil, pointerType
+  //    'pen') touches; then touches never draw. Remembered across reloads; the 🖐 button flips it.
+  //  - otherwise (finger, or a stylus the browser reports as a plain touch): the newest small touch draws,
+  //    big contacts (palm) are ignored, and a stroke a resting palm started is dropped when the pen lands.
   try { penSeen = localStorage.getItem('scitem-pen') === '1'; } catch (e) {}
-  function markPen() {
-    if (penSeen) return;
-    penSeen = true;
-    try { localStorage.setItem('scitem-pen', '1'); } catch (e) {}
+  function setPencilOnly(on) {
+    penSeen = on;
+    $('palm').classList.toggle('on', on);
+    try { localStorage.setItem('scitem-pen', on ? '1' : '0'); } catch (e) {}
   }
+  function markPen() { if (!penSeen) setPencilOnly(true); }
+  const PALM = 36;   // CSS px; contact wider than this is a palm (when the browser reports contact size)
+  const contact = e => { const w = Math.max(e.width || 0, e.height || 0); return w > 1 ? w : 0; };   // 0 = not reported
 
   function makeInk(canvas) {
     const ictx = canvas.getContext('2d');
@@ -453,17 +463,32 @@
       const p = e.pointerType === 'pen' ? (e.pressure || 0.5) : 0.5;
       return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height, p];
     }
+    function drop(s) { const i = strokes.indexOf(s); if (i >= 0) strokes.splice(i, 1); redraw(); }
+    function travel(s) {
+      const r = canvas.getBoundingClientRect(), a = s.pts[0];
+      return Math.max(...s.pts.map(q => Math.hypot((q[0] - a[0]) * r.width, (q[1] - a[1]) * r.height)));
+    }
     canvas.addEventListener('pointerdown', e => {
       if (e.pointerType === 'pen') {
         markPen();
-        // the palm usually lands a moment before the pen: drop the stroke it started
-        if (cur && cur.touch) { strokes.splice(strokes.indexOf(cur), 1); cur = null; redraw(); }
+        // the pen always wins; a stroke the palm started a moment earlier is thrown away
+        if (cur) { if (cur.touch) drop(cur); cur = null; }
+      } else if (e.pointerType === 'touch') {
+        if (penSeen) return;                       // pencil-only: fingers and palm never draw
+        const w = contact(e);
+        if (w > PALM) return;                      // big contact = palm
+        if (cur && cur.touch) {
+          // a second touch while one is drawing: the palm usually rests first and the pen comes after,
+          // so the newest touch takes over — unless it's clearly bigger than the one already drawing
+          if (w && cur.w && w > cur.w * 1.5) return;
+          if ((w && cur.w ? cur.w >= w : travel(cur) < 40)) drop(cur);
+          cur = null;
+        }
       }
-      if (e.pointerType === 'touch' && (penSeen || cur)) return;   // palm rejection; one finger draws at a time
       if (cur) return;
       e.preventDefault();
       try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
-      cur = { id: e.pointerId, touch: e.pointerType === 'touch', color, size, erase: mode === 'erase', pts: [pt(e)] };
+      cur = { id: e.pointerId, touch: e.pointerType === 'touch', w: contact(e), color, size, erase: mode === 'erase', pts: [pt(e)] };
       strokes.push(cur);
       draw(cur);
     });
@@ -476,7 +501,7 @@
       for (const ce of evs) cur.pts.push(pt(ce));
       draw(cur, start);
     });
-    const end = e => { if (cur && e.pointerId === cur.id) { delete cur.touch; cur = null; } };
+    const end = e => { if (cur && e.pointerId === cur.id) { delete cur.touch; delete cur.w; cur = null; } };
     canvas.addEventListener('pointerup', end);
     canvas.addEventListener('pointercancel', end);
     return {
@@ -542,7 +567,11 @@
   window.addEventListener('pointerup', touchEnd, true);   // window: a pen lifted off-stage must still count as up
   window.addEventListener('pointercancel', touchEnd, true);
   // older iPadOS ignores touch-action in places; also stops the long-press magnifier and double-tap zoom
-  stage.addEventListener('touchstart', e => { if (!e.target.closest('.ctrl')) e.preventDefault(); }, { passive: false });
+  // (a stylus touch is left alone so nothing can get in the way of its pointer events)
+  stage.addEventListener('touchstart', e => {
+    if ([...e.changedTouches].some(t => t.touchType === 'stylus')) { markPen(); return; }
+    if (!e.target.closest('.ctrl')) e.preventDefault();
+  }, { passive: false });
 
   $('prev').onclick = () => go(current() - 1);
   $('next').onclick = () => go(current() + 1);
@@ -573,6 +602,8 @@
     b.onclick = () => { size = s; [...swrap.children].forEach(x => x.classList.toggle('on', x === b)); if (mode === 'erase') setMode('pen'); };
     swrap.appendChild(b);
   });
+  $('palm').onclick = () => setPencilOnly(!penSeen);
+  $('palm').classList.toggle('on', penSeen);
   $('undo').onclick = () => inks[current()].undo();
   $('clear').onclick = () => inks[current()].clear();
   $('full').onclick = () => {
