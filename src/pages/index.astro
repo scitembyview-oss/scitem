@@ -16,6 +16,32 @@ const sheets = [
     note: 'English only พร้อม Self-Check และ Code Breaker',
   },
 ];
+const classLinks = [
+  {
+    tag: 'สไลด์สอน',
+    title: 'การเคลื่อนที่แบบวงกลม',
+    note: 'ภาพเคลื่อนไหวปรับค่าได้ พร้อมปากกาเขียนบนสไลด์ (2 สไลด์)',
+    href: '/demo/',
+  },
+  {
+    tag: 'เช็คพื้นฐาน',
+    title: 'การเคลื่อนที่แบบวงกลม',
+    note: '10 ข้อ ทำก่อนเรียน',
+    href: '/check/circular/',
+  },
+  {
+    tag: 'เช็คพื้นฐาน · Gifted',
+    title: 'การเคลื่อนที่แบบวงกลม (Gifted)',
+    note: '8 ข้อ ตอบเป็น √ หรือ π ได้',
+    href: '/check/circular-gifted/',
+  },
+  {
+    tag: 'เช็คพื้นฐาน',
+    title: 'แรงลอยตัว',
+    note: '10 ข้อ ทำก่อนเรียน',
+    href: '/check/buoyancy/',
+  },
+];
 ---
 <Base
   title="scitem · ชีทวิทย์สองภาษา สำหรับเด็ก EP/Inter"
@@ -67,14 +93,22 @@ const sheets = [
     <p class="muted">กำลังทำเพิ่มทุกสัปดาห์ ครอบคลุม ป.5 ถึง ม.3</p>
   </section>
 
-  <section id="slides">
-    <h2>สไลด์สอนแบบโต้ตอบ</h2>
-    <a class="sheet slide-link" href="/demo/">
-      <p class="level">ม.3 / Gifted</p>
-      <h3>การเคลื่อนที่แบบวงกลม</h3>
-      <p class="th">ภาพเคลื่อนไหวปรับค่าได้ พร้อมปากกาเขียนบนสไลด์</p>
-      <p class="note">บทที่ 1 เวกเตอร์ v และ a · บทที่ 2 รถข้ามเนินโค้ง</p>
-    </a>
+  <section id="class">
+    <h2>ห้องเรียนฟิสิกส์ ม.ต้น</h2>
+    <p class="muted">สำหรับนักเรียนที่เรียนกับครูวิว ทำเช็คพื้นฐานก่อนเรียน แล้วส่งรหัสที่ได้ให้ครูทาง LINE</p>
+    <div class="sheets">
+      {classLinks.map((c) => (
+        <a class="sheet link-card" href={c.href}>
+          <p class="level">{c.tag}</p>
+          <h3>{c.title}</h3>
+          <p class="note">{c.note}</p>
+        </a>
+      ))}
+    </div>
+    <p class="muted small">
+      <a href="/check/teacher/">หน้าตรวจรหัสสำหรับครู</a> (ต้องใช้รหัสผ่าน) ·
+      <a href="/vault/">Answer Vault</a> (ปลดล็อกเฉลยชีท Code Breaker)
+    </p>
   </section>
 
   <section id="parents" class="panel">
@@ -138,8 +172,10 @@ const sheets = [
     border-radius: 999px;
     margin: 0 0 8px;
   }
-  .slide-link { display: block; max-width: 420px; color: inherit; text-decoration: none; }
-  .slide-link:hover { border-color: var(--brand); }
+  .link-card { display: block; color: inherit; text-decoration: none; }
+  .link-card:hover { border-color: var(--brand); }
+  .link-card h3 { color: var(--brand); }
+  .small { font-size: 0.9rem; margin-top: 16px; }
   .th { margin: 0; font-weight: 600; }
   .note { margin: 4px 0 0; color: var(--muted); }
   .links { margin: 12px 0 0; display: flex; gap: 16px; flex-wrap: wrap; font-weight: 600; }
