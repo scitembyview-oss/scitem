@@ -122,6 +122,67 @@
     sh.setAttribute('cx', (180 + (sx < 180 ? 1 : -1) * L / 2).toFixed(1));
     sh.setAttribute('rx', (L / 2).toFixed(1));
   }
+  // shine a light source on an object (geometry in data-cast / data-obs, see cast_svg in the build script):
+  // the light spreads out from the source, the area between the two edge rays behind the object stays
+  // dark, and the shadow forms where those rays meet the ground or the wall. on: true/false, or toggle.
+  // now: draw it straight away (while the lamp is being dragged)
+  let castN = 0;
+  function cast(svg, on, now) {
+    const box = svg.querySelector('.cast');
+    if (on === undefined) on = !box.hasChildNodes();
+    cancelAnimationFrame(box._raf);
+    box.innerHTML = '';
+    if (!on) return;
+    const vb = svg.viewBox.baseVal, geo = JSON.parse(svg.dataset.cast);
+    const [sx, sy] = geo.s, W = geo.wall ?? vb.width, H = geo.g ?? vb.height;
+    const pts = svg.dataset.obs.split(' ').map(q => q.split(',').map(Number));
+    const mx = pts.reduce((a, p) => a + p[0], 0) / pts.length, my = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+    const base = Math.atan2(my - sy, mx - sx);
+    let lo = Infinity, hi = -Infinity, P1, P2;
+    for (const p of pts) {
+      let d = Math.atan2(p[1] - sy, p[0] - sx) - base;
+      d = Math.atan2(Math.sin(d), Math.cos(d));
+      if (d < lo) { lo = d; P1 = p; }
+      if (d > hi) { hi = d; P2 = p; }
+    }
+    const a1 = base + lo, a2 = base + hi;
+    // where an edge ray leaves the lit area (ground, wall or picture edge)
+    const exit = a => {
+      const ux = Math.cos(a), uy = Math.sin(a);
+      let t = Infinity;
+      if (ux > 1e-6) t = Math.min(t, (W - sx) / ux); else if (ux < -1e-6) t = Math.min(t, -sx / ux);
+      if (uy > 1e-6) t = Math.min(t, (H - sy) / uy); else if (uy < -1e-6) t = Math.min(t, -sy / uy);
+      return [sx + ux * t, sy + uy * t];
+    };
+    const E1 = exit(a1), E2 = exit(a2), F = 3000;
+    const far = (P, a) => `${P[0] + Math.cos(a) * F},${P[1] + Math.sin(a) * F}`;
+    // the shadow: where the dark area meets the ground (or wall); a ray that misses it runs the shadow to the edge
+    let shade;
+    if (geo.g != null) {
+      const xs = [[E1, a1], [E2, a2]].map(([E, a]) => Math.abs(E[1] - H) < .5 ? E[0] : (Math.cos(a) > 0 ? vb.width : 0));
+      for (const p of pts) if (p[1] >= H - .5) xs.push(p[0]);
+      const x1 = Math.max(6, Math.min(...xs)), x2 = Math.min(vb.width - 6, Math.max(...xs));
+      shade = `<ellipse class="shade" cx="${(x1 + x2) / 2}" cy="${H + 2}" rx="${(x2 - x1) / 2}" ry="5"/>`;
+    } else {
+      const ys = [[E1, a1], [E2, a2]].map(([E, a]) => Math.abs(E[0] - W) < .5 ? E[1] : (Math.sin(a) > 0 ? vb.height : 0));
+      const y1 = Math.max(6, Math.min(...ys)), y2 = Math.min(vb.height - 6, Math.max(...ys));
+      shade = `<ellipse class="shade" cx="${W - 4}" cy="${(y1 + y2) / 2}" rx="6" ry="${(y2 - y1) / 2}"/>`;
+    }
+    const id = 'cast' + (++castN);
+    box.innerHTML = `<defs><clipPath id="${id}c"><circle cx="${sx}" cy="${sy}" r="0"/></clipPath>
+      <mask id="${id}m" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="#fff"/>
+      <polygon points="${P1} ${far(P1, a1)} ${far(P2, a2)} ${P2}" fill="#000"/></mask></defs>
+      <g clip-path="url(#${id}c)"><rect class="lit" width="${W}" height="${H}" mask="url(#${id}m)"/>
+      <path class="edge" d="M${sx} ${sy} L${E1} M${sx} ${sy} L${E2}"/></g>${shade}`;
+    if (now) { box.querySelector('circle').setAttribute('r', 9999); box.querySelector('.shade').classList.add('on'); return; }
+    const circle = box.querySelector('circle'), R = Math.hypot(Math.max(sx, W - sx), Math.max(sy, H - sy)), t0 = performance.now();
+    const grow = now => {
+      const t = Math.min(1, (now - t0) / 1000);
+      circle.setAttribute('r', (R * t).toFixed(1));
+      if (t < 1) box._raf = requestAnimationFrame(grow); else box.querySelector('.shade').classList.add('on');
+    };
+    box._raf = requestAnimationFrame(grow);
+  }
   const ACT = {
     glow: el => play(el, 900),
     badge: el => { if (el.classList.toggle('on')) play(el, 600); },
@@ -131,7 +192,13 @@
     flash: el => play(el, 800),
     strawA: el => { play(el, 800); play(el.ownerSVGElement.querySelector('.lightA'), 2200); },
     strawB: el => { play(el, 800); play(el.ownerSVGElement.querySelector('.lightB'), 2200); },
-    switch: el => el.ownerSVGElement.classList.toggle('off'),
+    // page 6: the first tap shines the light; after that the lamp switches off and on
+    switch: el => {
+      const svg = el.ownerSVGElement;
+      if (!svg.classList.contains('casting')) { svg.classList.add('casting'); play(el, 800); cast(svg, true); return; }
+      cast(svg, !svg.classList.toggle('off'));
+    },
+    cast: el => { play(el, 800); cast(el.ownerSVGElement); },
     wiggle: el => play(el, 600),
     moon: el => { el.classList.remove('asked'); void el.getBoundingClientRect(); el.classList.add('asked'); play(el, 2400); },
     sunday: btn => {
@@ -158,6 +225,12 @@
     const lx = Math.max(20, Math.min(150, p.matrixTransform(svg.getScreenCTM().inverse()).x));
     g.setAttribute('transform', `translate(${(lx - g.dataset.lx).toFixed(1)} 0)`);
     svg.querySelector('.wshade').setAttribute('ry', (16 * (300 - lx) / (190 - lx)).toFixed(1));
+    // the lamp shines while it is held and moved
+    const geo = JSON.parse(svg.dataset.cast);
+    geo.s[0] = lx;
+    svg.dataset.cast = JSON.stringify(geo);
+    svg.classList.add('casting');
+    cast(svg, true, true);
   }
   window.addEventListener('pointermove', e => { if (drag && e.pointerId === drag.id) { e.preventDefault(); moveDrag(e); } });
   const dragEnd = e => { if (drag && e.pointerId === drag.id) drag = null; };

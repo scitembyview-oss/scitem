@@ -4,7 +4,7 @@ Drawings, CSS and text come from the worksheet generator (build_m2.py), student
 version only (no answers, no teacher notes). The page chrome (pen, eraser, paging,
 palm rejection) follows public/demo/. Run: python3 tools/build-light-m2.py
 """
-import math, pathlib
+import json, math, pathlib
 
 OUT = pathlib.Path(__file__).resolve().parent.parent / "public" / "light-m2" / "index.html"
 TOTAL = 14
@@ -124,9 +124,35 @@ def arrow_line(x1, y1, x2, y2, col="#E8962E", w=3):
     return (f'<path d="M{x1} {y1} L{x2} {y2}" stroke="{col}" stroke-width="{w}" stroke-linecap="round"/>'
             f'<path d="M{p1[0]:.1f} {p1[1]:.1f} L{x2} {y2} L{p2[0]:.1f} {p2[1]:.1f}" stroke="{col}" stroke-width="{w}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>')
 
-def svg(w, h, inner, width=None, cls=""):
+def svg(w, h, inner, width=None, cls="", attrs=""):
     c = f' class="{cls}"' if cls else ""
-    return f'<svg{c} viewBox="0 0 {w} {h}" width="{width or w}" style="max-width:100%">{inner}</svg>'
+    return f'<svg{c}{attrs} viewBox="0 0 {w} {h}" width="{width or w}" style="max-width:100%">{inner}</svg>'
+
+# ---------- shining light (tap a light source: light spreads, the object blocks it, its shadow forms) ----------
+# Each blocking object is given as its outline points; JS (cast() in the shell) finds the two edge rays
+# that just touch the object, leaves the area between them dark, and draws the shadow where they meet
+# the ground (g) or the wall (wall).
+def circle_pts(cx, cy, r, n=24):
+    return [(cx + r*math.cos(2*math.pi*i/n), cy + r*math.sin(2*math.pi*i/n)) for i in range(n)]
+
+def tree_pts(x, g):
+    return [(x-5, g), (x+5, g), (x-5, g-34), (x+5, g-34)] + circle_pts(x, g-48, 21)
+
+def kid_pts(x, g, h=58):
+    hy = g - h + 9
+    return circle_pts(x, hy, 9, 12) + [(x-12, hy+20), (x+12, hy+20), (x-9, g), (x+9, g)]
+
+def bottle_pts(x, g):
+    return [(x-10, g), (x-10, g-36), (x-4, g-48), (x-4, g-58), (x+4, g-58), (x+4, g-48), (x+10, g-36), (x+10, g)]
+
+def cast_svg(w, h, inner, width, src, obs, g=None, wall=None):
+    """svg whose light source (data-act="cast" or "switch") shines on the objects in obs"""
+    geo = {"s": list(src)}
+    if g is not None: geo["g"] = g
+    if wall is not None: geo["wall"] = wall
+    pts = " ".join(f"{x:.1f},{y:.1f}" for x, y in obs)
+    attrs = f" data-cast='{json.dumps(geo)}' data-obs=\"{pts}\""
+    return svg(w, h, '<g class="cast"></g>' + inner, width, attrs=attrs)
 
 K = lambda t: f'<b class="k">{t}</b>'
 pages = []
@@ -229,7 +255,7 @@ sh = (lamp_svg(40, 80, "switch") + '<circle cx="170" cy="80" r="24" fill="#FDECE
     '<rect x="153" y="120" width="34" height="26" rx="6" fill="#fff" stroke="#E8962E" stroke-width="2"/><text x="165" y="139" font-family="Fredoka" font-weight="600" font-size="16" fill="#E8962E">2</text>' +
     '<rect x="248" y="134" width="34" height="26" rx="6" fill="#fff" stroke="#E8962E" stroke-width="2"/><text x="260" y="153" font-family="Fredoka" font-weight="600" font-size="16" fill="#E8962E">3</text>')
 pages.append(page(6, "What is a shadow?", bubble(f"Light cannot pass through an {K('opaque')} object. When an opaque object {K('blocks')} light, a dark area forms behind it. This dark area is a {K('shadow')}.") +
-f'<div class="center">{svg(320, 165, sh, 400)}</div>' +
+f'<div class="center">{cast_svg(320, 165, sh, 400, (40, 80), circle_pts(170, 80, 25), wall=298)}</div>' +
 task(1, "Label the picture. Use the words in the box.", '<div class="wbox">shadow · light source · opaque object</div>' +
      f'<p class="fill">1 {blank(160)} &nbsp; 2 {blank(170)} &nbsp; 3 {blank(140)}</p>') +
 task(2, "Fill in the blanks.", f'<p class="fill">A shadow is formed when light is {blank(130)} by an {blank(130)} object.</p>') +
@@ -259,11 +285,11 @@ task(3, "In a shadow puppet show, the puppet is between a lamp and a screen. Wha
 def scene(src, thing):
     g = 112
     b = ground(200, g)
-    if src == "sunL": b += sun_svg(30, 30, act="flash")
-    elif src == "sunR": b += sun_svg(170, 30, act="flash")
-    else: b += lamp_svg(170, 70, "flash")
+    s = {"sunL": (30, 30), "sunR": (170, 30), "lamp": (170, 70)}[src]
+    b += lamp_svg(*s, "cast") if src == "lamp" else sun_svg(*s, act="cast")
     b += {"tree": tree(100, g), "kid": kid(100, g), "bottle": bottle(100, g)}[thing]
-    return f'<div class="dcell">{svg(200, 125, b, 200)}</div>'
+    obs = {"tree": tree_pts, "kid": kid_pts, "bottle": bottle_pts}[thing](100, g)
+    return f'<div class="dcell">{cast_svg(200, 125, b, 200, s, obs, g=g)}</div>'
 pages.append(page(8, "Which side?", bubble(f"A shadow is always on the {K('opposite side')} from the light. Light comes from one side, so the shadow falls on the other side.") +
 task(2, '<b class="go">Shadow drawing.</b> Draw the shadow in each picture.',
      '<div class="dgrid">' + scene("sunL", "tree") + scene("lamp", "bottle") + scene("sunR", "kid") + '</div>') +
@@ -274,9 +300,9 @@ task(2, "If you walk towards the Sun, can you see your shadow? Why?", lines(2)))
 # 9 sun moves
 def sunpanel(sx, sy, label):
     g = 112
-    b = (ground(200, g) + sun_svg(sx, sy, 12) + kid(100, g) +
+    b = (ground(200, g) + sun_svg(sx, sy, 12, act="cast") + kid(100, g) +
          f'<text x="10" y="22" font-family="Fredoka" font-weight="600" font-size="15" fill="#3C3A8F">{label}</text>')
-    return f'<div class="dcell">{svg(200, 125, b, 200)}<div class="tl">{blank(130)}</div></div>'
+    return f'<div class="dcell">{cast_svg(200, 125, b, 200, (sx, sy), kid_pts(100, g), g=g)}<div class="tl">{blank(130)}</div></div>'
 # demo box: JS moves .dsun along an arc and resizes .dshade (see sunDay in the script)
 sunday = (ground(360, 100) + '<ellipse class="dshade" cx="180" cy="102" rx="0" ry="5" fill="#4A5560" opacity=".55"/>' +
     kid(180, 100) + f'<g class="dsun">{sun_svg(0, 0, 11)}</g>')
@@ -291,7 +317,7 @@ task(3, "Why does your shadow point one way in the morning and the other way in 
 
 # 10 near or far
 def nf(lx, label, drag=False):
-    lamp = lamp_svg(lx, 75)
+    lamp = lamp_svg(lx, 75, "" if drag else "cast")
     if drag:
         # the lamp slides left/right; JS sizes .wshade from the lamp, ball (x 190, r 16) and wall (x 300)
         lamp = (f'<ellipse class="wshade" cx="296" cy="75" rx="5" ry="{16*(300-lx)/(190-lx):.1f}" fill="#4A5560" opacity=".6"/>'
@@ -302,7 +328,7 @@ def nf(lx, label, drag=False):
     return b
 pages.append(page(10, "Big shadow, small shadow", bubble(f"The size of a shadow depends on where the light is. Move the light {K('closer')} to the object, and the shadow gets {K('bigger')}. Move the light {K('farther')} away, and the shadow gets {K('smaller')}.") +
 task(2, "In which picture will the shadow on the wall be bigger? Circle it.",
-     f'<div class="nfgrid"><div class="rcell">{svg(310, 150, nf(40, "A"), 260)}</div><div class="rcell">{svg(310, 150, nf(140, "B", True), 260)}</div></div>') +
+     f'<div class="nfgrid"><div class="rcell">{cast_svg(310, 150, nf(40, "A"), 260, (40, 75), circle_pts(190, 75, 17), wall=298)}</div><div class="rcell">{cast_svg(310, 150, nf(140, "B", True), 260, (140, 75), circle_pts(190, 75, 17), wall=298)}</div></div>') +
 task(1, "Fill in the blanks.", f'<p class="fill">When the light moves closer to the object, the shadow gets {blank(130)}.</p><p class="fill">When the light moves farther away, the shadow gets {blank(130)}.</p>') +
 task(3, "Glow wants to make a giant shadow of himself on the wall. What should he do with the torch?", lines(2))))
 
@@ -468,6 +494,12 @@ svg.off .shadow, svg.off .rays { opacity: 0 }
 
 .confetti { position: absolute; left: 50%; top: 50px; width: 8px; height: 8px; border-radius: 2px; pointer-events: none; animation: pop .9s ease-out forwards }
 @keyframes pop { from { transform: translate(-50%,-50%) } to { transform: translate(var(--dx), var(--dy)) rotate(260deg); opacity: 0 } }
+
+.cast .lit { fill: #FFE68A; opacity: .55 }
+.cast .edge { stroke: #E8962E; stroke-width: 1.6; stroke-dasharray: 5 4; fill: none }
+.cast .shade { fill: #4A5560; opacity: 0; transition: opacity .5s }
+.cast .shade.on { opacity: .7 }
+svg.casting .shadow, svg.casting .rays, svg.casting .wshade { opacity: 0 }
 
 .moon .mb { transform-origin: 40px 40px }
 .moon .mq { opacity: 0 }
