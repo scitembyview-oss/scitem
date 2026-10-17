@@ -1,0 +1,77 @@
+---
+import Base from '../layouts/Base.astro';
+import Tile from '../components/Tile.astro';
+import { numbered, LINE_URL } from '../data/catalog';
+
+const sheets = numbered.filter((it) => it.family === 'parents');
+const props = [
+  ['ศัพท์สองภาษา', 'คำศัพท์วิทยาศาสตร์ที่ใช้ในห้องเรียน EP พร้อมคำแปลและคำอธิบายภาษาไทย'],
+  ['ตรงหลักสูตร', 'เนื้อหาตามที่ลูกเรียนในโรงเรียนจริง ทุกชีทใช้สอนนักเรียนจริงก่อน'],
+  ['Code Breaker', 'ทำแบบฝึกหัดครบ จะได้รหัสลับไว้ปลดล็อกเฉลย เด็กอยากทำจนจบเอง'],
+  ['มุมผู้ปกครอง', 'คำถามง่ายๆ ที่พ่อแม่ใช้ทบทวนลูกได้ แม้ไม่เก่งภาษาอังกฤษ'],
+  ['ใช้ได้ทั้งสองแบบ', 'พิมพ์ออกมาทำ หรือทำบนแท็บเล็ตก็ได้'],
+];
+---
+<Base
+  title="สำหรับผู้ปกครอง · scitem"
+  description="ชีทวิทย์สองภาษาไทย-อังกฤษ ให้พ่อแม่ช่วยทบทวนลูก EP/Inter ได้ แม้ไม่ถนัดภาษาอังกฤษ"
+  family="parents"
+>
+  <header class="fam-head">
+    <div class="fam-sym"><small>ผู้ปกครอง</small><span>Pa</span></div>
+    <div>
+      <h1>ลูกเรียนวิทย์เป็นภาษาอังกฤษ<br />พ่อแม่ก็ช่วยทบทวนได้</h1>
+      <p>ชีทของ scitem มีศัพท์ภาษาอังกฤษพร้อมคำแปลไทย แบบฝึกหัดตามหลักสูตรจริง และมุมผู้ปกครองที่บอกว่าควรถามลูกอะไร</p>
+    </div>
+  </header>
+
+  <section class="split">
+    <div>
+      <h2>ชีทที่มีแล้ว</h2>
+      <div class="grid">{sheets.map((it) => <Tile item={it} />)}</div>
+      <p class="muted small">กำลังทำเพิ่มทุกสัปดาห์ ครอบคลุม ป.5 ถึง ม.3 · แตะชีทที่มี PDF เพื่อเปิดดู</p>
+    </div>
+    <div>
+      <h2>ในชีทมีอะไร</h2>
+      <dl class="props">
+        {props.map(([k, v]) => (<div><dt>{k}</dt><dd>{v}</dd></div>))}
+      </dl>
+    </div>
+  </section>
+
+  <section class="contact" id="contact">
+    <div>
+      <h2>ขอชีทตัวอย่างฟรี หรือสนใจเรียนกับครูวิว</h2>
+      <p>ครูวิวสอนวิทยาศาสตร์ให้นักเรียน EP, International และห้องเรียนพิเศษ (Gifted) ส่งข้อความมาได้เลย</p>
+    </div>
+    <div class="actions">
+      <a class="btn line" href={LINE_URL} target="_blank" rel="noopener">แอดไลน์ scitem</a>
+      <a class="mail" href="mailto:view@scitem.net">view@scitem.net</a>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .split { display: grid; grid-template-columns: 1fr 1.15fr; gap: 40px; align-items: start; }
+  h2 { font-size: 1.35rem; margin: 0 0 16px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 200px)); }
+  .small { font-size: 0.9rem; margin: 14px 0 0; }
+  .props { margin: 0; border-top: 2px solid var(--ink); }
+  .props div { display: grid; grid-template-columns: 9.5em 1fr; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--rule-soft); }
+  .props dt { font-weight: 700; }
+  .props dd { margin: 0; color: var(--muted); }
+  .contact {
+    margin-top: 56px;
+    display: flex; justify-content: space-between; align-items: center; gap: 20px 40px; flex-wrap: wrap;
+    padding: 28px; border: 2px solid var(--ink); border-radius: 6px;
+    background: var(--f-fill); color: var(--f-ink);
+  }
+  .contact h2 { margin: 0 0 6px; }
+  .contact p { margin: 0; max-width: 56ch; }
+  .actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .mail { color: var(--f-ink); font-weight: 700; font-size: 1.1rem; }
+  @media (max-width: 820px) {
+    .split { grid-template-columns: 1fr; }
+    .props div { grid-template-columns: 1fr; gap: 2px; }
+  }
+</style>

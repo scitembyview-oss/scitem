@@ -1,0 +1,69 @@
+---
+import type { NumberedItem } from '../data/catalog';
+interface Props {
+  item?: NumberedItem;
+  /** empty slot: an element not made yet */
+  ghost?: boolean;
+  big?: boolean;
+}
+const { item, ghost = false, big = false } = Astro.props;
+const href = item?.href ?? item?.pdf;
+const Tag = href ? 'a' : 'div';
+---
+{ghost || !item ? (
+  <div class="tile ghost" aria-hidden="true"><span class="sym">?</span><span class="th">กำลังทำ</span></div>
+) : (
+  <Tag
+    class:list={['tile', { big }]}
+    data-f={item.family}
+    href={href}
+    target={item.pdf && !item.href ? '_blank' : undefined}
+    rel={item.pdf && !item.href ? 'noopener' : undefined}
+  >
+    <span class="top"><span class="n">{item.n}</span><span class="g">{item.grade}</span></span>
+    <span class="sym">{item.sym}</span>
+    <span class="en">{item.en}</span>
+    <span class="th">{item.th}</span>
+    <span class="meta">{href ? item.meta : 'เร็วๆ นี้'}</span>
+  </Tag>
+)}
+
+<style>
+  .tile {
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    aspect-ratio: 1 / 1.08;
+    padding: 7% 8% 6%;
+    border: 2px solid var(--ink);
+    border-radius: 6px;
+    background: var(--f-fill, var(--surface));
+    color: var(--f-ink, var(--ink));
+    text-decoration: none;
+    line-height: 1.2;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s;
+  }
+  a.tile:hover, a.tile:focus-visible {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px -8px rgb(22 27 38 / 0.45);
+  }
+  a.tile:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  a.tile:active { transform: translateY(0); }
+  div.tile:not(.ghost) { opacity: 0.72; }
+  .top { display: flex; justify-content: space-between; align-items: baseline; font-size: 10cqi; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .g { font-size: 8.5cqi; letter-spacing: 0.02em; }
+  .sym { font-size: 36cqi; font-weight: 700; line-height: 1; letter-spacing: -0.03em; margin: auto 0 4cqi; }
+  .en { font-size: 9cqi; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .th { font-size: 9cqi; font-weight: 400; margin-top: 1cqi; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .meta { font-size: 8cqi; font-weight: 600; margin-top: auto; padding-top: 3cqi; border-top: 1.5px solid currentColor; font-variant-numeric: tabular-nums; }
+  .ghost {
+    background: transparent;
+    border: 2px dashed var(--rule-soft);
+    color: var(--muted);
+    justify-content: center;
+    align-items: center;
+    gap: 2cqi;
+  }
+  .ghost .sym { margin: 0; color: var(--rule-soft); }
+  .ghost .th { font-size: 10cqi; }
+</style>

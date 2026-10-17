@@ -1,0 +1,50 @@
+---
+import Base from '../layouts/Base.astro';
+import Tile from '../components/Tile.astro';
+import { numbered } from '../data/catalog';
+
+const checks = numbered.filter((it) => it.family === 'students' && it.href?.startsWith('/check/'));
+const vault = numbered.find((it) => it.href === '/vault/')!;
+---
+<Base title="นักเรียน · scitem" description="เช็คพื้นฐานก่อนเรียน และ Answer Vault สำหรับนักเรียน scitem" family="students">
+  <header class="fam-head">
+    <div class="fam-sym"><small>นักเรียน</small><span>St</span></div>
+    <div>
+      <h1>เช็คพื้นฐานก่อนเรียน</h1>
+      <p>ทำก่อนเรียนเพื่อให้ครูรู้ว่าต้องทวนตรงไหน ไม่มีผลกับคะแนน ทำเสร็จแล้วกดส่งรหัสให้ครูทาง LINE</p>
+    </div>
+  </header>
+
+  <ol class="steps">
+    <li><b>เลือกเรื่องที่ครูบอก</b> ใส่ชื่อเล่นแล้วเริ่มทำ</li>
+    <li><b>ตอบทีละข้อ</b> ไม่ต้องแสดงวิธีทำ ทำไม่ได้ก็ข้ามได้</li>
+    <li><b>ส่งรหัสให้ครู</b> กดปุ่มส่งทาง LINE ตอนจบ</li>
+  </ol>
+
+  <div class="grid">{checks.map((it) => <Tile item={it} />)}</div>
+
+  <section class="vault">
+    <Tile item={vault} />
+    <div>
+      <h2>ทำชีทครบแล้ว? เปิดเฉลยที่ Answer Vault</h2>
+      <p>วงตัวอักษรใน Code Breaker ท้ายชีทให้ครบ อ่านเรียงจากข้อแรกถึงข้อสุดท้าย แล้วใส่เป็นรหัสเพื่อเปิดเฉลยมาตรวจเอง</p>
+      <a class="btn" href="/vault/">เปิด Answer Vault</a>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .steps { list-style: none; counter-reset: s; margin: 0 0 28px; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); border-top: 2px solid var(--ink); }
+  .steps li { counter-increment: s; padding: 14px 16px 14px 0; color: var(--muted); }
+  .steps li::before { content: counter(s); display: inline-grid; place-items: center; width: 28px; height: 28px; margin-right: 8px; border: 2px solid var(--ink); border-radius: 4px; background: var(--f-fill); color: var(--f-ink); font-weight: 700; font-size: 0.9rem; }
+  .steps b { color: var(--ink); }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(170px, 210px)); }
+  .vault { margin-top: 56px; display: grid; grid-template-columns: 180px 1fr; gap: 28px; align-items: center; padding-top: 28px; border-top: 2px solid var(--ink); }
+  .vault h2 { margin: 0 0 8px; font-size: 1.35rem; }
+  .vault p { margin: 0 0 16px; color: var(--muted); max-width: 60ch; }
+  @media (max-width: 700px) {
+    .steps { grid-template-columns: 1fr; }
+    .steps li { padding: 10px 0; border-bottom: 1px solid var(--rule-soft); }
+    .vault { grid-template-columns: 120px 1fr; gap: 16px; align-items: start; }
+  }
+</style>

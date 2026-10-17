@@ -1,10 +1,17 @@
 ---
-import Base from '../../layouts/Base.astro';
+import Base from '../layouts/Base.astro';
+import { numbered, families } from '../data/catalog';
+const share = numbered.filter((it) => it.family !== 'teacher' && it.href);
 ---
-<Base title="ตรวจรหัสนักเรียน · scitem" description="หน้าตรวจรหัสเช็คพื้นฐานสำหรับครู" noindex>
+<Base title="ครู · scitem" description="หน้าครู ตรวจรหัสเช็คพื้นฐาน" noindex family="teacher">
   <section class="t">
-    <p class="eyebrow">สำหรับครู</p>
-    <h1>ตรวจรหัสเช็คพื้นฐาน</h1>
+    <header class="fam-head">
+      <div class="fam-sym"><small>ครู</small><span>Te</span></div>
+      <div>
+        <h1>หน้าครู</h1>
+        <p>ใส่รหัสผ่านเพื่อตรวจรหัสเช็คของนักเรียน และคัดลอกลิงก์ส่งให้นักเรียนทาง LINE</p>
+      </div>
+    </header>
 
     <form class="card" id="login" autocomplete="off">
       <label for="pw">รหัสผ่านครู</label>
@@ -27,12 +34,25 @@ import Base from '../../layouts/Base.astro';
     </form>
 
     <div id="out"></div>
+
+    <section class="card" id="tools" hidden>
+      <h2>ลิงก์ส่งนักเรียน</h2>
+      <ul class="share">
+        {share.map((it) => (
+          <li data-f={it.family}>
+            <i aria-hidden="true">{it.sym}</i>
+            <a href={it.href}>{it.en}<small>{it.th} · {families[it.family].th}</small></a>
+            <button type="button" class="ghost copy" data-url={`https://scitem.net${it.href}`}>คัดลอกลิงก์</button>
+          </li>
+        ))}
+      </ul>
+    </section>
   </section>
 </Base>
 
 <script>
-  import { decodeCheck } from '../../lib/check-code.js';
-  import blob from '../../data/check-keys.json';
+  import { decodeCheck } from '../lib/check-code.js';
+  import blob from '../data/check-keys.json';
 
   type Q = { label: string; kind: 'num' | 'mc'; answers?: string[]; answer?: number; solution: string };
   type Keys = Record<string, { title: string; questions: Q[] }>;
@@ -117,6 +137,7 @@ import Base from '../../layouts/Base.astro';
     } catch {}
     $('login').hidden = true;
     $('paste').hidden = false;
+    $('tools').hidden = false;
   }
 
   type Row = { name: string; at: number; answers: string[]; secs: number[]; marks: boolean[] };
@@ -184,24 +205,41 @@ import Base from '../../layouts/Base.astro';
     keys = null;
     $('out').innerHTML = '';
     $('paste').hidden = true;
+    $('tools').hidden = true;
     $('login').hidden = false;
   });
+  document.querySelectorAll<HTMLButtonElement>('.copy').forEach((b) =>
+    b.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(b.dataset.url!);
+        b.textContent = 'คัดลอกแล้ว';
+      } catch {
+        b.textContent = b.dataset.url!;
+      }
+      setTimeout(() => (b.textContent = 'คัดลอกลิงก์'), 2000);
+    }),
+  );
   let saved: string | null = null;
   try { saved = localStorage.getItem(STORE); } catch {}
   if (saved) login(saved, true);
 </script>
 
 <style>
-  .t { max-width: 1000px; margin: 0 auto; padding: 32px 0 16px; }
-  .eyebrow { color: var(--brand); font-weight: 700; letter-spacing: 0.08em; margin: 0; }
-  h1 { font-size: clamp(1.8rem, 6vw, 2.4rem); line-height: 1.2; margin: 4px 0 16px; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin: 0 0 18px; }
+  .t { max-width: 1000px; margin: 0 auto; padding: 0 0 16px; }
+  .card { background: var(--surface); border: 2px solid var(--ink); border-radius: 6px; padding: 20px; margin: 0 0 18px; }
+  #tools h2 { margin: 0 0 12px; font-size: 1.3rem; }
+  .share { list-style: none; margin: 0; padding: 0; }
+  .share li { display: grid; grid-template-columns: 44px 1fr auto; gap: 14px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); }
+  .share i { display: grid; place-items: center; width: 44px; height: 44px; border: 2px solid var(--ink); border-radius: 4px; background: var(--f-fill); color: var(--f-ink); font-style: normal; font-weight: 700; }
+  .share a { color: var(--ink); font-weight: 700; text-decoration: none; line-height: 1.35; }
+  .share a small { display: block; color: var(--muted); font-weight: 400; }
+  .share .copy { padding: 8px 14px; font-size: 0.9rem; }
   label { display: block; font-weight: 700; margin-bottom: 8px; }
   .keep { font-weight: 400; color: var(--muted); margin: 10px 0 0; display: flex; gap: 8px; align-items: center; }
   .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
-  input[type='password'], textarea { flex: 1 1 200px; min-width: 0; width: 100%; font: inherit; font-size: 1rem; padding: 10px 12px; border: 2px solid var(--border); border-radius: 10px; background: var(--bg); }
+  input[type='password'], textarea { flex: 1 1 200px; min-width: 0; width: 100%; font: inherit; font-size: 1rem; padding: 10px 12px; border: 2px solid var(--border); border-radius: 6px; background: var(--surface); }
   textarea { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; }
-  button { font: inherit; font-weight: 700; padding: 12px 22px; border: 0; border-radius: 999px; background: var(--brand); color: #fff; cursor: pointer; }
+  button { font: inherit; font-weight: 700; min-height: 44px; padding: 10px 22px; border: 2px solid var(--brand); border-radius: 6px; background: var(--brand); color: #fff; cursor: pointer; }
   .ghost { background: transparent; color: var(--brand); border: 2px solid var(--brand); }
   .msg { margin: 12px 0 0; font-weight: 700; color: #a6402a; }
   .hint { color: var(--muted); font-size: 0.85rem; margin: 10px 0; }

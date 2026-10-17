@@ -1,0 +1,53 @@
+---
+import Base from '../layouts/Base.astro';
+import Tile from '../components/Tile.astro';
+import { courses, numbered, type CourseId } from '../data/catalog';
+
+const rows = (Object.entries(courses) as [CourseId, (typeof courses)[CourseId]][]).map(([id, c]) => ({
+  ...c,
+  items: numbered.filter((it) => it.course === id),
+}));
+---
+<Base title="ชีทสอน · scitem" description="สไลด์และเช็คที่ใช้สอน แยกตามคอร์ส: Light (EP Primary 5) และฟิสิกส์ ม.ต้น" family="lessons">
+  <header class="fam-head">
+    <div class="fam-sym"><small>ชีทสอน</small><span>Le</span></div>
+    <div>
+      <h1>ชีทสอน แยกตามคอร์ส</h1>
+      <p>แต่ละแถวคือหนึ่งคอร์ส สีฟ้าคือสไลด์สอน (ใช้บน iPad มีปากกาเขียน) สีเหลืองคือเช็คที่ส่งให้นักเรียนทำ</p>
+    </div>
+  </header>
+
+  {rows.map((c, i) => (
+    <section class="period">
+      <div class="label">
+        <span class="pn">{i + 1}</span>
+        <h2>{c.name}</h2>
+        <p class="where">{c.where}</p>
+        <p class="th">{c.th}</p>
+      </div>
+      <div class="items">
+        {c.items.map((it) => (
+          <div class="item">
+            <Tile item={it} />
+            {it.note && <p>{it.note}</p>}
+          </div>
+        ))}
+      </div>
+    </section>
+  ))}
+</Base>
+
+<style>
+  .period { display: grid; grid-template-columns: 220px 1fr; gap: 24px; padding: 24px 0 28px; border-top: 2px solid var(--ink); }
+  .label { position: relative; padding-left: 44px; }
+  .pn { position: absolute; left: 0; top: 2px; display: grid; place-items: center; width: 32px; height: 32px; border: 2px solid var(--ink); border-radius: 4px; font-weight: 700; }
+  h2 { margin: 0; font-size: 1.5rem; }
+  .where { margin: 2px 0 0; font-weight: 600; }
+  .th { margin: 2px 0 0; color: var(--muted); }
+  .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+  .item p { margin: 8px 2px 0; font-size: 0.88rem; color: var(--muted); line-height: 1.45; }
+  @media (max-width: 760px) {
+    .period { grid-template-columns: 1fr; gap: 16px; }
+    .items { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  }
+</style>

@@ -8,8 +8,11 @@ push ขึ้น `main` แล้ว GitHub Actions (`.github/workflows/deploy.
 
 | อะไร | ไฟล์ |
 |---|---|
-| หน้าแรก: รายการชีท (`sheets`) และลิงก์สไลด์/เช็ค (`classLinks`) | `src/pages/index.astro` |
-| เมนู, footer, สี, ฟอนต์ | `src/layouts/Base.astro` |
+| **รายการทุกอย่างบนเว็บ** (สไลด์ เช็ค ชีท เครื่องมือ = ช่องธาตุ 1 ช่อง) กลุ่มสี และคอร์ส | `src/data/catalog.ts` |
+| หน้าแรก (ตารางธาตุ) / ผู้ปกครอง / นักเรียน / ชีทสอน (แยกคอร์ส) / ครู (รหัสผ่าน + ตรวจรหัส) | `src/pages/index.astro`, `parents.astro`, `students.astro`, `lessons.astro`, `teacher.astro` |
+| ช่องธาตุ | `src/components/Tile.astro` |
+| หน้าตา (ตารางธาตุ, สี 4 กลุ่ม, ฟอนต์ Anuphan ใน `public/fonts/`) | `DESIGN.md` |
+| เมนู, footer, สี, ฟอนต์ (`family=` ระบายสีทั้งหน้า) | `src/layouts/Base.astro` |
 | ชีท PDF | `public/sheets/*.pdf` |
 | สไลด์เดโมการเคลื่อนที่แบบวงกลม (canvas, ปากกา) | `public/demo/index.html` (เขียนมือ ไฟล์เดียว) |
 | สไลด์ Light Explorer · Mission 2 (14 หน้า) | `public/light-p5/index.html` **สร้างจากสคริปต์ ห้ามแก้ตรง** |
@@ -25,7 +28,7 @@ push ขึ้น `main` แล้ว GitHub Actions (`.github/workflows/deploy.
 - อนิเมชั่นแตะ: ใส่ `class="tap" data-act="ชื่อ"` ในสคริปต์ แล้วเพิ่มฟังก์ชันชื่อเดียวกันใน `ACT` ของ shell; `play(el, ms)` เล่น CSS animation ครั้งเดียว
 - ฉายแสงเป็นเงา: `cast_svg(...)` ในสคริปต์ (ตำแหน่งแหล่งแสง, จุดขอบวัตถุ, พื้น `g` หรือผนัง `wall`) + `cast()` ใน shell; แหล่งแสงใช้ `data-act="cast"`
 - โหมด ✏️ แตะสั้นๆ บนรูป = เล่นอนิเมชั่น (ไม่เป็นหมึก); โหมด 👆 = แตะ/เลื่อนอย่างเดียว; ลากได้ใช้ `class="drag"`
-- บทเรียนใหม่: คัดลอกคู่ไฟล์นี้เป็น `tools/build-<ชื่อ>.py` + ใช้ shell เดิมได้ แล้วเพิ่มลิงก์ใน `classLinks`
+- บทเรียนใหม่: คัดลอกคู่ไฟล์นี้เป็น `tools/build-<ชื่อ>.py` + ใช้ shell เดิมได้ แล้วเพิ่มรายการใน `src/data/catalog.ts` (ใส่ `course`)
 
 ## กติกา
 

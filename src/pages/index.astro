@@ -1,202 +1,94 @@
 ---
 import Base from '../layouts/Base.astro';
+import Tile from '../components/Tile.astro';
+import { families, numbered, LINE_URL, type Family } from '../data/catalog';
 
-const sheets = [
-  {
-    level: 'ป.6 / Grade 6',
-    title: 'Solar System Vocabulary',
-    th: 'ระบบสุริยะ',
-    note: 'คำศัพท์ 15 คำ แบบฝึกหัด 3 ชุด และมุมผู้ปกครอง',
-    pdf: '/sheets/solar-system-p6.pdf',
-  },
-  {
-    level: 'Year 7',
-    title: 'Rocks & the Rock Cycle',
-    th: 'หินและวัฏจักรหิน',
-    note: 'English only พร้อม Self-Check และ Code Breaker',
-  },
-];
-const classLinks = [
-  {
-    tag: 'สไลด์สอน',
-    title: 'การเคลื่อนที่แบบวงกลม',
-    note: 'ภาพเคลื่อนไหวปรับค่าได้ พร้อมปากกาเขียนบนสไลด์ (2 สไลด์)',
-    href: '/demo/',
-  },
-  {
-    tag: 'สไลด์สอน',
-    title: 'Light Explorer · Mission 2',
-    note: 'ป.5 แสงเดินทางเป็นเส้นตรงและเงา แตะรูปให้ขยับได้ พร้อมปากกาเขียน (14 หน้า)',
-    href: '/light-p5/',
-  },
-  {
-    tag: 'เช็คพื้นฐาน',
-    title: 'การเคลื่อนที่แบบวงกลม',
-    note: '10 ข้อ ทำก่อนเรียน',
-    href: '/check/circular/',
-  },
-  {
-    tag: 'เช็คพื้นฐาน',
-    title: 'ทดสอบความรู้เรื่องการเคลื่อนที่วงกลม',
-    note: '8 ข้อ ตอบเป็น √ หรือ π ได้',
-    href: '/check/circular-gifted/',
-  },
-  {
-    tag: 'เช็คพื้นฐาน',
-    title: 'แรงลอยตัว',
-    note: '10 ข้อ ทำก่อนเรียน',
-    href: '/check/buoyancy/',
-  },
-];
+const keys = Object.entries(families) as [Family, (typeof families)[Family]][];
 ---
 <Base
   title="scitem · ชีทวิทย์สองภาษา สำหรับเด็ก EP/Inter"
   description="ชีทวิทยาศาสตร์ไทย-อังกฤษ สำหรับนักเรียน EP และ International ป.5 ถึง ม.3 พร้อมคำแปลและคู่มือให้ผู้ปกครองช่วยทบทวนลูกได้"
 >
-  <section class="hero">
-    <p class="eyebrow">Bilingual Science · ป.5 – ม.3</p>
-    <h1>ชีทวิทย์สองภาษา<br />สำหรับเด็ก EP/Inter</h1>
-    <p class="lead">
-      ลูกเรียนวิทย์เป็นภาษาอังกฤษ แต่พ่อแม่ช่วยทบทวนไม่ถนัด? ชีทของ scitem มีศัพท์ภาษาอังกฤษพร้อมคำแปลไทย
-      แบบฝึกหัดตามหลักสูตรจริง และมุมผู้ปกครองที่บอกว่าควรถามลูกอะไร
-    </p>
-    <a class="btn" href="#contact">ขอชีทตัวอย่างฟรี</a>
-  </section>
-
-  <section class="features">
-    <div class="card">
-      <h3>🔤 ศัพท์สองภาษา</h3>
-      <p>คำศัพท์วิทยาศาสตร์ที่ใช้ในห้องเรียน EP พร้อมคำแปลและคำอธิบายภาษาไทย</p>
+  <section class="table" aria-label="ทุกบทเรียนของ scitem">
+    <div class="key">
+      <div class="intro">
+        <h1>ชีทและบทเรียน<br />วิทย์สองภาษา</h1>
+        <p>สำหรับเด็ก EP/Inter ป.5–ม.3 ทุกช่องในตารางคือบทเรียนหนึ่งเรื่อง แตะเพื่อเปิด</p>
+        <a class="btn line" href={LINE_URL} target="_blank" rel="noopener">ขอชีทตัวอย่างฟรีทาง LINE</a>
+      </div>
+      <ul class="legend" aria-label="กลุ่มสี">
+        {keys.map(([f, v]) => (
+          <li>
+            <a href={v.href} data-f={f} data-key={f}>
+              <i aria-hidden="true"></i>
+              <span><b>{v.th}</b> <span class="en">{v.en}</span><small>{v.blurb}</small></span>
+            </a>
+          </li>
+        ))}
+      </ul>
     </div>
-    <div class="card">
-      <h3>🧩 Code Breaker</h3>
-      <p>ทำแบบฝึกหัดครบ จะได้รหัสลับไว้ปลดล็อกเฉลย เด็กอยากทำจนจบเอง</p>
-    </div>
-    <div class="card">
-      <h3>👪 มุมผู้ปกครอง</h3>
-      <p>คำถามง่ายๆ ที่พ่อแม่ใช้ทบทวนลูกได้ แม้ไม่เก่งภาษาอังกฤษ</p>
-    </div>
-  </section>
-
-  <section id="sheets">
-    <h2>ชีทที่มีแล้ว</h2>
-    <div class="sheets">
-      {sheets.map((s) => (
-        <article class="sheet">
-          <p class="level">{s.level}</p>
-          <h3>{s.title}</h3>
-          <p class="th">{s.th}</p>
-          <p class="note">{s.note}</p>
-          {s.pdf && (
-            <p class="links">
-              <a href={s.pdf} target="_blank" rel="noopener">เปิดดูชีท</a>
-              <a href={s.pdf} download>โหลด PDF</a>
-            </p>
-          )}
-        </article>
-      ))}
-    </div>
-    <p class="muted">กำลังทำเพิ่มทุกสัปดาห์ ครอบคลุม ป.5 ถึง ม.3</p>
-  </section>
-
-  <section id="class">
-    <h2>ห้องเรียนฟิสิกส์ ม.ต้น</h2>
-    <p class="muted">สำหรับนักเรียนที่เรียนกับครูวิว ทำเช็คพื้นฐานก่อนเรียน แล้วส่งรหัสที่ได้ให้ครูทาง LINE</p>
-    <div class="sheets">
-      {classLinks.map((c) => (
-        <a class="sheet link-card" href={c.href}>
-          <p class="level">{c.tag}</p>
-          <h3>{c.title}</h3>
-          <p class="note">{c.note}</p>
-        </a>
-      ))}
-    </div>
-    <p class="muted small">
-      <a href="/check/teacher/">หน้าตรวจรหัสสำหรับครู</a> (ต้องใช้รหัสผ่าน) ·
-      <a href="/vault/">Answer Vault</a> (ปลดล็อกเฉลยชีท Code Breaker)
-    </p>
-  </section>
-
-  <section id="parents" class="panel">
-    <h2>สำหรับผู้ปกครอง</h2>
-    <p>
-      scitem ทำโดยติวเตอร์ที่สอนวิทยาศาสตร์ให้นักเรียน EP, International และห้องเรียนพิเศษ (Gifted)
-      ทุกชีทผ่านการใช้สอนจริงกับนักเรียนก่อน
-    </p>
-    <ul>
-      <li>ตรงกับเนื้อหาที่ลูกเรียนในโรงเรียน</li>
-      <li>ลูกทำเองได้ พ่อแม่ตรวจได้ด้วยเฉลยและคำแปล</li>
-      <li>พิมพ์ได้ หรือใช้บนแท็บเล็ตก็ได้</li>
-    </ul>
-  </section>
-
-  <section id="contact" class="panel contact">
-    <h2>ติดต่อ / ขอชีทตัวอย่าง</h2>
-    <p>อยากลองชีทฟรี หรือสนใจเรียนวิทย์กับ scitem ส่งข้อความมาได้เลย</p>
-    <p><a class="line-btn" href="https://lin.ee/NO52k1Y" target="_blank" rel="noopener">แอดไลน์ scitem</a></p>
-    <p class="email"><a href="mailto:view@scitem.net">view@scitem.net</a></p>
+    {numbered.map((it) => <Tile item={it} />)}
+    <Tile ghost />
   </section>
 </Base>
 
 <style>
-  .hero { padding: 48px 0 32px; }
-  .eyebrow { color: var(--brand); font-weight: 600; margin: 0 0 8px; }
-  h1 { font-size: clamp(2rem, 6vw, 3.2rem); line-height: 1.25; margin: 0 0 16px; }
-  .lead { font-size: 1.1rem; color: var(--muted); max-width: 640px; }
-  .btn {
-    display: inline-block;
-    margin-top: 12px;
-    background: var(--brand);
-    color: #fff;
-    padding: 12px 24px;
-    border-radius: 999px;
-    text-decoration: none;
-    font-weight: 600;
-  }
-  .btn:hover { background: #115e59; }
-  section { margin-bottom: 48px; }
-  .features, .sheets {
+  .table {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(6, 1fr);
+    grid-auto-flow: row dense;
+    gap: 10px;
+    padding: 12px 0 0;
   }
-  .card, .sheet, .panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 20px;
+  .key {
+    grid-column: 2 / 6;
+    grid-row: 1 / 3;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 20px 28px;
+    align-items: center;
+    padding: 4px 8px;
   }
-  .card h3, .sheet h3 { margin: 0 0 8px; }
-  .card p { margin: 0; color: var(--muted); }
-  .level {
-    display: inline-block;
-    background: var(--brand-soft);
-    color: var(--brand);
-    font-weight: 600;
-    font-size: 0.85rem;
-    padding: 2px 10px;
-    border-radius: 999px;
-    margin: 0 0 8px;
-  }
-  .link-card { display: block; color: inherit; text-decoration: none; }
-  .link-card:hover { border-color: var(--brand); }
-  .link-card h3 { color: var(--brand); }
-  .small { font-size: 0.9rem; margin-top: 16px; }
-  .th { margin: 0; font-weight: 600; }
-  .note { margin: 4px 0 0; color: var(--muted); }
-  .links { margin: 12px 0 0; display: flex; gap: 16px; flex-wrap: wrap; font-weight: 600; }
-  .muted { color: var(--muted); }
-  .contact { text-align: center; }
-  .email { font-size: 1.3rem; font-weight: 700; }
-  .line-btn {
-    display: inline-block;
-    background: #06c755;
-    color: #fff;
-    padding: 12px 28px;
-    border-radius: 999px;
+  h1 { font-size: clamp(1.9rem, 3.6vw, 3rem); margin: 0 0 10px; letter-spacing: -0.02em; }
+  .intro p { margin: 0 0 18px; color: var(--muted); max-width: 34ch; }
+  .legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .legend a {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 10px;
+    min-height: 48px;
+    border-radius: 6px;
+    color: var(--ink);
     text-decoration: none;
-    font-weight: 700;
-    font-size: 1.1rem;
+    line-height: 1.35;
+    transition: background-color 0.2s;
   }
-  .line-btn:hover { background: #05a847; }
+  .legend a:hover, .legend a:focus-visible { background: var(--surface); }
+  .legend i { flex: none; width: 22px; height: 22px; margin-top: 1px; border: 2px solid var(--ink); border-radius: 4px; background: var(--f-fill); }
+  .legend .en { color: var(--muted); font-size: 0.85rem; }
+  .legend small { display: block; color: var(--muted); font-size: 0.82rem; }
+
+  /* pointing at a family in the key lights up its tiles, like an interactive periodic table */
+  .table:has([data-key='lessons']:is(:hover, :focus-visible)) :global(.tile:not([data-f='lessons'])),
+  .table:has([data-key='students']:is(:hover, :focus-visible)) :global(.tile:not([data-f='students'])),
+  .table:has([data-key='parents']:is(:hover, :focus-visible)) :global(.tile:not([data-f='parents'])),
+  .table:has([data-key='teacher']:is(:hover, :focus-visible)) :global(.tile:not([data-f='teacher'])) {
+    opacity: 0.18;
+  }
+
+  @media (max-width: 900px) {
+    .key { grid-template-columns: 1fr; gap: 14px; }
+    .legend small { display: none; }
+  }
+  @media (max-width: 700px) {
+    .table { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .key { grid-column: 1 / -1; grid-row: auto; padding: 8px 0 12px; }
+    .legend { grid-template-columns: 1fr 1fr; }
+    .legend small { display: block; }
+    .table > :global(.ghost) { display: none; }
+  }
+  @media (max-width: 420px) {
+    .legend { grid-template-columns: 1fr; }
+  }
 </style>

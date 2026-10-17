@@ -3,5 +3,6 @@ import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
   site: 'https://scitem.net',
-  integrations: [sitemap({ filter: (page) => !page.includes('/check/') })],
+  redirects: { '/check/teacher': '/teacher' },
+  integrations: [sitemap({ filter: (page) => !page.includes('/check/') && !page.includes('/teacher') })],
 });
