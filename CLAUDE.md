@@ -12,16 +12,16 @@ push ขึ้น `main` แล้ว GitHub Actions (`.github/workflows/deploy.
 | เมนู, footer, สี, ฟอนต์ | `src/layouts/Base.astro` |
 | ชีท PDF | `public/sheets/*.pdf` |
 | สไลด์เดโมการเคลื่อนที่แบบวงกลม (canvas, ปากกา) | `public/demo/index.html` (เขียนมือ ไฟล์เดียว) |
-| สไลด์ Light Explorer · Mission 2 (14 หน้า) | `public/light-m2/index.html` **สร้างจากสคริปต์ ห้ามแก้ตรง** |
+| สไลด์ Light Explorer · Mission 2 (14 หน้า) | `public/light-p5/index.html` **สร้างจากสคริปต์ ห้ามแก้ตรง** |
 | เช็คพื้นฐานก่อนเรียน | `src/pages/check/*.astro` + `src/components/BasicCheck.astro` + `src/lib/check-code.js` |
 | เฉลยเช็ค (เข้ารหัส) | `src/data/check-keys.json` ← `node tools/encrypt-check-keys.mjs <keys.json> <รหัสผ่าน>` |
 | Answer Vault | `src/pages/vault.astro` (รายการ `VAULT` เข้ารหัสแล้ว) |
 
-## สไลด์บทเรียนจากชีท (แบบ light-m2)
+## สไลด์บทเรียนจากชีท (แบบ light-p5)
 
-- `tools/build-light-m2.py` = เนื้อหา รูป SVG CSS และอนิเมชั่นแตะของแต่ละหน้า ดัดแปลงจากสคริปต์ที่ครูใช้สร้างชีท PDF (เวอร์ชันนักเรียน)
-- `tools/light-m2-shell.html` = แถบเครื่องมือ ปากกา/ยางลบ/กันฝ่ามือ (เหมือน `/demo/`), เปลี่ยนหน้า ◀ ▶ ←/→ ปัดข้าง, ระบบแตะ
-- แก้แล้วรัน `python3 tools/build-light-m2.py` แล้ว commit ทั้งสคริปต์และ `public/light-m2/index.html`
+- `tools/build-light-p5.py` = เนื้อหา รูป SVG CSS และอนิเมชั่นแตะของแต่ละหน้า ดัดแปลงจากสคริปต์ที่ครูใช้สร้างชีท PDF (เวอร์ชันนักเรียน)
+- `tools/light-p5-shell.html` = แถบเครื่องมือ ปากกา/ยางลบ/กันฝ่ามือ (เหมือน `/demo/`), เปลี่ยนหน้า ◀ ▶ ←/→ ปัดข้าง, ระบบแตะ
+- แก้แล้วรัน `python3 tools/build-light-p5.py` แล้ว commit ทั้งสคริปต์และ `public/light-p5/index.html`
 - อนิเมชั่นแตะ: ใส่ `class="tap" data-act="ชื่อ"` ในสคริปต์ แล้วเพิ่มฟังก์ชันชื่อเดียวกันใน `ACT` ของ shell; `play(el, ms)` เล่น CSS animation ครั้งเดียว
 - ฉายแสงเป็นเงา: `cast_svg(...)` ในสคริปต์ (ตำแหน่งแหล่งแสง, จุดขอบวัตถุ, พื้น `g` หรือผนัง `wall`) + `cast()` ใน shell; แหล่งแสงใช้ `data-act="cast"`
 - โหมด ✏️ แตะสั้นๆ บนรูป = เล่นอนิเมชั่น (ไม่เป็นหมึก); โหมด 👆 = แตะ/เลื่อนอย่างเดียว; ลากได้ใช้ `class="drag"`
@@ -45,6 +45,6 @@ push ขึ้น `main` แล้ว GitHub Actions (`.github/workflows/deploy.
 
 ```
 npm ci && npm run build                       # เช็คว่า build ผ่าน
-python3 -m http.server 8765 -d public         # แล้วเปิด http://localhost:8765/light-m2/#p5
+python3 -m http.server 8765 -d public         # แล้วเปิด http://localhost:8765/light-p5/#p5
 ```
 Playwright อยู่ที่ `/opt/node-tools/node_modules/playwright` (ใช้ `devices['iPad Pro 11 landscape']`)
