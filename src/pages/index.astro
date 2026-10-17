@@ -60,6 +60,16 @@ const sheets = [
     <p class="muted">กำลังทำเพิ่มทุกสัปดาห์ ครอบคลุม ป.5 ถึง ม.3</p>
   </section>
 
+  <section id="slides">
+    <h2>สไลด์สอนแบบโต้ตอบ</h2>
+    <a class="sheet slide-link" href="/demo/">
+      <p class="level">ม.3 / Gifted</p>
+      <h3>การเคลื่อนที่แบบวงกลม</h3>
+      <p class="th">ภาพเคลื่อนไหวปรับค่าได้ พร้อมปากกาเขียนบนสไลด์</p>
+      <p class="note">บทที่ 1 เวกเตอร์ v และ a · บทที่ 2 รถข้ามเนินโค้ง</p>
+    </a>
+  </section>
+
   <section id="parents" class="panel">
     <h2>สำหรับผู้ปกครอง</h2>
     <p>
@@ -121,6 +131,8 @@ const sheets = [
     border-radius: 999px;
     margin: 0 0 8px;
   }
+  .slide-link { display: block; max-width: 420px; color: inherit; text-decoration: none; }
+  .slide-link:hover { border-color: var(--brand); }
   .th { margin: 0; font-weight: 600; }
   .note { margin: 4px 0 0; color: var(--muted); }
   .muted { color: var(--muted); }
