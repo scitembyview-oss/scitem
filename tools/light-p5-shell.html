@@ -160,13 +160,13 @@
     const E1 = exit(a1), E2 = exit(a2), F = 3000;
     const far = (P, a) => `${P[0] + Math.cos(a) * F},${P[1] + Math.sin(a) * F}`;
     // the shadow: where the dark area meets the ground (or wall); a ray that misses it runs the shadow to the edge
-    let shade;
+    let shade = '';
     if (geo.g != null) {
       const xs = [[E1, a1], [E2, a2]].map(([E, a]) => Math.abs(E[1] - H) < .5 ? E[0] : (Math.cos(a) > 0 ? vb.width : 0));
       for (const p of pts) if (p[1] >= H - .5) xs.push(p[0]);
       const x1 = Math.max(6, Math.min(...xs)), x2 = Math.min(vb.width - 6, Math.max(...xs));
       shade = `<ellipse class="shade" cx="${(x1 + x2) / 2}" cy="${H + 2}" rx="${(x2 - x1) / 2}" ry="5"/>`;
-    } else {
+    } else if (geo.wall != null) {
       const ys = [[E1, a1], [E2, a2]].map(([E, a]) => Math.abs(E[0] - W) < .5 ? E[1] : (Math.sin(a) > 0 ? vb.height : 0));
       const y1 = Math.max(6, Math.min(...ys)), y2 = Math.min(vb.height - 6, Math.max(...ys));
       shade = `<ellipse class="shade" cx="${W - 4}" cy="${(y1 + y2) / 2}" rx="6" ry="${(y2 - y1) / 2}"/>`;
@@ -177,12 +177,12 @@
       <polygon points="${P1} ${far(P1, a1)} ${far(P2, a2)} ${P2}" fill="#000"/></mask></defs>
       <g clip-path="url(#${id}c)"><rect class="lit" width="${W}" height="${H}" mask="url(#${id}m)"/>
       <path class="edge" d="M${sx} ${sy} L${E1} M${sx} ${sy} L${E2}"/></g>${shade}`;
-    if (now) { box.querySelector('circle').setAttribute('r', 9999); box.querySelector('.shade').classList.add('on'); return; }
+    if (now) { box.querySelector('circle').setAttribute('r', 9999); box.querySelector('.shade')?.classList.add('on'); return; }
     const circle = box.querySelector('circle'), R = Math.hypot(Math.max(sx, W - sx), Math.max(sy, H - sy)), t0 = performance.now();
     const grow = now => {
       const t = Math.min(1, (now - t0) / 1000);
       circle.setAttribute('r', (R * t).toFixed(1));
-      if (t < 1) box._raf = requestAnimationFrame(grow); else box.querySelector('.shade').classList.add('on');
+      if (t < 1) box._raf = requestAnimationFrame(grow); else box.querySelector('.shade')?.classList.add('on');
     };
     box._raf = requestAnimationFrame(grow);
   }

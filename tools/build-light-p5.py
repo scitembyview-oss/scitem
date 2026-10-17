@@ -146,7 +146,8 @@ def bottle_pts(x, g):
     return [(x-10, g), (x-10, g-36), (x-4, g-48), (x-4, g-58), (x+4, g-58), (x+4, g-48), (x+10, g-36), (x+10, g)]
 
 def cast_svg(w, h, inner, width, src, obs, g=None, wall=None):
-    """svg whose light source (data-act="cast" or "switch") shines on the objects in obs"""
+    """svg whose light source (data-act="cast" or "switch") shines on the objects in obs
+    (no g or wall: light and dark area only, no shadow drawn)"""
     geo = {"s": list(src)}
     if g is not None: geo["g"] = g
     if wall is not None: geo["wall"] = wall
@@ -231,7 +232,7 @@ straws = (lamp_svg(24, 40, "strawA") + lamp_svg(24, 118, "strawB") +
     '<path d="M150 92 V82 M162 92 V82" stroke="#2F80C9" stroke-width="3"/>' +
     '<text x="250" y="46" font-family="Fredoka" font-weight="600" font-size="18" fill="#3C3A8F">A</text>' +
     '<text x="176" y="94" font-family="Fredoka" font-weight="600" font-size="18" fill="#3C3A8F">B</text>')
-wall = (lamp_svg(30, 85) + '<rect x="150" y="66" width="22" height="46" rx="3" fill="#C9A27A" stroke="#8A5A2B" stroke-width="2.5"/>' +
+wall = (lamp_svg(30, 85, "cast") + '<rect x="150" y="66" width="22" height="46" rx="3" fill="#C9A27A" stroke="#8A5A2B" stroke-width="2.5"/>' +
     '<path d="M300 14 l7 14 15 2 -11 10 3 15 -14 -8 -14 8 3 -15 -11 -10 15 -2z" fill="#FFF3C4" stroke="#E8962E" stroke-width="2.5" stroke-linejoin="round"/>' +
     '<circle cx="306" cy="89" r="15" fill="#E6F2FB" stroke="#2F80C9" stroke-width="2.5"/>' +
     '<path d="M306 140 l17 28 h-34z" fill="#E8F6F3" stroke="#2A9D8F" stroke-width="2.5" stroke-linejoin="round"/>' +
@@ -242,7 +243,7 @@ pages.append(page(5, "Light can't turn corners", bubble(f"Light cannot {K('bend'
 task(1, "Glow looks through two straws at a lamp. Through which straw can Glow see the light?",
      f'<div class="center">{svg(270, 140, straws, 300)}</div><p class="fill">Glow can see the light through straw {choose("A","B")}.</p>') +
 task(2, "The lamp shines at three shapes. Use a ruler. Which shape does NOT get any light?",
-     f'<div class="center">{svg(350, 175, wall, 360)}</div><p class="fill">Shape {blank(70)} does not get any light.</p>') +
+     f'<div class="center">{cast_svg(350, 175, wall, 360, (30, 85), [(149, 65), (173, 65), (149, 113), (173, 113)])}</div><p class="fill">Shape {blank(70)} does not get any light.</p>') +
 task(3, "Why can't the light reach that shape?", lines(1))))
 
 # 6 what is a shadow
