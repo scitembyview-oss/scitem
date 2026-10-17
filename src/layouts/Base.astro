@@ -41,8 +41,9 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     />
   </head>
   <body>
+    <div class="header-wrap">
     <header class="site-header">
-      <a href="/" class="logo">sci<span>tem</span></a>
+      <a href="/" class="logo"><span class="logo-icon" aria-hidden="true">⚛</span><b>sci<span>tem</span></b></a>
       <nav>
         <a href="/#sheets">ชีท</a>
         <a href="/#class">ห้องเรียน</a>
@@ -51,41 +52,60 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
         <a href="/#contact">ติดต่อ</a>
       </nav>
     </header>
+    </div>
     <main>
       <slot />
     </main>
     <footer class="site-footer">
-      <p>© scitem · ชีทวิทย์สองภาษา สำหรับเด็ก EP/Inter · สอนโดยครูวิว</p>
+      <p class="footer-logo">sci<span>tem</span></p>
+      <p>ชีทวิทย์สองภาษา สำหรับเด็ก EP/Inter · สอนโดยครูวิว</p>
+      <p class="footer-links"><a href="https://lin.ee/NO52k1Y" target="_blank" rel="noopener">LINE</a> · <a href="mailto:view@scitem.net">view@scitem.net</a></p>
     </footer>
   </body>
 </html>
 
 <style is:global>
   :root {
-    --bg: #fffdf7;
+    --bg: #fffaf0;
     --surface: #ffffff;
-    --text: #1f2a2e;
-    --muted: #5b6b70;
-    --brand: #0f766e;
+    --text: #1e2a3a;
+    --muted: #5b6878;
+    --brand: #0d9488;
+    --brand-dark: #0f766e;
     --brand-soft: #ccfbf1;
     --accent: #f59e0b;
-    --border: #e7e2d6;
+    --pink: #ec4899;
+    --violet: #7c3aed;
+    --sky: #0ea5e9;
+    --border: #eee4cf;
+    --shadow: 0 2px 0 rgba(30, 42, 58, 0.06), 0 8px 24px rgba(30, 42, 58, 0.06);
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body {
     margin: 0;
-    background: var(--bg);
+    background-color: var(--bg);
+    background-image: radial-gradient(rgba(13, 148, 136, 0.12) 1.2px, transparent 1.2px);
+    background-size: 22px 22px;
     color: var(--text);
     font-family: 'IBM Plex Sans Thai', system-ui, sans-serif;
     line-height: 1.7;
   }
-  a { color: var(--brand); }
-  main { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+  a { color: var(--brand-dark); }
+  main { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+  .header-wrap {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(255, 250, 240, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
   .site-header {
-    max-width: 960px;
+    max-width: 1040px;
     margin: 0 auto;
-    padding: 16px;
+    padding: 10px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -93,20 +113,52 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     flex-wrap: wrap;
   }
   .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     font-weight: 700;
     font-size: 1.5rem;
     text-decoration: none;
     color: var(--text);
     letter-spacing: -0.02em;
   }
-  .logo span { color: var(--brand); }
-  nav { display: flex; gap: 16px; flex-wrap: wrap; }
-  nav a { text-decoration: none; color: var(--muted); font-weight: 600; }
-  nav a:hover { color: var(--brand); }
-  .site-footer {
-    text-align: center;
+  .logo b span { color: var(--brand); }
+  .logo .logo-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--brand), var(--sky));
+    color: #fff;
+    font-size: 1.3rem;
+    transform: rotate(-8deg);
+    transition: transform 0.3s;
+  }
+  .logo:hover .logo-icon { transform: rotate(172deg); }
+  nav { display: flex; gap: 4px; flex-wrap: wrap; }
+  nav a {
+    text-decoration: none;
     color: var(--muted);
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 999px;
+    transition: background 0.2s, color 0.2s;
+  }
+  nav a:hover { color: var(--brand-dark); background: var(--brand-soft); }
+  .site-footer {
+    margin-top: 32px;
+    text-align: center;
+    color: #cbd5e1;
     font-size: 0.9rem;
     padding: 40px 16px;
+    background: var(--text);
+  }
+  .site-footer p { margin: 4px 0; }
+  .footer-logo { font-weight: 700; font-size: 1.4rem; color: #fff; }
+  .footer-logo span { color: #5eead4; }
+  .footer-links a { color: #5eead4; text-decoration: none; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
   }
 </style>

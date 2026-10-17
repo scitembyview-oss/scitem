@@ -54,32 +54,42 @@ const classLinks = [
   description="ชีทวิทยาศาสตร์ไทย-อังกฤษ สำหรับนักเรียน EP และ International ป.5 ถึง ม.3 พร้อมคำแปลและคู่มือให้ผู้ปกครองช่วยทบทวนลูกได้"
 >
   <section class="hero">
-    <p class="eyebrow">Bilingual Science · ป.5 – ม.3</p>
-    <h1>ชีทวิทย์สองภาษา<br />สำหรับเด็ก EP/Inter</h1>
+    <div class="hero-art" aria-hidden="true">
+      <span class="float f1">🪐</span>
+      <span class="float f2">🔬</span>
+      <span class="float f3">🧲</span>
+      <span class="float f4">💡</span>
+      <span class="float f5">🌋</span>
+    </div>
+    <p class="eyebrow">✨ Bilingual Science · ป.5 – ม.3</p>
+    <h1>ชีทวิทย์<span class="hl">สองภาษา</span><br />สำหรับเด็ก EP/Inter</h1>
     <p class="lead">
       ลูกเรียนวิทย์เป็นภาษาอังกฤษ แต่พ่อแม่ช่วยทบทวนไม่ถนัด? ชีทของ scitem มีศัพท์ภาษาอังกฤษพร้อมคำแปลไทย
       แบบฝึกหัดตามหลักสูตรจริง และมุมผู้ปกครองที่บอกว่าควรถามลูกอะไร
     </p>
-    <a class="btn" href="#contact">ขอชีทตัวอย่างฟรี</a>
+    <p class="hero-btns">
+      <a class="btn" href="#contact">ขอชีทตัวอย่างฟรี</a>
+      <a class="btn btn-ghost" href="#sheets">ดูชีททั้งหมด →</a>
+    </p>
   </section>
 
   <section class="features">
-    <div class="card">
-      <h3>🔤 ศัพท์สองภาษา</h3>
+    <div class="card c1">
+      <h3><span class="ico">🔤</span> ศัพท์สองภาษา</h3>
       <p>คำศัพท์วิทยาศาสตร์ที่ใช้ในห้องเรียน EP พร้อมคำแปลและคำอธิบายภาษาไทย</p>
     </div>
-    <div class="card">
-      <h3>🧩 Code Breaker</h3>
+    <div class="card c2">
+      <h3><span class="ico">🧩</span> Code Breaker</h3>
       <p>ทำแบบฝึกหัดครบ จะได้รหัสลับไว้ปลดล็อกเฉลย เด็กอยากทำจนจบเอง</p>
     </div>
-    <div class="card">
-      <h3>👪 มุมผู้ปกครอง</h3>
+    <div class="card c3">
+      <h3><span class="ico">👪</span> มุมผู้ปกครอง</h3>
       <p>คำถามง่ายๆ ที่พ่อแม่ใช้ทบทวนลูกได้ แม้ไม่เก่งภาษาอังกฤษ</p>
     </div>
   </section>
 
   <section id="sheets">
-    <h2>ชีทที่มีแล้ว</h2>
+    <h2><span class="h-ico">📚</span>ชีทที่มีแล้ว</h2>
     <div class="sheets">
       {sheets.map((s) => (
         <article class="sheet">
@@ -100,7 +110,7 @@ const classLinks = [
   </section>
 
   <section id="class">
-    <h2>ห้องเรียนฟิสิกส์ ม.ต้น</h2>
+    <h2><span class="h-ico">🚀</span>ห้องเรียนฟิสิกส์ ม.ต้น</h2>
     <p class="muted">สำหรับนักเรียนที่เรียนกับครูวิว ทำเช็คพื้นฐานก่อนเรียน แล้วส่งรหัสที่ได้ให้ครูทาง LINE</p>
     <div class="sheets">
       {classLinks.map((c) => (
@@ -118,7 +128,7 @@ const classLinks = [
   </section>
 
   <section id="parents" class="panel">
-    <h2>สำหรับผู้ปกครอง</h2>
+    <h2><span class="h-ico">👨‍👩‍👧</span>สำหรับผู้ปกครอง</h2>
     <p>
       scitem ทำโดยติวเตอร์ที่สอนวิทยาศาสตร์ให้นักเรียน EP, International และห้องเรียนพิเศษ (Gifted)
       ทุกชีทผ่านการใช้สอนจริงกับนักเรียนก่อน
@@ -131,7 +141,7 @@ const classLinks = [
   </section>
 
   <section id="contact" class="panel contact">
-    <h2>ติดต่อ / ขอชีทตัวอย่าง</h2>
+    <h2>💬 ติดต่อ / ขอชีทตัวอย่าง</h2>
     <p>อยากลองชีทฟรี หรือสนใจเรียนวิทย์กับ scitem ส่งข้อความมาได้เลย</p>
     <p><a class="line-btn" href="https://lin.ee/NO52k1Y" target="_blank" rel="noopener">แอดไลน์ scitem</a></p>
     <p class="email"><a href="mailto:view@scitem.net">view@scitem.net</a></p>
@@ -139,54 +149,163 @@ const classLinks = [
 </Base>
 
 <style>
-  .hero { padding: 48px 0 32px; }
-  .eyebrow { color: var(--brand); font-weight: 600; margin: 0 0 8px; }
-  h1 { font-size: clamp(2rem, 6vw, 3.2rem); line-height: 1.25; margin: 0 0 16px; }
-  .lead { font-size: 1.1rem; color: var(--muted); max-width: 640px; }
+  .hero {
+    position: relative;
+    padding: 64px 0 40px;
+  }
+  .hero > :not(.hero-art) { position: relative; }
+  .hero-art { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .hero-art::before {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 10px;
+    width: min(420px, 70vw);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fde68a, #fbcfe8 45%, #a5f3fc 75%, transparent 76%);
+    opacity: 0.55;
+    filter: blur(8px);
+  }
+  .float {
+    position: absolute;
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    animation: bob 5s ease-in-out infinite;
+  }
+  .f1 { right: 12%; top: 18%; }
+  .f2 { right: 30%; top: 8%; font-size: clamp(1.4rem, 3.5vw, 2.2rem); animation-delay: -1s; }
+  .f3 { right: 4%; top: 52%; animation-delay: -2s; }
+  .f4 { right: 24%; top: 60%; font-size: clamp(1.4rem, 3.5vw, 2.2rem); animation-delay: -3s; }
+  .f5 { right: 40%; top: 78%; font-size: clamp(1.2rem, 3vw, 1.8rem); animation-delay: -4s; }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0) rotate(-6deg); }
+    50% { transform: translateY(-14px) rotate(6deg); }
+  }
+  .eyebrow {
+    display: inline-block;
+    color: var(--violet);
+    background: #ede9fe;
+    font-weight: 600;
+    padding: 2px 14px;
+    border-radius: 999px;
+    margin: 0 0 12px;
+  }
+  h1 { font-size: clamp(2.1rem, 6vw, 3.6rem); line-height: 1.3; margin: 0 0 16px; max-width: 640px; }
+  .hl {
+    background: linear-gradient(90deg, var(--brand), var(--sky) 50%, var(--violet));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .lead { font-size: 1.1rem; color: var(--muted); max-width: 600px; }
+  .hero-btns { display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0 0; }
   .btn {
     display: inline-block;
-    margin-top: 12px;
     background: var(--brand);
     color: #fff;
-    padding: 12px 24px;
+    padding: 12px 26px;
     border-radius: 999px;
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 700;
+    box-shadow: 0 4px 0 var(--brand-dark);
+    transition: transform 0.15s, box-shadow 0.15s;
   }
-  .btn:hover { background: #115e59; }
-  section { margin-bottom: 48px; }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--brand-dark); }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--brand-dark); }
+  .btn-ghost {
+    background: var(--surface);
+    color: var(--brand-dark);
+    border: 2px solid var(--brand);
+    box-shadow: 0 4px 0 var(--brand-soft);
+  }
+  .btn-ghost:hover { box-shadow: 0 6px 0 var(--brand-soft); }
+  section { margin-bottom: 56px; scroll-margin-top: 72px; }
+  h2 { font-size: 1.7rem; display: flex; align-items: center; gap: 10px; }
+  .h-ico {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: #fef3c7;
+    font-size: 1.4rem;
+  }
   .features, .sheets {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 16px;
+    gap: 18px;
   }
   .card, .sheet, .panel {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 20px;
+    border-radius: 20px;
+    padding: 22px;
+    box-shadow: var(--shadow);
+  }
+  .card { --c: var(--brand); --cs: var(--brand-soft); border-top: 6px solid var(--c); }
+  .c2 { --c: var(--accent); --cs: #fef3c7; }
+  .c3 { --c: var(--pink); --cs: #fce7f3; }
+  .card h3 { display: flex; align-items: center; gap: 10px; }
+  .ico {
+    display: inline-grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: var(--cs);
+    font-size: 1.3rem;
   }
   .card h3, .sheet h3 { margin: 0 0 8px; }
   .card p { margin: 0; color: var(--muted); }
+  .sheet { --c: var(--brand); --cs: var(--brand-soft); position: relative; overflow: hidden; }
+  .sheet::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 6px;
+    background: var(--c);
+  }
+  .sheets > :nth-child(4n+2) { --c: var(--violet); --cs: #ede9fe; }
+  .sheets > :nth-child(4n+3) { --c: var(--accent); --cs: #fef3c7; }
+  .sheets > :nth-child(4n+4) { --c: var(--pink); --cs: #fce7f3; }
   .level {
     display: inline-block;
-    background: var(--brand-soft);
-    color: var(--brand);
+    background: var(--cs);
+    color: var(--text);
     font-weight: 600;
     font-size: 0.85rem;
     padding: 2px 10px;
     border-radius: 999px;
     margin: 0 0 8px;
   }
-  .link-card { display: block; color: inherit; text-decoration: none; }
-  .link-card:hover { border-color: var(--brand); }
-  .link-card h3 { color: var(--brand); }
+  .link-card {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  }
+  .link-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--c);
+    box-shadow: 0 12px 28px rgba(30, 42, 58, 0.12);
+  }
+  .link-card h3 { color: var(--text); }
+  .link-card h3::after { content: ' →'; color: var(--c); transition: margin 0.2s; }
+  .link-card:hover h3::after { margin-left: 4px; }
   .small { font-size: 0.9rem; margin-top: 16px; }
   .th { margin: 0; font-weight: 600; }
   .note { margin: 4px 0 0; color: var(--muted); }
   .links { margin: 12px 0 0; display: flex; gap: 16px; flex-wrap: wrap; font-weight: 600; }
   .muted { color: var(--muted); }
-  .contact { text-align: center; }
+  #parents { background: linear-gradient(135deg, #f0fdfa, #eff6ff); }
+  #parents ul { list-style: none; padding: 0; }
+  #parents li::before { content: '✅ '; }
+  .contact {
+    text-align: center;
+    background: linear-gradient(135deg, #fef3c7, #fce7f3 50%, #e0f2fe);
+    padding: 36px 22px;
+  }
+  .contact h2 { justify-content: center; }
   .email { font-size: 1.3rem; font-weight: 700; }
   .line-btn {
     display: inline-block;
@@ -197,6 +316,15 @@ const classLinks = [
     text-decoration: none;
     font-weight: 700;
     font-size: 1.1rem;
+    box-shadow: 0 4px 0 #04a045;
+    transition: transform 0.15s, box-shadow 0.15s;
   }
-  .line-btn:hover { background: #05a847; }
+  .line-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #04a045; }
+  @media (max-width: 640px) {
+    .hero { padding-top: 40px; }
+    .hero-art { opacity: 0.5; }
+    .float:not(.f1):not(.f2) { display: none; }
+    .f1 { top: 2%; right: 4%; }
+    .f2 { top: 0; right: 24%; }
+  }
 </style>
