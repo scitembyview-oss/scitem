@@ -7,7 +7,7 @@ const sheets = [
     title: 'Solar System Vocabulary',
     th: 'ระบบสุริยะ',
     note: 'คำศัพท์ 15 คำ แบบฝึกหัด 3 ชุด และมุมผู้ปกครอง',
-    drive: '1e0p6vZbEy6t6lWk69ZFyWUGPGmID8Yny-ZGucFHu36k',
+    pdf: '/sheets/solar-system-p6.pdf',
   },
   {
     level: 'Year 7',
@@ -16,9 +16,6 @@ const sheets = [
     note: 'English only พร้อม Self-Check และ Code Breaker',
   },
 ];
-
-// `drive` is the Google Doc id (the part after /document/d/ in its link).
-const docUrl = (id, path) => `https://docs.google.com/document/d/${id}/${path}`;
 ---
 <Base
   title="scitem · ชีทวิทย์สองภาษา สำหรับเด็ก EP/Inter"
@@ -58,10 +55,10 @@ const docUrl = (id, path) => `https://docs.google.com/document/d/${id}/${path}`;
           <h3>{s.title}</h3>
           <p class="th">{s.th}</p>
           <p class="note">{s.note}</p>
-          {s.drive && (
+          {s.pdf && (
             <p class="links">
-              <a href={docUrl(s.drive, 'preview')} target="_blank" rel="noopener">เปิดดูชีท</a>
-              <a href={docUrl(s.drive, 'export?format=pdf')}>โหลด PDF</a>
+              <a href={s.pdf} target="_blank" rel="noopener">เปิดดูชีท</a>
+              <a href={s.pdf} download>โหลด PDF</a>
             </p>
           )}
         </article>
