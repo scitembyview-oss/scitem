@@ -32,7 +32,8 @@ const nav = [
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#ffffff" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
@@ -48,7 +49,7 @@ const nav = [
   <body>
     <header class="site-header">
       <div class="wrap bar">
-        <a href="/" class="logo" aria-label="scitem หน้าแรก">sci<span>tem</span></a>
+        <a href="/" class="logo" aria-label="scitem หน้าแรก"><img src="/img/logo-bar.png" alt="scitem" width="190" height="48" /></a>
         <nav aria-label="เมนูหลัก">
           {nav.map(([label, href]) => (
             <a href={href} aria-current={href === path ? 'page' : undefined}>{label}</a>
@@ -63,7 +64,7 @@ const nav = [
     <footer class="site-footer">
       <div class="wrap foot">
         <div>
-          <a href="/" class="logo">sci<span>tem</span></a>
+          <a href="/" class="logo"><img src="/img/logo-bar-white.png" alt="scitem" width="190" height="48" loading="lazy" /></a>
           <p>วิทย์สองภาษา สำหรับเด็ก EP/Inter ป.5–ม.3 · สอนโดยครูวิว</p>
         </div>
         <p class="links">
@@ -135,8 +136,8 @@ const nav = [
 
   .site-header { position: sticky; top: 0; z-index: 10; background: rgb(255 255 255 / 0.92); backdrop-filter: saturate(1.4) blur(10px); border-bottom: 1px solid var(--rule); }
   .bar { display: flex; align-items: center; gap: 12px 28px; min-height: 64px; }
-  .logo { font-weight: 700; font-size: 1.5rem; letter-spacing: -0.03em; color: var(--ink); text-decoration: none; }
-  .logo span { color: var(--blue); }
+  .logo { display: block; line-height: 0; }
+  .logo img { height: 40px; width: auto; }
   .site-header nav { display: flex; gap: 4px; margin-left: auto; }
   .site-header nav a { padding: 8px 12px; border-radius: 10px; color: var(--ink); font-weight: 600; text-decoration: none; }
   .site-header nav a:hover { background: var(--tint); }
@@ -148,8 +149,6 @@ const nav = [
   }
 
   .site-footer { margin-top: 96px; padding: 36px 0 44px; background: var(--ink); color: #c9d2e6; font-size: 0.92rem; }
-  .site-footer .logo { color: #fff; }
-  .site-footer .logo span { color: #8fb0ff; }
   .foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px 40px; flex-wrap: wrap; }
   .foot p { margin: 4px 0 0; }
   .foot .links { display: flex; gap: 8px 22px; flex-wrap: wrap; }
