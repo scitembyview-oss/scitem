@@ -215,7 +215,7 @@ function renderStart(msg) {
     <div class="field"><label for="name">Your name</label><input type="text" id="name" autocomplete="off" placeholder="e.g. Ploy"></div>
     ${R2 ? `<div class="field"><label>Round 2</label><div class="small">8 topics · about 35–50 questions · 50–70 min</div></div>` : ""}
     <div class="field" ${R2 ? "hidden" : ""}><label>Topics in this test</label>
-      <div class="chips" id="chips">${STRANDS.map(([k, n]) => `<button class="chip" aria-pressed="true" data-k="${k}">${n}</button>`).join("")}</div>
+      <div class="chips" id="chips">${STRANDS.map(([k, n]) => `<button class="chip" aria-pressed="false" data-k="${k}">${n}</button>`).join("")}</div>
       <div class="row" style="margin-top:8px"><button class="linkish" data-set="all">All 10</button><button class="linkish" data-set="a">Part 1 (first 5)</button><button class="linkish" data-set="b">Part 2 (last 5)</button></div>
     </div>
     <div><div class="label" style="margin-bottom:6px">How it works</div>
@@ -231,7 +231,7 @@ function renderStart(msg) {
   ${msg ? `<p class="small">${esc(msg)}</p>` : ""}`;
   const chips = [...app.querySelectorAll(".chip")];
   const info = () => { const n = chips.filter(c => c.getAttribute("aria-pressed") === "true").length;
-    document.getElementById("selinfo").textContent = n === 0 ? "Choose at least one topic." : `${n} topic${n > 1 ? "s" : ""} · about ${Math.round(n * 6.5)}–${Math.round(n * 8)} min`;
+    document.getElementById("selinfo").textContent = n === 0 ? "Choose at least one topic. · เลือกอย่างน้อย 1 หัวข้อ" : `${n} topic${n > 1 ? "s" : ""} · about ${Math.round(n * 6.5)}–${Math.round(n * 8)} min`;
     document.getElementById("go").disabled = n === 0; };
   chips.forEach(c => c.onclick = () => { c.setAttribute("aria-pressed", c.getAttribute("aria-pressed") === "true" ? "false" : "true"); info(); });
   app.querySelectorAll("[data-set]").forEach(b => b.onclick = () => {
