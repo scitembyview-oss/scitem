@@ -38,9 +38,10 @@
   button.size i { display: block; background: currentColor; border-radius: 50%; }
 
   /* stage: slides stacked, one screen each */
-  #stage { flex: 1; min-height: 0; overflow-y: auto; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; }
+  /* touch-action none: fingers/palm never scroll natively (swipe is handled in JS, see palm rejection) */
+  #stage { flex: 1; min-height: 0; overflow-y: auto; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; touch-action: none; }
   .page { height: 100%; display: flex; align-items: center; justify-content: center; padding: 8px; scroll-snap-align: start; }
-  .slide { position: relative; flex: none; background: var(--slide); border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.35); overflow: hidden; font-size: var(--u); }
+  .slide { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; position: relative; flex: none; background: var(--slide); border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.35); overflow: hidden; font-size: var(--u); }
   .content { position: absolute; inset: 0; display: grid; grid-template-columns: 38% 62%; }
   .text { padding: 4.2em 2.6em 3em 4.2em; display: flex; flex-direction: column; gap: 1.6em; }
   .tag { font-size: 1.6em; color: var(--muted); font-weight: 600; margin-bottom: -1.2em; }
@@ -68,7 +69,7 @@
   /* pen layer sits over the whole slide */
   .ink { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 5; touch-action: none; cursor: crosshair; }
   body.erasing .ink { cursor: cell; }
-  body.pen-seen .ink { touch-action: pan-y; }
+  body.pen-down .ctrl { pointer-events: none; }   /* palm can't hit sliders/buttons while the pen is writing */
   #rotate { display: none; color: #cbd5e1; font-size: 14px; text-align: center; padding: 0 0 8px; }
   @media (orientation: portrait) and (max-width: 700px) { #rotate { display: block; } }
 </style>
@@ -87,6 +88,10 @@
   <div class="grp">
     <button id="undo" title="ย้อนกลับ">↶</button>
     <button id="clear" title="ลบทั้งหมดในสไลด์นี้">🗑 ล้าง</button>
+  </div>
+  <div class="sep"></div>
+  <div class="grp">
+    <button id="palm" title="เปิด: เขียนได้เฉพาะ Apple Pencil นิ้ว/ฝ่ามือไม่เป็นเส้น · ปิด: ปากกาทั่วไปหรือนิ้วก็เขียนได้ (กันฝ่ามือจากขนาดการแตะ)">🖐 กันมือ</button>
   </div>
   <div class="sep"></div>
   <div class="grp">
@@ -414,7 +419,21 @@
   // ================= pen layers (one per slide) =================
   const COLORS = ['#111827', '#dc2626', '#2563eb', '#16a34a', '#f59e0b', '#9333ea'];
   const SIZES = [1, 2, 4];
-  let mode = 'pen', color = COLORS[0], size = 2, penSeen = false;
+  let mode = 'pen', color = COLORS[0], size = 2, penSeen = false, penDown = 0, penUpAt = 0;
+  // Palm rejection, two levels:
+  //  - "pencil only" (penSeen): turned on by itself the first time a real stylus (Apple Pencil, pointerType
+  //    'pen') touches; then touches never draw. Remembered across reloads; the 🖐 button flips it.
+  //  - otherwise (finger, or a stylus the browser reports as a plain touch): the newest small touch draws,
+  //    big contacts (palm) are ignored, and a stroke a resting palm started is dropped when the pen lands.
+  try { penSeen = localStorage.getItem('scitem-pen') === '1'; } catch (e) {}
+  function setPencilOnly(on) {
+    penSeen = on;
+    $('palm').classList.toggle('on', on);
+    try { localStorage.setItem('scitem-pen', on ? '1' : '0'); } catch (e) {}
+  }
+  function markPen() { if (!penSeen) setPencilOnly(true); }
+  const PALM = 36;   // CSS px; contact wider than this is a palm (when the browser reports contact size)
+  const contact = e => { const w = Math.max(e.width || 0, e.height || 0); return w > 1 ? w : 0; };   // 0 = not reported
 
   function makeInk(canvas) {
     const ictx = canvas.getContext('2d');
@@ -444,27 +463,47 @@
       const p = e.pointerType === 'pen' ? (e.pressure || 0.5) : 0.5;
       return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height, p];
     }
+    function drop(s) { const i = strokes.indexOf(s); if (i >= 0) strokes.splice(i, 1); redraw(); }
+    function travel(s) {
+      const r = canvas.getBoundingClientRect(), a = s.pts[0];
+      return Math.max(...s.pts.map(q => Math.hypot((q[0] - a[0]) * r.width, (q[1] - a[1]) * r.height)));
+    }
     canvas.addEventListener('pointerdown', e => {
-      if (e.pointerType === 'pen' && !penSeen) { penSeen = true; document.body.classList.add('pen-seen'); }
-      if (penSeen && e.pointerType === 'touch') return;   // palm rejection; fingers scroll instead
+      if (e.pointerType === 'pen') {
+        markPen();
+        // the pen always wins; a stroke the palm started a moment earlier is thrown away
+        if (cur) { if (cur.touch) drop(cur); cur = null; }
+      } else if (e.pointerType === 'touch') {
+        if (penSeen) return;                       // pencil-only: fingers and palm never draw
+        const w = contact(e);
+        if (w > PALM) return;                      // big contact = palm
+        if (cur && cur.touch) {
+          // a second touch while one is drawing: the palm usually rests first and the pen comes after,
+          // so the newest touch takes over — unless it's clearly bigger than the one already drawing
+          if (w && cur.w && w > cur.w * 1.5) return;
+          if ((w && cur.w ? cur.w >= w : travel(cur) < 40)) drop(cur);
+          cur = null;
+        }
+      }
+      if (cur) return;
       e.preventDefault();
-      canvas.setPointerCapture(e.pointerId);
-      cur = { id: e.pointerId, color, size, erase: mode === 'erase', pts: [pt(e)] };
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+      cur = { id: e.pointerId, touch: e.pointerType === 'touch', w: contact(e), color, size, erase: mode === 'erase', pts: [pt(e)] };
       strokes.push(cur);
       draw(cur);
     });
     canvas.addEventListener('pointermove', e => {
       if (!cur || e.pointerId !== cur.id) return;
       e.preventDefault();
-      const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+      let evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+      if (!evs.length) evs = [e];
       const start = cur.pts.length;
       for (const ce of evs) cur.pts.push(pt(ce));
       draw(cur, start);
     });
-    const end = e => { if (cur && e.pointerId === cur.id) cur = null; };
+    const end = e => { if (cur && e.pointerId === cur.id) { delete cur.touch; delete cur.w; cur = null; } };
     canvas.addEventListener('pointerup', end);
     canvas.addEventListener('pointercancel', end);
-    canvas.addEventListener('touchstart', e => { if (!penSeen) e.preventDefault(); }, { passive: false });
     return {
       canvas, redraw,
       undo() { strokes.pop(); redraw(); },
@@ -498,6 +537,42 @@
     $('prev').disabled = c === 0; $('next').disabled = c === pages.length - 1;
   }
   stage.addEventListener('scroll', updatePager, { passive: true });
+  // ================= palm-safe touch handling on the stage =================
+  // Native touch scrolling is off (#stage touch-action: none), otherwise a resting palm drags the
+  // slide away mid-writing. Paging with a finger is a deliberate quick one-finger swipe instead,
+  // ignored while the pen is down or was just lifted, and when more than one touch is on the glass.
+  const touches = new Set();
+  let swipe = null;
+  stage.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'pen') { penDown++; document.body.classList.add('pen-down'); swipe = null; return; }
+    if (e.pointerType !== 'touch') return;
+    touches.add(e.pointerId);
+    const drawing = !penSeen && e.target.classList.contains('ink');
+    const busy = penDown || performance.now() - penUpAt < 800;
+    swipe = touches.size === 1 && !drawing && !busy && !e.target.closest('.ctrl')
+      ? { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() } : null;
+  }, true);
+  const touchEnd = e => {
+    if (e.pointerType === 'pen') {
+      penDown = Math.max(0, penDown - 1); penUpAt = performance.now();
+      if (!penDown) document.body.classList.remove('pen-down');
+      return;
+    }
+    touches.delete(e.pointerId);
+    if (!swipe || e.pointerId !== swipe.id || e.type === 'pointercancel') { if (swipe && e.pointerId === swipe.id) swipe = null; return; }
+    const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y, dt = performance.now() - swipe.t;
+    swipe = null;
+    if (dt < 700 && Math.abs(dy) > Math.max(60, stage.clientHeight * 0.12) && Math.abs(dy) > 2 * Math.abs(dx)) go(current() + (dy < 0 ? 1 : -1));
+  };
+  window.addEventListener('pointerup', touchEnd, true);   // window: a pen lifted off-stage must still count as up
+  window.addEventListener('pointercancel', touchEnd, true);
+  // older iPadOS ignores touch-action in places; also stops the long-press magnifier and double-tap zoom
+  // (a stylus touch is left alone so nothing can get in the way of its pointer events)
+  stage.addEventListener('touchstart', e => {
+    if ([...e.changedTouches].some(t => t.touchType === 'stylus')) { markPen(); return; }
+    if (!e.target.closest('.ctrl')) e.preventDefault();
+  }, { passive: false });
+
   $('prev').onclick = () => go(current() - 1);
   $('next').onclick = () => go(current() + 1);
 
@@ -527,6 +602,8 @@
     b.onclick = () => { size = s; [...swrap.children].forEach(x => x.classList.toggle('on', x === b)); if (mode === 'erase') setMode('pen'); };
     swrap.appendChild(b);
   });
+  $('palm').onclick = () => setPencilOnly(!penSeen);
+  $('palm').classList.toggle('on', penSeen);
   $('undo').onclick = () => inks[current()].undo();
   $('clear').onclick = () => inks[current()].clear();
   $('full').onclick = () => {
