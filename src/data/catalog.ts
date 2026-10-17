@@ -52,7 +52,7 @@ export const items: Item[] = [
   { title: 'เช็คพื้นฐาน: แรงลอยตัว', th: 'แรงลอยตัว', kind: 'check', grade: 'ม.ต้น',
     meta: '10 ข้อ', href: '/check/buoyancy/', course: 'physics-lower', note: 'ทำก่อนเรียน' },
   { title: 'Maths Level Finder', th: 'สอบวัดระดับคณิต ม.1–2 (EP)', kind: 'check', grade: 'ม.1–2',
-    meta: '10 หัวข้อ · 5 ระดับ', href: '/math-level/', note: 'ข้อสอบปรับระดับตามคำตอบ รอบ 2 เติม #r2' },
+    meta: '10 หัวข้อ · 5 ระดับ', href: '/math-level/', note: 'ข้อสอบปรับระดับตามคำตอบ ผลส่งเข้าหน้าครู' },
   { title: 'Solar System Vocabulary', th: 'ระบบสุริยะ', kind: 'sheet', grade: 'ป.6',
     meta: 'ศัพท์ 15 คำ · แบบฝึก 3 ชุด',
     note: 'ศัพท์ 15 คำพร้อมคำแปลไทย แบบฝึกหัด 3 ชุด และมุมผู้ปกครอง',

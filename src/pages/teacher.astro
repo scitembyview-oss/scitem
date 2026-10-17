@@ -29,7 +29,7 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
       <p class="msg" id="listMsg" hidden></p>
       <div id="rows"></div>
       <details class="paste">
-        <summary>วางรหัส SC1- (นักเรียนที่ส่งเข้าชีทไม่ได้)</summary>
+        <summary>วางรหัส SC1- / LF1- (นักเรียนที่ส่งเข้าชีทไม่ได้)</summary>
         <textarea id="codes" rows="4" placeholder="SC1-..."></textarea>
         <div class="row"><button type="button" id="addCodes">เพิ่มในรายการ</button></div>
         <p class="msg" id="pasteMsg" hidden></p>
@@ -55,6 +55,8 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
 <script>
   import { decodeCheck } from '../lib/check-code.js';
   import blob from '../data/check-keys.json';
+  import mathBlob from '../data/math-keys.json';
+  import { MATH_QUIZ, decodeLF, mathScore, mathReport, type MathKeys } from '../lib/math-level';
   import { checks, type Question } from '../data/checks';
   import { SHEET_URL } from '../data/catalog';
 
@@ -64,15 +66,16 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
   const STORE = 'scitem-teacher-pw';
   let keys: Keys | null = null;
+  let math: MathKeys | null = null;
 
   const b64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-  async function unlock(pw: string): Promise<Keys> {
+  async function unlock(pw: string, b: typeof blob = blob): Promise<any> {
     const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
     const key = await crypto.subtle.deriveKey(
-      { name: 'PBKDF2', salt: b64(blob.salt), iterations: blob.iter, hash: 'SHA-256' },
+      { name: 'PBKDF2', salt: b64(b.salt), iterations: b.iter, hash: 'SHA-256' },
       base, { name: 'AES-GCM', length: 256 }, false, ['decrypt'],
     );
-    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(blob.iv) }, key, b64(blob.ct));
+    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(b.iv) }, key, b64(b.ct));
     return JSON.parse(new TextDecoder().decode(plain));
   }
 
@@ -138,6 +141,7 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
       return;
     }
     pw = pass;
+    try { math = (await unlock(pass, mathBlob))[MATH_QUIZ]; } catch { math = null; } // a wrong key hides only the maths results
     try {
       if (($('keep') as HTMLInputElement).checked) localStorage.setItem(STORE, pass);
     } catch {}
@@ -182,11 +186,13 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
 
   // List: one group per quiz, newest first. Tap a row to open it.
   function draw() {
-    all = [...sheetRows, ...codeRows].filter((r) => keys![r.quiz]).sort((a, b) => b.at - a.at);
-    const order = [...new Set([...Object.keys(checks), ...all.map((r) => r.quiz)])];
+    all = [...sheetRows, ...codeRows].filter((r) => keys![r.quiz] || (r.quiz === MATH_QUIZ && !!math && decodeLF(r.answers.join('')))).sort((a, b) => b.at - a.at);
+    const order = [...new Set([...Object.keys(checks), MATH_QUIZ, ...all.map((r) => r.quiz)])];
     const html = order.map((quiz) => {
       const rows = all.map((r, i) => [r, i] as const).filter(([r]) => r.quiz === quiz);
       if (!rows.length) return '';
+      if (quiz === MATH_QUIZ) return `<h3>${esc(math!.title)} <span class="cnt">${rows.length} คน</span></h3><ul class="who">${rows.map(([r, i]) =>
+        `<li><button type="button" data-i="${i}"><b>${esc(r.name)}</b><span>${when(r.at)}${r.code ? ' · จากรหัส' : ''}</span><em>${mathScore(decodeLF(r.answers.join(''))!)}</em></button></li>`).join('')}</ul>`;
       const n = keys![quiz].questions.length;
       return `<h3>${esc(checks[quiz]?.title ?? keys![quiz].title)} <span class="cnt">${rows.length} คน</span></h3><ul class="who">${rows.map(([r, i]) =>
         `<li><button type="button" data-i="${i}"><b>${esc(r.name)}</b><span>${when(r.at)}${r.code ? ' · จากรหัส' : ''}</span><em>${score(r)}/${n}</em></button></li>`).join('')}</ul>`;
@@ -204,6 +210,7 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
 
   function open(i: number) {
     const r = all[i];
+    if (r.quiz === MATH_QUIZ) return show(`<button type="button" class="ghost" id="back">← กลับไปรายการ</button>${mathReport(decodeLF(r.answers.join(''))!, math!)}`);
     const { title, questions } = keys![r.quiz];
     const meta = checks[r.quiz]?.questions;
     const total = r.secs.reduce((a, b) => a + (b || 0), 0);
@@ -225,10 +232,14 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
         <p class="qh"><span class="mk">${ok ? '✓' : '✗'}</span> ข้อ ${k + 1} · ${esc(q.label)} <small>${mmss(r.secs[k] ?? 0)}</small></p>
         ${body}<div class="sol"><p class="sh">วิธีทำ</p>${q.solution}</div></div>`;
     }).join('');
-    $('detail').innerHTML = `<button type="button" class="ghost" id="back">← กลับไปรายการ</button>
+    show(`<button type="button" class="ghost" id="back">← กลับไปรายการ</button>
       <h2>${esc(r.name)} <span class="cnt">${score(r)}/${questions.length} · ${mmss(total)}</span></h2>
-      <p class="hint">${esc(title)} · ส่งเมื่อ ${when(r.at)} · ข้อที่ใช้เวลาเกิน 1 นาทีครึ่งเวลาเป็นสีส้ม</p>${blocks}`;
+      <p class="hint">${esc(title)} · ส่งเมื่อ ${when(r.at)} · ข้อที่ใช้เวลาเกิน 1 นาทีครึ่งเวลาเป็นสีส้ม</p>${blocks}`);
     $('detail').querySelectorAll('.qa small').forEach((el, k) => (r.secs[k] ?? 0) > 90 && el.classList.add('slow'));
+  }
+
+  function show(html: string) {
+    $('detail').innerHTML = html;
     $('back').addEventListener('click', close);
     $('list').hidden = true;
     $('tools').hidden = true;
@@ -249,6 +260,12 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
   $('reload').addEventListener('click', load);
   $('addCodes').addEventListener('click', () => {
     const text = ($('codes') as HTMLTextAreaElement).value;
+    for (const c of new Set(text.replace(/\s+/g, '').match(/LF1-[A-Za-z0-9+/=]+/g) ?? [])) {
+      const p = decodeLF(c);
+      const at = p && Date.parse(p.ended || p.started);
+      if (p && !codeRows.some((r) => r.quiz === MATH_QUIZ && r.at === at))
+        codeRows.push({ quiz: MATH_QUIZ, name: p.name || 'No name', answers: [c], secs: [], at, code: true });
+    }
     const codes = [...new Set(text.match(/SC1-[A-Za-z0-9_-]+/g) ?? [])];
     const bad: string[] = [];
     for (const c of codes) {
@@ -259,8 +276,9 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
         codeRows.push({ quiz, name, answers, secs, at: at * 60000, code: true });
     }
     const msg = $('pasteMsg');
-    msg.hidden = !(bad.length || !codes.length);
-    msg.textContent = !codes.length ? 'ไม่พบรหัสในข้อความ (รหัสขึ้นต้นด้วย SC1-)' : `มี ${bad.length} รหัสที่อ่านไม่ได้ อาจคัดลอกมาไม่ครบ: ${bad.join(', ')}`;
+    const lf = /LF1-/.test(text);
+    msg.hidden = !(bad.length || (!codes.length && !lf));
+    msg.textContent = !codes.length && !lf ? 'ไม่พบรหัสในข้อความ (รหัสขึ้นต้นด้วย SC1- หรือ LF1-)' : `มี ${bad.length} รหัสที่อ่านไม่ได้ อาจคัดลอกมาไม่ครบ: ${bad.join(', ')}`;
     ($('codes') as HTMLTextAreaElement).value = '';
     draw();
   });
@@ -271,6 +289,7 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
   $('logout').addEventListener('click', () => {
     try { localStorage.removeItem(STORE); } catch {}
     keys = null;
+    math = null;
     pw = '';
     sheetRows = [];
     codeRows = [];
@@ -354,5 +373,9 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
   #detail :global(.sol p) { margin: 2px 0; }
   #detail :global(.sh) { font-weight: 700; }
   #detail :global(.ans) { font-weight: 700; color: var(--brand); }
+  #detail :global(.lv) { list-style: none; margin: 10px 0 16px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+  #detail :global(.lv li) { border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; }
+  #detail :global(.lv b) { color: var(--brand); }
+  #detail :global(.lv small) { display: block; color: var(--muted); }
   #detail :global(.flag) { color: #a6402a; font-size: 0.9rem; }
 </style>
