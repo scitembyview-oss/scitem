@@ -6,7 +6,7 @@ import Viewer from '../components/Viewer.astro';
 import { courses, items, kinds, LINE_URL, type CourseId } from '../data/catalog';
 
 // any of these names works, so a photo uploaded straight from a phone shows up without renaming the type
-const photo = ['teacher.jpg', 'teacher.jpeg', 'teacher.png', 'teacher.webp', 'teacher.JPG', 'teacher.PNG'].find((f) => existsSync(`public/img/${f}`));
+const photo = ['วิวถือไมค์.jpeg', 'teacher.jpg', 'teacher.jpeg', 'teacher.png', 'teacher.webp', 'teacher.JPG', 'teacher.PNG'].find((f) => existsSync(`public/img/${f}`));
 const sheets = items.filter((it) => it.kind === 'sheet');
 const courseList = (Object.entries(courses) as [CourseId, (typeof courses)[CourseId]][]).map(([id, c]) => ({
   id, ...c, items: items.filter((it) => it.course === id),
@@ -102,7 +102,7 @@ const inSheet = [
   </section>
 
   <section class="teacher" id="teacher">
-    {photo && <img class="photo" src={`/img/${photo}`} alt="ครูวิว" width="600" height="640" loading="lazy" />}
+    {photo && <img class="photo" src={`/img/${photo}`} alt="ครูวิว" width="549" height="611" loading="lazy" />}
     <div>
       <h2>สวัสดีค่ะ ครูวิวเอง</h2>
       <p>

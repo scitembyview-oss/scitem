@@ -11,7 +11,7 @@ push ขึ้น `main` แล้ว GitHub Actions (`.github/workflows/deploy.
 | **รายการทุกอย่างบนเว็บ** (สไลด์ เช็ค ชีท) + คอร์ส + ลิงก์ LINE | `src/data/catalog.ts` |
 | หน้าแรก (ขายผู้ปกครอง ดึงคนทักไลน์) / บทเรียน (แยกคอร์ส) / นักเรียน / ครู (รหัสผ่าน + ตรวจรหัส) | `src/pages/index.astro`, `lessons.astro`, `students.astro`, `teacher.astro` |
 | ตัวอย่างชีทแบบกองกระดาษ + หน้าต่างดูทีละหน้า | `src/components/Pages.astro`, `Viewer.astro` |
-| รูปตัวอย่าง: หน้าชีท `public/img/sheets/`, ภาพสไลด์ `public/img/slides/`, รูปครู `public/img/teacher.jpg` | `pdftoppm -f 1 -l 3 -jpeg -scale-to 1000 <pdf> public/img/sheets/<ชื่อ>` (ห้ามรวมหน้าเฉลย) |
+| รูปตัวอย่าง: หน้าชีท `public/img/sheets/`, ภาพสไลด์ `public/img/slides/`, รูปครู `public/img/วิวถือไมค์.jpeg` (ชื่ออื่นที่รับ: teacher.jpg/png) — รูปจากมือถือต้องลบ GPS และย่อก่อน commit | `pdftoppm -f 1 -l 3 -jpeg -scale-to 1000 <pdf> public/img/sheets/<ชื่อ>` (ห้ามรวมหน้าเฉลย) |
 | หน้าตา (สมุดวิทย์: กระดาษกราฟ, ปากกาเน้น, iPad สไลด์จริง) | `DESIGN.md` |
 | เมนู, footer, สี, ฟอนต์ | `src/layouts/Base.astro` |
 | ชีท PDF | `public/sheets/*.pdf` |
