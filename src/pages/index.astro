@@ -1,4 +1,5 @@
 ---
+import MathTest from '../components/MathTest.astro';
 import { existsSync } from 'node:fs';
 import Base from '../layouts/Base.astro';
 import { courses, items, kinds, LINE_URL, type CourseId } from '../data/catalog';
@@ -72,6 +73,7 @@ const courseList = (Object.entries(courses) as [CourseId, (typeof courses)[Cours
       </span>
       <span class="soon-go">ดูรายละเอียด →</span>
     </a>
+    <MathTest />
   </section>
 
   <section class="teacher" id="teacher">

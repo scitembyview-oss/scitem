@@ -2,6 +2,7 @@
 // Layout for the MathTEM pages written in Markdown (src/pages/mathtem/**/*.md).
 // Frontmatter: title (Google title), description, h1, lead, faq: [{ q, a }], related: [{ title, href }]
 import Base from './Base.astro';
+import MathTest from '../components/MathTest.astro';
 import { LINE_URL } from '../data/catalog';
 
 interface Faq { q: string; a: string }
@@ -27,6 +28,8 @@ const faqJsonLd = faq.length
     <h1>{h1}</h1>
     {lead && <p class="lead">{lead}</p>}
     {isHub && <a class="btn line big" href={LINE_URL} target="_blank" rel="noopener">ทักไลน์ รับข่าวรอบแรกก่อนใคร</a>}
+
+    <MathTest />
 
     <div class="prose"><slot /></div>
 

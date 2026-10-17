@@ -1,0 +1,24 @@
+---
+// Promo card for the Maths Level Finder sample test (public/math-level/). Used on the home page and every MathTEM page.
+---
+<a class="mtest" href="/math-level/">
+  <span class="tag">ลองทำฟรี</span>
+  <span class="body">
+    <b>ตัวอย่างข้อสอบวัดระดับคณิต ม.1–2 <span>Maths Level Finder</span></b>
+    <span>โจทย์ภาษาอังกฤษ ปรับระดับตามคำตอบ สำหรับเด็ก EP, International และเด็กที่อยากฝึกอังกฤษไปพร้อมเลข ทำเสร็จครูวิวเห็นผลทันที</span>
+  </span>
+  <span class="go">เริ่มทำ →</span>
+</a>
+
+<style>
+  .mtest { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 18px; align-items: center; margin: 24px 0 0; padding: 18px 20px;
+    border: 2px solid var(--blue); border-radius: var(--radius); background: var(--paper, #fff); color: var(--ink); text-decoration: none; }
+  .mtest:hover { background: var(--tint); }
+  .tag { background: var(--blue); color: #fff; font-weight: 700; font-size: 0.85rem; border-radius: 999px; padding: 4px 12px; white-space: nowrap; }
+  .body { display: grid; gap: 4px; }
+  .body b { font-size: 1.1rem; }
+  .body b span { font-weight: 400; color: var(--muted); }
+  .body > span { color: var(--muted); }
+  .go { color: var(--blue); font-weight: 700; white-space: nowrap; }
+  @media (max-width: 640px) { .mtest { grid-template-columns: 1fr; } .tag { justify-self: start; } }
+</style>
