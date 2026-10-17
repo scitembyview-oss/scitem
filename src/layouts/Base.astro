@@ -19,6 +19,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 const path = Astro.url.pathname;
 const nav = [
   ['บทเรียน', '/lessons/'],
+  ['MathTEM', '/mathtem/'],
   ['ตัวอย่างชีท', '/#sheets'],
   ['เกี่ยวกับครู', '/#teacher'],
   ['นักเรียน', '/students/'],
@@ -70,6 +71,7 @@ const nav = [
         <p class="links">
           <a href={LINE_URL} target="_blank" rel="noopener">LINE scitem</a>
           <a href="mailto:view@scitem.net">view@scitem.net</a>
+          <a href="/mathtem/">MathTEM ฝึกเลขพื้นฐาน</a>
           <a href="/teacher/">สำหรับครู</a>
         </p>
       </div>

@@ -1,0 +1,88 @@
+---
+// Layout for the MathTEM pages written in Markdown (src/pages/mathtem/**/*.md).
+// Frontmatter: title (Google title), description, h1, lead, faq: [{ q, a }], related: [{ title, href }]
+import Base from './Base.astro';
+import { LINE_URL } from '../data/catalog';
+
+interface Faq { q: string; a: string }
+interface Link { title: string; href: string }
+const { frontmatter } = Astro.props;
+const { title, description, h1, lead, faq = [], related = [] } = frontmatter as {
+  title: string; description: string; h1: string; lead?: string; faq?: Faq[]; related?: Link[];
+};
+const isHub = Astro.url.pathname.replace(/\/$/, '') === '/mathtem';
+const faqJsonLd = faq.length
+  ? JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+    })
+  : '';
+---
+<Base title={title} description={description}>
+  {faqJsonLd && <script type="application/ld+json" set:html={faqJsonLd} />}
+  <article class="mt">
+    {!isHub && <a class="crumb" href="/mathtem/">← MathTEM ฝึกเลขพื้นฐานทุกวัน</a>}
+    <p class="badge">MathTEM <span>แมทเต็ม</span></p>
+    <h1>{h1}</h1>
+    {lead && <p class="lead">{lead}</p>}
+    {isHub && <a class="btn line big" href={LINE_URL} target="_blank" rel="noopener">ทักไลน์ รับข่าวรอบแรกก่อนใคร</a>}
+
+    <div class="prose"><slot /></div>
+
+    <aside class="cta">
+      <h2>MathTEM กำลังจะเปิดรับสมัครรอบแรก</h2>
+      <p>เว็บฝึกเลขพื้นฐานวันละนิด ทำได้ทุกวันที่บ้าน โจทย์ปรับตามระดับของน้องแต่ละคน ดูแลโดยครูวิว รอบแรกรับจำนวนจำกัด ทักไลน์ไว้ก่อน ครูจะแจ้งรายละเอียดให้ก่อนใคร</p>
+      <a class="btn line big" href={LINE_URL} target="_blank" rel="noopener">ทักไลน์ scitem</a>
+    </aside>
+
+    {faq.length > 0 && (
+      <section class="faq">
+        <h2>คำถามที่ผู้ปกครองถามบ่อย</h2>
+        {faq.map((f) => (
+          <details>
+            <summary>{f.q}</summary>
+            <p>{f.a}</p>
+          </details>
+        ))}
+      </section>
+    )}
+
+    {related.length > 0 && (
+      <nav class="related" aria-label="อ่านต่อ">
+        <h2>อ่านต่อ</h2>
+        <ul>{related.map((r) => <li><a href={r.href}>{r.title}</a></li>)}</ul>
+      </nav>
+    )}
+  </article>
+</Base>
+
+<style>
+  .mt { max-width: 760px; margin: 0 auto; padding: 32px 20px 56px; }
+  .crumb { display: inline-block; color: var(--muted); font-weight: 600; text-decoration: none; padding: 6px 0; }
+  .crumb:hover { color: var(--ink); }
+  .badge { display: inline-block; margin: 8px 0 0; padding: 2px 12px; border-radius: 999px; background: var(--marker); font-weight: 700; font-size: 0.9rem; }
+  .badge span { font-weight: 400; }
+  h1 { font-size: clamp(1.7rem, 5.5vw, 2.4rem); line-height: 1.25; margin: 10px 0 12px; }
+  .lead { color: var(--muted); font-size: 1.1rem; margin: 0 0 20px; }
+  .prose { font-size: 1.05rem; line-height: 1.75; }
+  .prose :global(h2) { font-size: 1.4rem; margin: 36px 0 10px; line-height: 1.35; }
+  .prose :global(h3) { font-size: 1.15rem; margin: 24px 0 8px; }
+  .prose :global(table) { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 0.97rem; display: block; overflow-x: auto; }
+  .prose :global(th), .prose :global(td) { border: 1px solid var(--rule); padding: 8px 10px; text-align: left; vertical-align: top; }
+  .prose :global(th) { background: var(--tint); }
+  .prose :global(strong) { background: linear-gradient(transparent 60%, var(--marker) 60%); }
+  .prose :global(li) { margin: 4px 0; }
+  .cta { margin: 40px 0 0; padding: 24px; border-radius: var(--radius); background: var(--tint); border: 1px solid var(--rule); }
+  .cta h2 { margin: 0 0 8px; font-size: 1.3rem; }
+  .cta p { margin: 0 0 16px; color: var(--muted); }
+  .btn.big { min-height: 56px; padding: 12px 28px; font-size: 1.05rem; }
+  .faq { margin-top: 40px; }
+  .faq h2, .related h2 { font-size: 1.3rem; margin: 0 0 10px; }
+  details { border: 1px solid var(--rule); border-radius: 12px; padding: 12px 16px; margin: 0 0 10px; background: var(--paper); }
+  summary { font-weight: 700; cursor: pointer; }
+  details p { margin: 8px 0 0; color: var(--muted); }
+  .related { margin-top: 36px; }
+  .related ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .related a { font-weight: 600; }
+</style>
