@@ -511,7 +511,8 @@ svg.casting .shadow, svg.casting .rays, svg.casting .wshade { opacity: 0 }
 """
 
 SHELL = (pathlib.Path(__file__).resolve().parent / "light-p5-shell.html").read_text(encoding="utf-8")
-html = (SHELL.replace("/*SHEET_CSS*/", CSS + CSS_M2 + CSS_ANIM)
+html = (SHELL.replace("<!--TITLE-->", "Light Explorer · Mission 2").replace("<!--BUILD-->", "tools/build-light-p5.py")
+             .replace("<!--HEAD-->\n", "").replace("/*SHEET_CSS*/", CSS + CSS_M2 + CSS_ANIM)
              .replace("<!--PAGES-->", "\n".join(f'<div class="sheet">{p}<canvas class="ink"></canvas></div>' for p in pages)))
 OUT.parent.mkdir(parents=True, exist_ok=True)
 OUT.write_text(html, encoding="utf-8")
