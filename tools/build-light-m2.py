@@ -328,7 +328,7 @@ def nf(lx, label, drag=False):
     return b
 pages.append(page(10, "Big shadow, small shadow", bubble(f"The size of a shadow depends on where the light is. Move the light {K('closer')} to the object, and the shadow gets {K('bigger')}. Move the light {K('farther')} away, and the shadow gets {K('smaller')}.") +
 task(2, "In which picture will the shadow on the wall be bigger? Circle it.",
-     f'<div class="nfgrid"><div class="rcell">{cast_svg(310, 150, nf(40, "A"), 260, (40, 75), circle_pts(190, 75, 17), wall=298)}</div><div class="rcell">{svg(310, 150, nf(140, "B", True), 260)}</div></div>') +
+     f'<div class="nfgrid"><div class="rcell">{cast_svg(310, 150, nf(40, "A"), 260, (40, 75), circle_pts(190, 75, 17), wall=298)}</div><div class="rcell">{cast_svg(310, 150, nf(140, "B", True), 260, (140, 75), circle_pts(190, 75, 17), wall=298)}</div></div>') +
 task(1, "Fill in the blanks.", f'<p class="fill">When the light moves closer to the object, the shadow gets {blank(130)}.</p><p class="fill">When the light moves farther away, the shadow gets {blank(130)}.</p>') +
 task(3, "Glow wants to make a giant shadow of himself on the wall. What should he do with the torch?", lines(2))))
 
@@ -499,7 +499,7 @@ svg.off .shadow, svg.off .rays { opacity: 0 }
 .cast .edge { stroke: #E8962E; stroke-width: 1.6; stroke-dasharray: 5 4; fill: none }
 .cast .shade { fill: #4A5560; opacity: 0; transition: opacity .5s }
 .cast .shade.on { opacity: .7 }
-svg.casting .shadow, svg.casting .rays { opacity: 0 }
+svg.casting .shadow, svg.casting .rays, svg.casting .wshade { opacity: 0 }
 
 .moon .mb { transform-origin: 40px 40px }
 .moon .mq { opacity: 0 }

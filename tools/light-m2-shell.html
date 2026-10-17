@@ -125,8 +125,9 @@
   // shine a light source on an object (geometry in data-cast / data-obs, see cast_svg in the build script):
   // the light spreads out from the source, the area between the two edge rays behind the object stays
   // dark, and the shadow forms where those rays meet the ground or the wall. on: true/false, or toggle.
+  // now: draw it straight away (while the lamp is being dragged)
   let castN = 0;
-  function cast(svg, on) {
+  function cast(svg, on, now) {
     const box = svg.querySelector('.cast');
     if (on === undefined) on = !box.hasChildNodes();
     cancelAnimationFrame(box._raf);
@@ -173,6 +174,7 @@
       <polygon points="${P1} ${far(P1, a1)} ${far(P2, a2)} ${P2}" fill="#000"/></mask></defs>
       <g clip-path="url(#${id}c)"><rect class="lit" width="${W}" height="${H}" mask="url(#${id}m)"/>
       <path class="edge" d="M${sx} ${sy} L${E1} M${sx} ${sy} L${E2}"/></g>${shade}`;
+    if (now) { box.querySelector('circle').setAttribute('r', 9999); box.querySelector('.shade').classList.add('on'); return; }
     const circle = box.querySelector('circle'), R = Math.hypot(Math.max(sx, W - sx), Math.max(sy, H - sy)), t0 = performance.now();
     const grow = now => {
       const t = Math.min(1, (now - t0) / 1000);
@@ -223,6 +225,12 @@
     const lx = Math.max(20, Math.min(150, p.matrixTransform(svg.getScreenCTM().inverse()).x));
     g.setAttribute('transform', `translate(${(lx - g.dataset.lx).toFixed(1)} 0)`);
     svg.querySelector('.wshade').setAttribute('ry', (16 * (300 - lx) / (190 - lx)).toFixed(1));
+    // the lamp shines while it is held and moved
+    const geo = JSON.parse(svg.dataset.cast);
+    geo.s[0] = lx;
+    svg.dataset.cast = JSON.stringify(geo);
+    svg.classList.add('casting');
+    cast(svg, true, true);
   }
   window.addEventListener('pointermove', e => { if (drag && e.pointerId === drag.id) { e.preventDefault(); moveDrag(e); } });
   const dragEnd = e => { if (drag && e.pointerId === drag.id) drag = null; };
