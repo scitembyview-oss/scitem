@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>สไลด์เดโม การเคลื่อนที่แบบวงกลม</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1d2230;
+    --slide: #fdfcf8;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --vcol: #2563eb;
+    --acol: #dc2626;
+    --bar: #ffffff;
+    --barline: #e5e7eb;
+    --on: #111827;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); font-family: 'Sarabun', system-ui, sans-serif; color: var(--ink); overflow: hidden; overscroll-behavior: none; }
+  body { display: flex; flex-direction: column; height: 100dvh; }
+
+  /* toolbar */
+  #bar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 10px; padding-top: max(6px, env(safe-area-inset-top)); background: var(--bar); border-bottom: 1px solid var(--barline); user-select: none; -webkit-user-select: none; }
+  #bar .grp { display: flex; align-items: center; gap: 4px; }
+  #bar .sep { width: 1px; height: 26px; background: var(--barline); margin: 0 4px; }
+  button { font: inherit; font-size: 15px; border: 1px solid var(--barline); background: #fff; color: var(--ink); border-radius: 10px; min-height: 38px; min-width: 38px; padding: 0 10px; cursor: pointer; touch-action: manipulation; }
+  button.on { background: var(--on); color: #fff; border-color: var(--on); }
+  button.sw { width: 34px; min-width: 34px; padding: 0; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--barline); }
+  button.sw.on { box-shadow: 0 0 0 3px var(--on); }
+  button.size { display: flex; align-items: center; justify-content: center; padding: 0; width: 38px; }
+  button.size i { display: block; background: currentColor; border-radius: 50%; }
+
+  /* stage */
+  #stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 8px; }
+  #slide { position: relative; background: var(--slide); border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.35); overflow: hidden; font-size: var(--u); }
+  #content { position: absolute; inset: 0; display: grid; grid-template-columns: 38% 62%; }
+  #text { padding: 4.2em 2.6em 3em 4.2em; display: flex; flex-direction: column; gap: 1.6em; }
+  h1 { margin: 0; font-size: 3.6em; line-height: 1.15; }
+  .sub { color: var(--muted); font-size: 1.8em; margin-top: -.6em; }
+  .pts { margin: 0; padding-left: 1.2em; font-size: 2.05em; line-height: 1.5; }
+  .pts b.v { color: var(--vcol); } .pts b.a { color: var(--acol); }
+  .eq { font-size: 2.4em; background: #f1efe6; border-radius: .4em; padding: .45em .7em; line-height: 1.6; }
+  .eq .frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; font-size: .85em; line-height: 1.15; }
+  .eq .frac span:first-child { border-bottom: .07em solid currentColor; padding: 0 .2em; }
+  .live { font-size: 2em; display: grid; grid-template-columns: auto auto; gap: .15em 1em; justify-content: start; }
+  .live .k { color: var(--muted); }
+  .live .val { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  #anim { position: relative; }
+  #anim canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #ctrl { position: absolute; left: 3em; right: 3em; bottom: 2.4em; display: flex; flex-wrap: wrap; align-items: center; gap: 1em 2.4em; font-size: 1.9em; background: rgba(255,255,255,.88); border: 1px solid #e7e3d6; border-radius: .6em; padding: .5em .9em; z-index: 6; }
+  #ctrl label { display: flex; align-items: center; gap: .5em; white-space: nowrap; }
+  #ctrl input[type=range] { width: 8em; accent-color: var(--on); }
+  #ctrl button { font-size: 1em; min-height: 1.9em; min-width: 1.9em; border-radius: .45em; padding: 0 .6em; }
+  #play { font-size: 1.3em !important; }
+  #ctrl .num { font-weight: 700; min-width: 3.2em; font-variant-numeric: tabular-nums; }
+
+  /* pen layer sits over the whole slide */
+  #ink { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 5; touch-action: none; pointer-events: none; }
+  body.drawing #ink { pointer-events: auto; cursor: crosshair; }
+  body.erasing #ink { cursor: cell; }
+  #rotate { display: none; color: #cbd5e1; font-size: 14px; text-align: center; padding: 0 0 8px; }
+  @media (orientation: portrait) and (max-width: 700px) { #rotate { display: block; } }
+</style>
+</head>
+<body class="drawing">
+<div id="bar">
+  <div class="grp">
+    <button id="mPen" class="on" title="ปากกา">✏️ เขียน</button>
+    <button id="mErase" title="ยางลบ">🧽 ลบ</button>
+  </div>
+  <div class="sep"></div>
+  <div class="grp" id="colors"></div>
+  <div class="sep"></div>
+  <div class="grp" id="sizes"></div>
+  <div class="sep"></div>
+  <div class="grp">
+    <button id="undo" title="ย้อนกลับ">↶</button>
+    <button id="clear" title="ลบทั้งหมด">🗑 ล้าง</button>
+    <button id="full" title="เต็มจอ">⛶</button>
+  </div>
+</div>
+<div id="rotate">หมุนจอเป็นแนวนอนจะเห็นสไลด์ใหญ่ขึ้น</div>
+
+<div id="stage">
+  <div id="slide">
+    <div id="content">
+      <div id="text">
+        <h1>การเคลื่อนที่แบบวงกลม</h1>
+        <div class="sub">อัตราเร็วคงที่ แต่ความเร็วเปลี่ยนตลอด</div>
+        <ul class="pts">
+          <li><b class="v">v</b> สัมผัสวงกลม ตั้งฉากกับรัศมี</li>
+          <li><b class="a">a</b> ชี้เข้าหาจุดศูนย์กลางเสมอ</li>
+        </ul>
+        <div class="eq">
+          a<sub>c</sub> = <span class="frac"><span>v²</span><span>r</span></span>
+          &nbsp;&nbsp; T = <span class="frac"><span>2πr</span><span>v</span></span>
+        </div>
+        <div class="live">
+          <span class="k">a<sub>c</sub> =</span><span class="val" id="oA"></span>
+          <span class="k">T =</span><span class="val" id="oT"></span>
+        </div>
+      </div>
+      <div id="anim">
+        <canvas id="cv"></canvas>
+        <div id="ctrl">
+          <button id="play">⏸</button>
+          <label>v <input id="sV" type="range" min="1" max="10" step="0.5" value="4"><span class="num" id="nV"></span></label>
+          <label>r <input id="sR" type="range" min="1" max="5" step="0.5" value="3"><span class="num" id="nR"></span></label>
+          <button id="cut">✂️ ตัดเชือก</button>
+        </div>
+      </div>
+    </div>
+    <canvas id="ink"></canvas>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ---------- slide sizing (16:9, 1 unit = 1% of slide width) ----------
+  const stage = document.getElementById('stage');
+  const slide = document.getElementById('slide');
+  const cv = document.getElementById('cv');
+  const ink = document.getElementById('ink');
+  let W = 0, H = 0, dpr = 1;
+
+  function layout() {
+    const sw = stage.clientWidth - 16, sh = stage.clientHeight - 16;
+    W = Math.floor(Math.min(sw, sh * 16 / 9));
+    H = Math.floor(W * 9 / 16);
+    slide.style.width = W + 'px';
+    slide.style.height = H + 'px';
+    slide.style.setProperty('--u', (W / 160) + 'px');
+    dpr = Math.min(window.devicePixelRatio || 1, 3);
+    for (const c of [cv, ink]) {
+      const r = c.getBoundingClientRect();
+      c.width = Math.round(r.width * dpr);
+      c.height = Math.round(r.height * dpr);
+    }
+    redrawInk();
+  }
+
+  // ---------- animation ----------
+  const ctx = cv.getContext('2d');
+  const sV = document.getElementById('sV'), sR = document.getElementById('sR');
+  const nV = document.getElementById('nV'), nR = document.getElementById('nR');
+  const oA = document.getElementById('oA'), oT = document.getElementById('oT');
+  const playBtn = document.getElementById('play'), cutBtn = document.getElementById('cut');
+  let playing = true, theta = 0, last = performance.now();
+  let cut = null;   // {x, y, vx, vy} in metres after the string is cut
+  const trail = [];
+
+  function fmt(x) { return (Math.round(x * 100) / 100).toLocaleString('th-TH', { maximumFractionDigits: 2 }); }
+  function readouts() {
+    const v = +sV.value, r = +sR.value;
+    nV.textContent = fmt(v) + ' m/s';
+    nR.textContent = fmt(r) + ' m';
+    oA.textContent = fmt(v * v / r) + ' m/s²';
+    oT.textContent = fmt(2 * Math.PI * r / v) + ' s';
+  }
+  sV.oninput = sR.oninput = () => { readouts(); trail.length = 0; };
+  playBtn.onclick = () => { playing = !playing; playBtn.textContent = playing ? '⏸' : '▶'; };
+  cutBtn.onclick = () => {
+    if (cut) { cut = null; cutBtn.textContent = '✂️ ตัดเชือก'; trail.length = 0; return; }
+    const v = +sV.value, r = +sR.value;
+    cut = { x: r * Math.cos(theta), y: r * Math.sin(theta), vx: -v * Math.sin(theta), vy: v * Math.cos(theta) };
+    cutBtn.textContent = '↺ เริ่มใหม่';
+    playing = true; playBtn.textContent = '⏸';
+  };
+
+  function arrow(x1, y1, x2, y2, color, lw, label) {
+    const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy);
+    if (L < 2) return;
+    const ux = dx / L, uy = dy / L, hs = Math.min(lw * 4.5, L * 0.5);
+    ctx.strokeStyle = ctx.fillStyle = color;
+    ctx.lineWidth = lw; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - ux * hs * 0.8, y2 - uy * hs * 0.8); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ux * hs - uy * hs * 0.55, y2 - uy * hs + ux * hs * 0.55);
+    ctx.lineTo(x2 - ux * hs + uy * hs * 0.55, y2 - uy * hs - ux * hs * 0.55);
+    ctx.closePath(); ctx.fill();
+    if (label) {
+      ctx.font = `700 ${lw * 6}px Sarabun, sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(label, x2 + ux * lw * 5, y2 + uy * lw * 5);
+    }
+  }
+
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.05); last = now;
+    const v = +sV.value, r = +sR.value;
+    if (playing) {
+      if (cut) { cut.x += cut.vx * dt; cut.y += cut.vy * dt; }
+      else theta += (v / r) * dt;
+    }
+
+    const w = cv.width, h = cv.height;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const u = w / 100;                       // 1% of canvas width
+    const cx = w * 0.5, cy = h * 0.43;
+    const scale = (h * 0.34) / 5;            // px per metre (r = 5 m fills 34% of height)
+    const R = r * scale;
+
+    // grid dots
+    ctx.fillStyle = '#e8e4d6';
+    const g = scale;
+    for (let x = cx % g; x < w; x += g) for (let y = cy % g; y < h; y += g) { ctx.beginPath(); ctx.arc(x, y, u * 0.25, 0, 7); ctx.fill(); }
+
+    // path
+    ctx.setLineDash([u * 1.2, u * 1]);
+    ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = u * 0.35;
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+
+    let bx, by;
+    if (cut) { bx = cx + cut.x * scale; by = cy - cut.y * scale; }
+    else { bx = cx + R * Math.cos(theta); by = cy - R * Math.sin(theta); }
+
+    if (playing) { trail.push([bx, by]); if (trail.length > 40) trail.shift(); }
+    for (let i = 0; i < trail.length; i++) {
+      ctx.fillStyle = `rgba(55,65,81,${(i / trail.length) * 0.25})`;
+      ctx.beginPath(); ctx.arc(trail[i][0], trail[i][1], u * 1.1, 0, 7); ctx.fill();
+    }
+
+    // string + centre
+    if (!cut) {
+      ctx.strokeStyle = '#374151'; ctx.lineWidth = u * 0.35;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(bx, by); ctx.stroke();
+      ctx.fillStyle = '#6b7280'; ctx.font = `600 ${u * 2.6}px Sarabun, sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const mx = (cx + bx) / 2, my = (cy + by) / 2;
+      ctx.fillText('r', mx - Math.sin(theta) * u * 2.5, my - Math.cos(theta) * u * 2.5);
+    }
+    ctx.fillStyle = '#111827';
+    ctx.beginPath(); ctx.arc(cx, cy, u * 0.9, 0, 7); ctx.fill();
+
+    // vectors
+    const kv = u * 1.6;                      // px per m/s
+    if (cut) {
+      arrow(bx, by, bx + cut.vx * kv, by - cut.vy * kv, '#2563eb', u * 0.7, 'v');
+    } else {
+      const tx = -Math.sin(theta), ty = Math.cos(theta);
+      arrow(bx, by, bx + tx * v * kv, by - ty * v * kv, '#2563eb', u * 0.7, 'v');
+      const a = v * v / r;
+      const La = Math.min(R * 0.85, Math.max(u * 3, Math.sqrt(a) * u * 2.2));
+      arrow(bx, by, bx - Math.cos(theta) * La, by + Math.sin(theta) * La, '#dc2626', u * 0.7, 'a');
+    }
+
+    // ball
+    ctx.fillStyle = '#f59e0b'; ctx.strokeStyle = '#92400e'; ctx.lineWidth = u * 0.3;
+    ctx.beginPath(); ctx.arc(bx, by, u * 1.6, 0, 7); ctx.fill(); ctx.stroke();
+
+    if (cut && (Math.abs(cut.x) > 40 || Math.abs(cut.y) > 40)) { cut = null; cutBtn.textContent = '✂️ ตัดเชือก'; trail.length = 0; }
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- pen layer ----------
+  const ictx = ink.getContext('2d');
+  const strokes = [];          // {color, size, erase, pts:[[x,y,p],...]} in 0..1 slide coords
+  let cur = null, mode = 'pen', color = '#111827', size = 2;
+  let penSeen = false;         // once an Apple Pencil/stylus is used, ignore finger touches (palm rejection)
+  const COLORS = ['#111827', '#dc2626', '#2563eb', '#16a34a', '#f59e0b', '#9333ea'];
+  const SIZES = [1, 2, 4];
+
+  function lineWidth(s) { return s.size * ink.width / 400 * (s.erase ? 6 : 1); }
+  function drawStroke(s, from) {
+    const pts = s.pts, w = ink.width, h = ink.height;
+    ictx.globalCompositeOperation = s.erase ? 'destination-out' : 'source-over';
+    ictx.strokeStyle = s.color; ictx.fillStyle = s.color;
+    ictx.lineCap = 'round'; ictx.lineJoin = 'round';
+    const base = lineWidth(s);
+    if (pts.length === 1) {
+      ictx.beginPath(); ictx.arc(pts[0][0] * w, pts[0][1] * h, base / 2, 0, 7); ictx.fill();
+      return;
+    }
+    for (let i = Math.max(1, from || 1); i < pts.length; i++) {
+      const p0 = pts[i - 1], p1 = pts[i];
+      ictx.lineWidth = s.erase ? base : base * (0.6 + 0.8 * p1[2]);
+      ictx.beginPath(); ictx.moveTo(p0[0] * w, p0[1] * h); ictx.lineTo(p1[0] * w, p1[1] * h); ictx.stroke();
+    }
+  }
+  function redrawInk() {
+    ictx.globalCompositeOperation = 'source-over';
+    ictx.clearRect(0, 0, ink.width, ink.height);
+    for (const s of strokes) drawStroke(s);
+    ictx.globalCompositeOperation = 'source-over';
+  }
+  function pt(e) {
+    const r = ink.getBoundingClientRect();
+    const p = e.pointerType === 'pen' ? (e.pressure || 0.5) : 0.5;
+    return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height, p];
+  }
+  ink.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'pen') penSeen = true;
+    if (penSeen && e.pointerType === 'touch') return;
+    e.preventDefault();
+    ink.setPointerCapture(e.pointerId);
+    cur = { id: e.pointerId, color, size, erase: mode === 'erase', pts: [pt(e)] };
+    strokes.push(cur);
+    drawStroke(cur);
+  });
+  ink.addEventListener('pointermove', e => {
+    if (!cur || e.pointerId !== cur.id) return;
+    e.preventDefault();
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    const start = cur.pts.length;
+    for (const ce of evs) cur.pts.push(pt(ce));
+    drawStroke(cur, start);
+  });
+  const end = e => { if (cur && e.pointerId === cur.id) cur = null; };
+  ink.addEventListener('pointerup', end);
+  ink.addEventListener('pointercancel', end);
+  ink.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+
+  // ---------- toolbar ----------
+  const $ = id => document.getElementById(id);
+  const modeBtns = { pen: $('mPen'), erase: $('mErase') };
+  function setMode(m) {
+    mode = m;
+    for (const k in modeBtns) modeBtns[k].classList.toggle('on', k === m);
+    document.body.classList.toggle('erasing', m === 'erase');
+  }
+  modeBtns.pen.onclick = () => setMode('pen');
+  modeBtns.erase.onclick = () => setMode('erase');
+
+  const cwrap = $('colors');
+  COLORS.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.className = 'sw' + (i === 0 ? ' on' : '');
+    b.style.background = c; b.title = 'สี';
+    b.onclick = () => { color = c; [...cwrap.children].forEach(x => x.classList.toggle('on', x === b)); setMode('pen'); };
+    cwrap.appendChild(b);
+  });
+  const swrap = $('sizes');
+  SIZES.forEach(s => {
+    const b = document.createElement('button');
+    b.className = 'size' + (s === size ? ' on' : '');
+    const d = 4 + s * 3; b.innerHTML = `<i style="width:${d}px;height:${d}px"></i>`;
+    b.title = 'ขนาดเส้น';
+    b.onclick = () => { size = s; [...swrap.children].forEach(x => x.classList.toggle('on', x === b)); if (mode === 'erase') setMode('pen'); };
+    swrap.appendChild(b);
+  });
+  $('undo').onclick = () => { strokes.pop(); redrawInk(); };
+  $('clear').onclick = () => { strokes.length = 0; redrawInk(); };
+  $('full').onclick = () => {
+    const d = document.documentElement;
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      (d.requestFullscreen || d.webkitRequestFullscreen || (() => {})).call(d);
+    } else {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    }
+  };
+  if (!document.documentElement.requestFullscreen && !document.documentElement.webkitRequestFullscreen) $('full').style.display = 'none';
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); $('undo').click(); }
+    else if (e.key === ' ') { e.preventDefault(); playBtn.click(); }
+  });
+
+  window.addEventListener('resize', layout);
+  readouts();
+  layout();
+  if (document.fonts) document.fonts.ready.then(layout);
+  requestAnimationFrame(t => { last = t; frame(t); });
+})();
+</script>
+</body>
+</html>
