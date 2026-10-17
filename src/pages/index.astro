@@ -7,6 +7,7 @@ const sheets = [
     title: 'Solar System Vocabulary',
     th: 'ระบบสุริยะ',
     note: 'คำศัพท์ 15 คำ แบบฝึกหัด 3 ชุด และมุมผู้ปกครอง',
+    pdf: '/sheets/solar-system-p6.pdf',
   },
   {
     level: 'Year 7',
@@ -54,6 +55,12 @@ const sheets = [
           <h3>{s.title}</h3>
           <p class="th">{s.th}</p>
           <p class="note">{s.note}</p>
+          {s.pdf && (
+            <p class="links">
+              <a href={s.pdf} target="_blank" rel="noopener">เปิดดูชีท</a>
+              <a href={s.pdf} download>โหลด PDF</a>
+            </p>
+          )}
         </article>
       ))}
     </div>
@@ -123,6 +130,7 @@ const sheets = [
   }
   .th { margin: 0; font-weight: 600; }
   .note { margin: 4px 0 0; color: var(--muted); }
+  .links { margin: 12px 0 0; display: flex; gap: 16px; flex-wrap: wrap; font-weight: 600; }
   .muted { color: var(--muted); }
   .contact { text-align: center; }
   .email { font-size: 1.3rem; font-weight: 700; }
