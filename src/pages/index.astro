@@ -50,14 +50,14 @@ const courseList = (Object.entries(courses) as [CourseId, (typeof courses)[Cours
     <div class="course-grid">
       {courseList.map((c) => (
         <article class="course">
-          <img src={c.cover} alt="" loading="lazy" width="1194" height="834" />
+          <img src={c.cover} alt="" loading="lazy" width="480" height="320" />
           <div class="course-body">
             <p class="where">{c.where}</p>
             <h3>{c.name} <span>{c.th}</span></h3>
             <p>{c.blurb}</p>
             <ul>
               {c.items.map((it) => (
-                <li><a href={it.href}>{it.title}</a> <small>{kinds[it.kind]} · {it.meta}</small></li>
+                <li><a href={it.href} title={`${kinds[it.kind]} · ${it.meta}`}>{it.title}</a></li>
               ))}
             </ul>
           </div>
@@ -146,18 +146,20 @@ const courseList = (Object.entries(courses) as [CourseId, (typeof courses)[Cours
   .sec-head a { font-weight: 700; text-decoration: none; }
 
   .courses { padding-top: 72px; padding-bottom: 72px; }
-  .course-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-  .course { border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; background: var(--paper); }
-  .course > img { width: 100%; aspect-ratio: 16 / 8; object-fit: cover; object-position: top; border-bottom: 1px solid var(--rule); }
-  .course-body { padding: 20px 24px 24px; }
-  .where { margin: 0; color: var(--blue); font-weight: 700; font-size: 0.92rem; }
-  .course h3 { margin: 2px 0 8px; font-size: 1.4rem; }
-  .course h3 span { color: var(--muted); font-weight: 400; font-size: 1rem; }
-  .course p { margin: 0 0 14px; }
-  .course ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
-  .course li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
-  .course li a { font-weight: 600; text-decoration: none; }
-  .course li small { color: var(--muted); white-space: nowrap; }
+  .course-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .course {
+    display: grid; grid-template-columns: 150px 1fr; border: 1px solid var(--rule); border-radius: var(--radius);
+    overflow: hidden; background: var(--paper); box-shadow: 0 12px 28px -22px rgb(20 33 61 / 0.45);
+  }
+  .course > img { width: 100%; height: 100%; object-fit: cover; background: #fff; border-right: 1px solid var(--rule); }
+  .course-body { padding: 16px 20px; }
+  .where { margin: 0; color: var(--blue); font-weight: 700; font-size: 0.85rem; }
+  .course h3 { margin: 2px 0 6px; font-size: 1.2rem; }
+  .course h3 span { color: var(--muted); font-weight: 400; font-size: 0.95rem; }
+  .course p { margin: 0 0 10px; font-size: 0.95rem; color: var(--muted); }
+  .course ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .course li a { display: inline-block; padding: 4px 12px; border: 1px solid var(--rule); border-radius: 999px; font-size: 0.9rem; font-weight: 600; text-decoration: none; }
+  .course li a:hover { border-color: var(--blue); }
 
   .teacher { display: flex; gap: 48px; align-items: center; padding-top: 88px; padding-bottom: 40px; }
   .teacher .photo { width: min(340px, 40%); aspect-ratio: 15 / 16; object-fit: cover; border-radius: 24px; rotate: -2deg; box-shadow: 0 24px 48px -24px rgb(20 33 61 / 0.5); }
@@ -172,11 +174,12 @@ const courseList = (Object.entries(courses) as [CourseId, (typeof courses)[Cours
   .btn.big { min-height: 56px; padding: 12px 32px; font-size: 1.1rem; }
 
   @media (max-width: 960px) {
+    .course-grid { grid-template-columns: 1fr; }
     .hero-in { grid-template-columns: 1fr; padding-top: 36px; gap: 32px; }
     .start-in { grid-template-columns: 1fr; }
   }
   @media (max-width: 700px) {
-    .course-grid { grid-template-columns: 1fr; }
+    .course { grid-template-columns: 110px 1fr; }
     .teacher { flex-direction: column; align-items: flex-start; gap: 28px; }
     .teacher .photo { width: 72%; }
     .screen { border-width: 9px; border-radius: 20px; }

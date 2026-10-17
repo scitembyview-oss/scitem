@@ -15,12 +15,12 @@ export const courses: Record<CourseId, { name: string; th: string; where: string
   'p5-light': {
     name: 'Light Explorer', th: 'แสงและเงา', where: 'EP Primary 5 · St. Gabriel',
     blurb: 'แสงเดินทางเป็นเส้นตรง วัตถุโปร่งใส โปร่งแสง ทึบแสง และการเกิดเงา เรียนจากสไลด์ที่แตะไฟฉายแล้วเงาเกิดขึ้นจริง',
-    cover: '/img/slides/light-5.jpg',
+    cover: '/img/slides/light-thumb.jpg',
   },
   'physics-lower': {
     name: 'ฟิสิกส์ ม.ต้น', th: 'แรง การเคลื่อนที่ ของไหล', where: 'Lower secondary physics',
     blurb: 'การเคลื่อนที่แบบวงกลม แรงลอยตัว และพื้นฐานที่ต้องแม่นก่อนขึ้น ม.ปลาย มี Circular Motion เป็นเดโมสไลด์สอน และเช็คพื้นฐานก่อนเรียนทุกเรื่อง',
-    cover: '/img/slides/demo.jpg',
+    cover: '/img/slides/demo-thumb.jpg',
   },
 };
 
