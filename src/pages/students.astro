@@ -4,7 +4,7 @@ import { items } from '../data/catalog';
 
 const checks = items.filter((it) => it.kind === 'check');
 ---
-<Base title="นักเรียน · scitem" description="เช็คพื้นฐานก่อนเรียน และ Answer Vault สำหรับนักเรียน scitem">
+<Base title="นักเรียน · scitem" description="เช็คพื้นฐานก่อนเรียนสำหรับนักเรียน scitem">
   <header class="page-head">
     <h1>สำหรับนักเรียน</h1>
     <p>ทำเช็คพื้นฐานก่อนเรียนเพื่อให้ครูรู้ว่าต้องทวนตรงไหน ไม่มีผลกับคะแนน ทำเสร็จแล้วกดส่งรหัสให้ครูทาง LINE</p>
@@ -30,11 +30,6 @@ const checks = items.filter((it) => it.kind === 'check');
     </ol>
   </section>
 
-  <section class="vault">
-    <h2>ทำชีทครบแล้ว? เปิดเฉลยที่ Answer Vault</h2>
-    <p>วงตัวอักษรใน Code Breaker ท้ายชีทให้ครบ อ่านเรียงจากข้อแรกถึงข้อสุดท้าย แล้วใส่เป็นรหัสเพื่อเปิดเฉลยมาตรวจเอง</p>
-    <a class="btn" href="/vault/">เปิด Answer Vault</a>
-  </section>
 </Base>
 
 <style>
@@ -51,6 +46,4 @@ const checks = items.filter((it) => it.kind === 'check');
   .checks svg { grid-row: 1 / 3; grid-column: 2; width: 24px; height: 24px; color: var(--blue); }
   .steps { margin: 20px 0 0; padding-left: 1.3em; color: var(--muted); max-width: 720px; }
   .steps b { color: var(--ink); }
-  .vault { margin-top: 56px; padding-top: 32px !important; padding-bottom: 32px !important; background: var(--tint); border-radius: var(--radius); max-width: 1120px !important; }
-  .vault p { margin: 0 0 18px; color: var(--muted); max-width: 62ch; }
 </style>
