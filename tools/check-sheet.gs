@@ -7,6 +7,8 @@ const TEACHER_PASSWORD = 'ใส่รหัสผ่านครูตรงน
 const TAB = 'ผลเช็ค';
 const HEAD = ['เวลาส่ง', 'ชุด', 'ชื่อ', 'คำตอบ', 'วินาทีต่อข้อ', 'id'];
 const MAX_ROWS = 1000; // newest rows sent to the teacher page
+const NOTIFY = true; // email the sheet owner each time a student finishes (Gmail app on the phone shows it as a notification)
+const QUIZ_NAMES = { 'math-r2': 'สอบวัดระดับคณิต', 'circular-1': 'เช็ควงกลม', 'circular-2': 'ทดสอบวงกลม', 'buoyancy-1': 'เช็คแรงลอยตัว' };
 
 function doPost(e) {
   let d;
@@ -51,6 +53,13 @@ function submit(d) {
     sh.appendRow([new Date(), text(d.quiz, 40), text(d.name, 30), JSON.stringify(answers), JSON.stringify(secs), id]);
   } finally {
     lock.releaseLock();
+  }
+  if (NOTIFY) {
+    try {
+      const quiz = QUIZ_NAMES[d.quiz] || String(d.quiz);
+      MailApp.sendEmail(Session.getEffectiveUser().getEmail(), `scitem: ${text(d.name, 30)} ทำ${quiz}เสร็จแล้ว`,
+        `${text(d.name, 30)} ส่งผล ${quiz} เมื่อ ${new Date().toLocaleString('th-TH')}\nดูผลที่ https://scitem.net/teacher/`);
+    } catch (err) {} // a mail quota hiccup must not lose the result
   }
   return out({ ok: true });
 }
