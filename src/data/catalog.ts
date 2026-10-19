@@ -66,3 +66,5 @@ export const LINE_URL = 'https://lin.ee/NO52k1Y';
 // Google Apps Script web app that stores "เช็คพื้นฐาน" results in the teacher's Google Sheet (setup: tools/check-sheet.gs).
 // Empty = students get the old SC1- code to send on LINE instead.
 export const SHEET_URL = 'https://script.google.com/macros/s/AKfycbyq7E1RkdI8pARED-cN4XAHeqRNx9BlQMwoY5AYiXF1_MjdPVoosxA7oefBbxgHky0/exec';
+// Live class pages (public/class/*) use their own Sheet, also running tools/check-sheet.gs
+export const CLASS_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzIaVMqROaTFaDN36SwCif7pWF_KEE7GroEUj2V5c9BM2gg4Y2v3wXbUOf-P4T0aBygnw/exec';

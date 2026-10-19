@@ -1,7 +1,7 @@
 // Builds a live-class page (student + teacher #teacher) from tools/class-shell.html.
 // The questions are encrypted twice: with the student code (student screen) and with the teacher code (#teacher),
 // so the page shows nothing until the right code is typed, and the student code does not open the teacher screen.
-// Work goes to the Google Sheet at SHEET_URL in src/data/catalog.ts (tools/check-sheet.gs); add --local to keep it in
+// Work goes to the Google Sheet at CLASS_SHEET_URL in src/data/catalog.ts (tools/check-sheet.gs); add --local to keep it in
 // the browser instead (try-out: open the student and #teacher pages in two tabs of one browser).
 // Usage: node tools/build-class.mjs <content.json> <student code> <teacher code> <out.html> <class id> [--local]
 //   e.g. python3 tools/build-class-l3.py <kit>/worksheets/worksheet-src /tmp/l3.json
@@ -31,8 +31,8 @@ async function seal(code) {
 }
 const blob = JSON.stringify({ s: await seal(sCode), t: await seal(tCode) });
 const shell = readFileSync(new URL('./class-shell.html', import.meta.url), 'utf8');
-const sheet = local ? null : /SHEET_URL\s*=\s*'([^']*)'/.exec(readFileSync(new URL('../src/data/catalog.ts', import.meta.url), 'utf8'))[1];
-if (!local && !sheet) throw new Error('SHEET_URL is empty in src/data/catalog.ts (or build with --local)');
+const sheet = local ? null : /CLASS_SHEET_URL\s*=\s*'([^']*)'/.exec(readFileSync(new URL('../src/data/catalog.ts', import.meta.url), 'utf8'))[1];
+if (!local && !sheet) throw new Error('CLASS_SHEET_URL is empty in src/data/catalog.ts (or build with --local)');
 const html = shell.replace('/*__DATA__*/null', blob).replace('/*__CLASS__*/"demo"', JSON.stringify(id)).replace('/*__SHEET__*/null', JSON.stringify(sheet));
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, html);
