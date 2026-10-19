@@ -1,5 +1,5 @@
 {
- "title": "Lesson 3 · S1 The four patterns",
+ "title": "Lesson 3 · Demo",
  "sets": [
   {
    "id": "S1",
@@ -80,7 +80,8 @@
        2
       ]
      ],
-     "mode": "guess"
+     "mode": "guess",
+     "scale": false
     },
     {
      "id": "S1.8",
@@ -91,7 +92,8 @@
        2
       ]
      ],
-     "mode": "guess"
+     "mode": "guess",
+     "scale": false
     },
     {
      "id": "S1.9",
@@ -144,6 +146,32 @@
      "mode": "answer",
      "lo": -30,
      "hi": 30
+    }
+   ]
+  },
+  {
+   "id": "CA",
+   "name": "Check A",
+   "items": [
+    {
+     "id": "CA.1",
+     "q": "−11 + 4",
+     "mode": "check"
+    },
+    {
+     "id": "CA.2",
+     "q": "(−2)³ × (−1)",
+     "mode": "check"
+    },
+    {
+     "id": "CA.3",
+     "q": "6 − 4 × (−3)",
+     "mode": "check"
+    },
+    {
+     "id": "CA.4",
+     "q": "−3/5 + 1/5",
+     "mode": "check"
     }
    ]
   }

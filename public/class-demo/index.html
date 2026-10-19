@@ -50,15 +50,16 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--peach);outline-
 #dots button.m1{border-bottom:4px solid var(--sage)}
 #dots button.m2{border-bottom:4px solid var(--peach)}
 #dots button.m3{border-bottom:4px solid var(--navy)}
+#dots button.m4{border-bottom:4px solid #6b7280}
+#dots .setlab{font:700 13px var(--display);color:var(--muted);align-self:center;margin:0 2px 0 6px}
 #dots button.ok{background:var(--mint)}
 #dots button.ok2{background:#fbeccd}
-#dots button.no{background:#f7d9d5}
 #dots button.new::after{content:"";position:absolute;top:3px;right:3px;width:9px;height:9px;border-radius:50%;background:#e07a1f}
 #stage{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
 .meta{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .code{font:700 1rem var(--display);color:var(--muted)}
 .mode{font:600 14px var(--display);border-radius:999px;padding:3px 12px;color:#fff}
-.mode.m1{background:var(--sage)} .mode.m2{background:var(--peach)} .mode.m3{background:var(--navy)}
+.mode.m1{background:var(--sage)} .mode.m2{background:var(--peach)} .mode.m3{background:var(--navy)} .mode.m4{background:#6b7280}
 .status{margin-left:auto;color:var(--muted);font-weight:600;font-size:15px}
 .q{font:700 clamp(1.8rem,4.6vw,2.8rem) var(--display);text-align:center}
 .q .cur{background:var(--hl);border-radius:10px;padding:0 8px}
@@ -73,9 +74,6 @@ svg.nl{width:100%;height:auto;display:block;touch-action:none}
 #pad{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;max-width:560px;margin:0 auto;width:100%}
 #pad button{min-height:50px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font:700 1.3rem var(--display)}
 .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-.teach{background:var(--mint);border-radius:12px;padding:10px 14px;font-size:16px;line-height:1.55}
-.teach b{font-family:var(--display)}
-.teach .w{color:var(--bad);font-weight:700} .teach .r{color:var(--good);font-weight:700}
 
 /* ---------- scratch ---------- */
 #right{display:flex;flex-direction:column;gap:8px;min-height:0}
@@ -96,7 +94,6 @@ body.teacher #paper .redl{pointer-events:auto}
 /* ---------- teacher ---------- */
 body.teacher #top h1::after{content:" · จอครู";color:var(--red)}
 .tlog{font-size:16px;line-height:1.6}
-.tlog .ok{color:var(--good);font-weight:700} .tlog .no{color:var(--bad);font-weight:700}
 .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
 .legend span{display:inline-flex;align-items:center;gap:4px}
 .legend i{display:inline-block;width:14px;height:14px;border-radius:4px;border:1px solid var(--line)}
@@ -142,9 +139,8 @@ body.teacher #top h1::after{content:" · จอครู";color:var(--red)}
       <button class="arr" id="next" aria-label="Next">▶</button>
     </div>
     <div class="legend" id="legend" hidden>
-      <span><i style="background:var(--mint)"></i>ถูกครั้งแรก</span>
-      <span><i style="background:#fbeccd"></i>ถูกแต่ลองหลายครั้ง/ขอดูภาพ</span>
-      <span><i style="background:#f7d9d5"></i>ยังไม่ถูก</span>
+      <span><i style="background:var(--mint)"></i>เสร็จ ลอง 1 ครั้ง</span>
+      <span><i style="background:#fbeccd"></i>เสร็จ ลองหลายครั้ง</span>
       <span><i style="background:#e07a1f;border-radius:50%"></i>เพิ่งส่งมา</span>
     </div>
     <section id="stage"></section>
@@ -166,7 +162,7 @@ body.teacher #top h1::after{content:" · จอครู";color:var(--red)}
 <script>
 (function(){
 "use strict";
-const BLOB={"s":{"iter":200000,"salt":"4iN3zc2PHGng2TO8s8/MRw==","iv":"BQfCnLbvCrcwi6NQ","ct":"0/alkrN2ym9rb1AebmBOiMGf5TF9925XFNsnaU21z5R3bcLF9ygQkFZymbtlJidInM/JLGBAK3Hw4LyG/GRpv64puUmgSW6jKgrr5v0pFa4xH7UIH8F8iU9kBECFS5o+flr/0Pdg0oiD+yVvLP/BTkxCJ68LcRuQTUZHcXPmwkvhX7Se78Ht9nDz6aUu5JqByeKRXwlfTYH6lBAMgb+jIX0izP9HfAvJg6YP9nRkDEUTjExex1d9+bcEYt2BNQ9DJijLo79XsVoWvgaRponuGKPQ0TJK+xO8+HdN6J9Cwq/gspkAxCVXv/6PS7PIQv/xiHxyXwZmjrRMrtsDulz4zCh1XYDCX9yeReXednxoH8y8g7Vy4X05qJmM4VsSuOWL1guwTCkmgOLLAkCmgE+0HTBfdJOyyidQxorZQSY2EgKwMc3//aUjEJeseuPtiVRxVpWM5lKe1TMrIAlsWztPJ/eFCrW3hft58OgFp/vMEKrSwikvVwyaPg12I3N+XH72YDGpjY9psplJLwD1ajOhu1Rb1vNKZhoB96e6pIxg/BBnvGm4q7ATTSpVzId0t8jpd3Sq/LCsqupsFc86BQvDHMg8EURGfhREgBfq59RTaOsxAi2j9iiblpWmmT4JVhhQP0AJDpqFOu/vE7SRdrrwmmEjrfKRjldDatjX0XKCvLM2p73W6yzIB4+SBjHMggnGpJsR5kttSXFCeEEGqwWQdHovK1oUEkCoczWFUgHe+ztgbdEUIXtzLgKj4tlfiQX+Hcg9SOaWo2YouF9NL9ebbuaSpvooLJkaH/J4PeMm6OYh5Lbdm/FdfxO2LSV4HRD9VVtQRFbBVTcMRwlXPWphKuB+OUmXKnDP49XEa/NewSFvt6kopdhUxoK7bRVdQbvPrzDa50dvyvT5Q43X4HFkyQidPU5Ed7eQF2NLOl22YVKcgjnIW74f64bzbG2s7ObkyT/UNvcSC2dNzLKNy/xEBjb2If1z5PDgQY6jc68HdC4owVDG1XkrpLtcJGdvgJh4dAP9sFBBIVnZN5eXItlR7Mi0wEqLyopwNq8xs/tElk8EzqIboKJUEGQ="},"t":{"iter":200000,"salt":"6o3s3rtmghATqmKoa/65cw==","iv":"Pp6tGswUNdcdyETG","ct":"Q9C0LKU2NAVx7T7VjiGshLN8oEPNzYRy7A5ecA9vXYXL3o8KnE/CUeJ7lyzSfXTwz/ijNUWHHYQjzE9mjVgbgo7OVAIJ5WrWZKeef/UW9zMpgvVeCim62o5hhwxWdHLdfDN0IHtJQVVJbEbS20NPCKMJ76la8rjNXZV33N4BA0aiyKZow5F7PZ2kbFIKB9NK2xnUeuH6ctf5ES/UPxXoNM5s+gR3BrDNrq36uB9slNJ0gjdZM6tbSPKOnaAxV/RjcAJFG+LJUqT6cZeeJgr9fX0SnhgD0iNausDoEtM8EGh9ekXPazkL4bmrAFRn8ldCRYvTdcnbSbTqP658gAFXRpiC28BR+euAZrzZDHd56hDsZHud+APOj08DKQXZXFaGyjDPIfR9rD4TdYUpasPe+dwIOcGrlSyFwOkTNqv9DS5/bf1kOshlkQoy0WiyTjdktlA2AqghwWKdBGEEMF6xX8BqQDSw3bie68k5Ael/Kvicxefk1ssluFP/Nv+Vx0IZfqatKNXr3WxrwHGS7ABdkrowKUa+TjVVWWS0N32uQ9E8y8O6OFHkdY2It4qBErm19tQG58DGjGDqJWv6YRf+TvR5ZusDZTQsmj9zBlim4uSVa/NkhTXPYId2yVWCm1lfrzDq56RF5ljejaPtNuJ4lGX0pfw+Q5jyaZoypOFNcKuZXLZe7+/FicBQXlbV7t5AJUrYlb9wwYArY0q8CnUNAkX6btQhWnvKqa1pi6jxLfYDW7f56qWQmk3NkMjib4HFFyfSlHLNWNJfjGNyNEBMC0PogVt+uxVEkLdWH3P99IbRJZmA+0wDeefUEBaH/pJrmgVruX6Z9d3bCGLXrjXVn9GBdqBcTZnlh3YzkDx+eMIhbiNz6yPDo9J5qk6xPA01w7qg1DNn4+MvTJRIOv1dSScq6YsTYLoT32bhziNyAATHlWWmVY6eQuZd0QFXWRQkuCAApfVAEmvS2oqliioKU57N4ZEISVD+FeO5TeS4yEv4I4Dq5ULASX45mOEFR2z9nhx+waRPk/EMhK2LdoxKadNdue+cPF5HcQiB2jUrCCdT8NQyiqjl2Yc="}};
+const BLOB={"s":{"iter":200000,"salt":"Mwcz2fF8Y8WtSFovvXuaxw==","iv":"Q4Uyrdm+/GvqwOcO","ct":"p0CRk26G0C/Z+zjSgufXVvwivVx1xvso/PnlZjHkG+rmGGoQHxlw+NDwemOkcD9QMsQNTRaURyAdEYw4TjIAKe82CA7uClzpZ683sNENATPAkSRtH2gAYRPz0CYXkx0wHrWY4TZ88mSc88EDegK1Ix9sSOpE16bco9nZfVimfJgXGqILpcfs2JJaG4jByU5PTTHniX+1ifSLXZqcUX98tCyr4d6OpkAhdYWXgHYEXJpLDESD6oenNMyped87g08eG7nHLtHhPvWRUePimjtegUQB/AQVkbz0YwcY0zrDdYKUdiiVoimSN318kxKhCEFLZXGhKFSvgSH8NZr4cDXCy/0Zi5PjzL8Y0qgzl26trCERh99/mTDsvpVIvnhEzs2a2ehgpbraBXtfh+0CDYJ6H2UAvS2poKFMsCJ86/aoIh+QrBHvP9XvWdlGdKYt2AJ77Ar8dLAib965cjy5a1Aa6wQZzPBuC45sppBh8OVEscZcrJGXXeA9qRuUD0XwyRR1/sjUe/KMvUJuIWntkr2pfPUt68e1mqTX9/YSCsOn3y82ceW1e6y1eO7EaN6PU7TWaPbimxyrNNBRZw2oeZwgajX/UY6fzv277oN1WYh6vX18f7Zvd4SbJBInMtWhh4I8UyuvR04azPwzeSvUy2oEmW7SPDX93VAn9MX/+uKnbcqWvreei0LiYrTMcnFanA/2UslcqLkzCl9twGFXfqwff/em54vFF04XVkwNtGrmcjTeRmt9AxqJ0LX0DCTXpVS06Nll8PylCd5dvpGJE6B4P488SfqJ9akjjxLCcpojsvZAA7rxRafIhzOU8hFRV5blbkq+V21IlD6AqSyFaTRUXTc14dLrXb/H0PD8qnuoJuLmDUh8XFj00WmFT10V4zIM9FE1i1pyW21vy4cR2snqq8LqVthTNo9sUoyZgXELLK38MSb+kKVo5pU/USa5ZSxxbCTOq71LDHUzDexbeqe07SGjTA0ErYPIAbngsXMIPHIaQeA+xIX71ZsV8I1lVAcLBEZUw5EbtdKMe4WNYJTKkwllIp9/GgQkDd31y3Bb0/kzkv/eWttuvIuu0SJM7GmGdTz7TTBTdk594QfV/QF9UUGw7HeaEO2oyF2SIVFEuQuf8McpT+HU8hrC5H2K9cu1Vba1b5M4+3lo3dVnkuAst4YQR6pxlz9pZnBqbz+/orGrUWAo6lGLhbINcpM7T5TiHQb5UlyDzDhO8AD84MvTwChmieSOLPxOyyYm+I/h3Xi2Qbdm1+L8t0w7VLEfIBZcC0KG+xFBt1JLnFdxh885hfRU7YGnZQ7QkdcJWVh7E1qRXYWrmzmhvFBh+fhmAzHE6dWX2BGk6mqoR7WeMbpf4AjGIj5zV6rjluIfgiPzpb9zHhM6bp7rcpvVSeaqADl1ZIMNgw=="},"t":{"iter":200000,"salt":"OfUJSQPvQbuJMd+AJIgKaw==","iv":"D19y3P/X7faRVHy0","ct":"hAHLMPIBD/wodF665BDlKWIKVKWBRq3yiM+go22czaoUsEvs8V6CKEmvGKNTuWq+WKE6MJj9hO+kIH1E7j00CVJwEnvw1Tyfiig1yO/0EeKzUM+v6b+vyRV+qHtDp00RMYrR7aKiyWkBcwURHVUc+SyKA/Tn0SZaNN3rrCGUEmEHXfKxCX8ocSyVTdM9QVMRtf+TDvTHRmffUCPSYrV7ixSSB78YFSbB+v3/R460JuVYSjOPUzkSMgMuTCLhnZGUsQP/na5Iv0AEkoEpKgVOU/pvNurpkRaC1VGhZHdCD4GwAJJPcpL7YOufSXr3ID6t5yX3gmcegA7xcQTbnAQrwSw9L70toPUKtrwnXYRFpDWjUjPy9AdSNZdX7EEyZw4e27q8hXA3o11ohhDBmNX7hgBi1eUkooFlqpSRp3+WQX7TA5VUwJ9kYR7EQEXOkGLTDEkuSJUL3gjkuYyZ4Ng1w5QmjUJIgFfjefTit5DhoWUylD6IkR/u3FwU5Lewf30RiGNM0QB5CspcvSCvfSkcKgjZlvYETn0kgTJ5uErrVDC22j9XebtT/f0kk6cvr3WFHz2tXe5rIEIKsW9n4zXL7RcJvi8N/IOy3Kn7KNwmNK/zj4g8YD4pXcWWNQENKAK1EHafNzOXaWl+66np7Vjq9iz4p5Heh0EThYzgn/rqOU1jtaLzCJ95ShCylOPRyWenovFF7G8FXauyBXuVVLoGm85GHkX/5KhNadSir0Uk10HPLDVqUzrNUKVIx8QA4DkYxXO/onuvBeGuqluOUehKS3tGQ5gym0secMJldjm16gIKZbDC/FJiE0S3fPpFv8zi403XYSZvgmau8FXmy4TznaNNLW7pQwQap0SsIoE2Fx2Mq/f6Ea9UKI2mSxjuZgGYYLYiSR8NjS//O9lnIl8VCjsB2bPxpV+Ae6/wmoVLa/WTrIpi+chnAvnRt4yzNi6LsmY9+wluzWRhA6bwrsZbhHkxzcOcQM39nQnjxeNGrhS8VjPeG6OQJJHXbFKZbBbg1ZJwVmNfRd5akvV03Uq0Zgo4L8feJJFB7xfPAEG/6FulUQzhyLI2S+Cby/KMk7QWI1moLl12mFi6gAtlkqE+zf2FSTBeNakGlAZCXEi0uM6JL+GzcxU0HjhLvRndeJb4MDAVOdqWseAHanHDB3/oZvw+DKy6vmxWO0GqtLZhV0h8XqP1Kdkc1mgwq25AcVjfAncycgibZsmdoBG2JcERtnBlFTLrGYeqkMVA3BaBGviF3eWryhOmQSWpV7+jQ0Y1p6AqZYZRixj/bhgK7jDF6ua7WViqCD5HSvBN+SilnSftIQzl8iEusP2+EtM9xpFzxVnpwiHMEKkASjawSDzxO+z7THgVl9NLMY9D/eiydR4sPjV8nEeqaMzMRfF+qQ/LNWbZgQ=="}};
 const CLASS="demo";
 const NS="http://www.w3.org/2000/svg",M="−";
 const $=id=>document.getElementById(id);
@@ -210,13 +206,15 @@ function parseAns(s){
   if(s.includes("/")){const [a,b]=s.split("/").map(Number);return b?a/b:NaN;}
   return Number(s);
 }
-const answerOf=it=>it.a+it.m.reduce((s,mv)=>s+signed(mv),0);
-const MODES={explore:["m1","1 · Explore"],guess:["m2","2 · Drag and guess"],answer:["m3","3 · Answer"]};
-const MODES_TH={explore:"โหมดดูภาพ",guess:"โหมดลากแล้วทาย",answer:"โหมดตอบ"};
+const answerOf=it=>it.m==null?null:it.a+it.m.reduce((s,mv)=>s+signed(mv),0);
+const MODES={explore:["m1","1 · Explore"],guess:["m2","2 · Drag and guess"],answer:["m3","3 · Answer"],check:["m4","Check"]};
+const MODES_TH={explore:"โหมดดูภาพ",guess:"โหมดลากแล้วทาย",answer:"โหมดตอบ",check:"โหมดสอบ (โจทย์ + ทด)"};
+// tries: typed answers; on Explore, the drags
+const attempts=(it,s)=>it.mode==="explore"?s.arrows.length+s.wrongDrag:s.tries.length;
 
 /* ---------- state ---------- */
 let items=[],idx=0,W={},SENT={},RED={},SEEN={};
-function blank(){return {started:false,k:0,pos:null,arrows:[],wrongStart:0,wrongDrag:0,tries:[],ok:null,hint:false,shown:false,ink:[],secs:0,touched:false};}
+function blank(){return {started:false,k:0,pos:null,arrows:[],wrongStart:0,wrongDrag:0,tries:[],ok:null,ink:[],secs:0,touched:false};}
 function st(i){const id=items[i].id;return W[id]||(W[id]=blank());}
 function persist(){if(!TEACHER)save(K.work,W);}
 
@@ -265,18 +263,18 @@ addEventListener("pagehide",()=>{if(!TEACHER)leave();});
 let flashT;function flash(t){const el=document.querySelector(".status");if(el){el.textContent=t;clearTimeout(flashT);flashT=setTimeout(()=>{el.textContent=""},2500);}}
 
 /* ---------- dots ---------- */
-function grade(s){
-  if(!s||s.ok==null)return "";
-  if(!s.ok)return "no";
-  return (s.tries.length>1||s.hint||s.wrongDrag||s.wrongStart||s.shown)?"ok2":"ok";
+function grade(it,s){
+  if(!s||!s.ok)return "";
+  return attempts(it,s)>(it.mode==="explore"?it.m.length:1)?"ok2":"ok";
 }
 function renderDots(){
   const d=$("dots");d.innerHTML="";
   items.forEach((it,i)=>{
+    if(C.sets.length>1&&(i===0||items[i-1].set!==it.set)){const l=document.createElement("span");l.className="setlab";l.textContent=it.set.id;d.appendChild(l);}
     const b=document.createElement("button");
     const s=TEACHER?SENT[it.id]:W[it.id];
-    b.className=MODES[it.mode][0]+" "+grade(s)+(TEACHER&&s&&SEEN[it.id]!==s.at?" new":"");
-    b.textContent=it.id.replace(/^S\d+\./,"");b.setAttribute("aria-label",it.id);
+    b.className=MODES[it.mode][0]+" "+grade(it,s)+(TEACHER&&s&&SEEN[it.id]!==s.at?" new":"");
+    b.textContent=it.id.replace(/^.*\./,"");b.setAttribute("aria-label",it.id);
     b.setAttribute("aria-current",i===idx?"true":"false");
     b.onclick=()=>go(i);d.appendChild(b);
   });
@@ -287,14 +285,14 @@ function renderDots(){
 const X0=40,X1=960,LY=200;
 function lineFor(it){return {LO:it.lo??-20,HI:it.hi??20};}
 function el(t,a,p){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e;}
-function drawLine(svg,R){
+function drawLine(svg,R,scale=true){
   svg.innerHTML="";const sx=t=>X0+(t-R.LO)/(R.HI-R.LO)*(X1-X0);
   el("line",{x1:X0-14,y1:LY,x2:X1+14,y2:LY,stroke:"#1f2836","stroke-width":2.5},svg);
   const span=R.HI-R.LO,every=span<=20?2:5;
   for(let t=R.LO;t<=R.HI;t++){
     const x=sx(t),maj=t%every===0;
     el("line",{x1:x,y1:LY-(maj?11:7),x2:x,y2:LY+(maj?11:7),stroke:maj?"#1f2836":"#8a93a3","stroke-width":maj?2:1.3},svg);
-    if(maj){const tx=el("text",{x,y:LY+34,"text-anchor":"middle","font-size":t===0?19:16,"font-weight":t===0?700:500,fill:"#1f2836","font-family":"Poppins, sans-serif"},svg);tx.textContent=show(t);}
+    if(maj&&(scale||t===0)){const tx=el("text",{x,y:LY+34,"text-anchor":"middle","font-size":t===0?19:16,"font-weight":t===0?700:500,fill:"#1f2836","font-family":"Poppins, sans-serif"},svg);tx.textContent=show(t);}
   }
   return sx;
 }
@@ -310,7 +308,7 @@ function arrow(g,sx,from,to,row,label,faint){
 /* a finished picture (for the teacher, the print, and revisits) */
 function staticLine(it,s,showEnd){
   const svg=document.createElementNS(NS,"svg");svg.setAttribute("viewBox","0 0 1000 250");svg.setAttribute("class","nl");
-  const sx=drawLine(svg,lineFor(it));
+  const sx=drawLine(svg,lineFor(it),it.scale!==false);
   s.arrows.forEach(([f,t],r)=>{const g=el("g",{},svg);arrow(g,sx,f,t,r,(t>f?"+":M)+Math.abs(t-f));});
   if(s.pos!=null){el("circle",{cx:sx(s.pos),cy:LY,r:10,fill:"#2b3a55",stroke:"#fff","stroke-width":3},svg);
     if(showEnd&&s.k>=it.m.length){const t=el("text",{x:sx(s.pos),y:LY-20,"text-anchor":"middle","font-size":22,"font-weight":700,fill:"#2b3a55","font-family":"Poppins, sans-serif"},svg);t.textContent=show(s.pos);}}
@@ -323,6 +321,7 @@ function moveWord(op,b){
 
 /* ---------- question view ---------- */
 function qHTML(it,s,live){
+  if(it.m==null)return esc(it.q);
   const parts=[show(it.a)].concat(it.m.map(([op,b])=>(op==="-"?M:"+")+" "+term(b)));
   return parts.map((p,j)=>live&&((!s.started&&j===0)||(s.started&&j===s.k+1&&s.k<it.m.length))?`<span class="cur">${p}</span>`:p).join(" ");
 }
@@ -341,11 +340,12 @@ function renderStudent(it,stg){
   const q=$("q"),ins=$("ins"),fb=$("fb"),lineBox=$("lineBox"),ansArea=$("ansArea");
   const say=(t,ok)=>{fb.textContent=t;fb.className="fb"+(ok===true?" good":ok===false?" bad":"");};
   const done=()=>s.k>=it.m.length&&s.started;
-  const needLine=it.mode!=="answer"||s.shown;
+  const needLine=it.mode==="explore"||it.mode==="guess";
   let typed="";
 
   function answerUI(){
     ansArea.innerHTML="";
+    if(it.mode==="check")return;
     if(it.mode==="explore"){
       if(done()){ansArea.innerHTML=`<div class="result">${esc(qHTML(it,s,false))} = ${show(answerOf(it))}</div>`;
         const r=document.createElement("div");r.className="row";const b=document.createElement("button");b.className="big";b.textContent="Next ▶";b.onclick=()=>go(idx+1);r.appendChild(b);ansArea.appendChild(r);}
@@ -365,18 +365,12 @@ function renderStudent(it,stg){
         const ab=$("ab");ab.textContent=typed||"?";ab.classList.toggle("empty",!typed);};
       pad.appendChild(b);}
     ansArea.appendChild(pad);
-    if(it.mode==="answer"&&!s.shown){
-      const r=document.createElement("div");r.className="row";r.style.marginTop="6px";
-      const h=document.createElement("button");h.className="ghost";h.textContent="Show me the picture";
-      h.onclick=()=>{s.shown=true;s.hint=true;s.touched=true;persist();renderStudent(it,stg);};
-      r.appendChild(h);ansArea.appendChild(r);
-    }
     chk.onclick=()=>{
       const v=parseAns(typed);if(isNaN(v)){say("Type a number first.",false);return;}
       s.touched=true;s.tries.push(typed);
       if(Math.abs(v-answerOf(it))<1e-9){s.ok=true;say(s.tries.length===1?"Yes! Right first time.":"Yes!",true);}
       else{s.ok=false;typed="";
-        say(s.tries.length>=2&&it.mode==="answer"&&!s.shown?"Not yet. Try the picture.":"Not yet. Try again.",false);}
+        say("Not yet. Try again.",false);}
       persist();renderDots();answerUI();
     };
   }
@@ -386,7 +380,7 @@ function renderStudent(it,stg){
   if(needLine){
     const svg=document.createElementNS(NS,"svg");svg.setAttribute("viewBox","0 0 1000 250");svg.setAttribute("class","nl");
     svg.setAttribute("aria-label","Number line: tap to put a dot, drag to draw a move");lineBox.appendChild(svg);
-    const R=lineFor(it),sx=drawLine(svg,R);
+    const R=lineFor(it),sx=drawLine(svg,R,it.scale!==false);
     const arrowsG=el("g",{},svg),ghost=el("g",{},svg);
     const dot=el("circle",{r:10,fill:"#2b3a55",stroke:"#fff","stroke-width":3,cy:LY,visibility:"hidden"},svg);
     const endLab=el("text",{y:LY-20,"text-anchor":"middle","font-size":22,"font-weight":700,fill:"#2b3a55","font-family":"Poppins, sans-serif"},svg);
@@ -429,7 +423,7 @@ function renderStudent(it,stg){
     };
     svg.addEventListener("pointerup",endDrag);
     svg.addEventListener("pointercancel",()=>{dragging=false;ghost.innerHTML="";});
-  }else ins.textContent="Work it out on the right, then type the answer.";
+  }else ins.textContent=it.mode==="check"?"Show your working and your answer on the paper.":"Work it out on the right, then type the answer.";
   if(s.ok)say("Done.",true);
   answerUI();
 }
@@ -439,36 +433,18 @@ function renderTeacher(it,stg){
   const s=SENT[it.id],[mc]=MODES[it.mode];
   if(s){SEEN[it.id]=s.at;save(K.seen,SEEN);}
   const ans=answerOf(it);
-  let html=`<div class="meta"><span class="code">${esc(it.id)}</span><span class="mode ${mc}">${MODES_TH[it.mode]}</span>
+  stg.innerHTML=`<div class="meta"><span class="code">${esc(it.id)}</span><span class="mode ${mc}">${MODES_TH[it.mode]}</span>
     <span class="status">${s?"ส่งเมื่อ "+new Date(s.at).toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"}):"ยังไม่ส่ง"}</span></div>
-    <div class="q">${qHTML(it,{},false)} <span style="color:var(--muted)">= ${show(ans)}</span></div>`;
-  stg.innerHTML=html;
+    <div class="q">${qHTML(it,{},false)}${ans==null?"":` <span style="color:var(--muted)">= ${show(ans)}</span>`}</div>`;
   if(!s){stg.insertAdjacentHTML("beforeend",`<div class="ins">น้องยังไม่ได้ทำข้อนี้ หรือยังไม่ได้เลื่อนออกจากข้อนี้</div>`);renderDots();return;}
-  if(s.arrows.length||s.started)stg.appendChild(staticLine(it,s,true));
+  if(s.arrows.length)stg.appendChild(staticLine(it,s,true));
   const log=[];
-  if(s.wrongStart)log.push(`วางจุดเริ่มผิด <b class="no">${s.wrongStart}</b> ครั้ง`);
-  if(it.mode!=="answer"||s.shown)log.push(`ลากลูกศร ${s.arrows.length}/${it.m.length}`+(s.wrongDrag?` · ลากผิด <b class="no">${s.wrongDrag}</b> ครั้ง`:" · ไม่ผิดเลย"));
-  if(s.tries.length)log.push("คำตอบที่พิมพ์: "+s.tries.map(t=>{const ok=Math.abs(parseAns(t)-ans)<1e-9;return `<b class="${ok?"ok":"no"}">${esc(t)} ${ok?"✓":"✗"}</b>`;}).join(" → "));
-  else if(it.mode==="explore")log.push(s.k>=it.m.length?'<b class="ok">ลากครบ เห็นคำตอบแล้ว</b>':"ยังลากไม่ครบ");
-  if(s.hint)log.push('<b class="no">กด "Show me the picture"</b>');
+  if(it.mode!=="check"){
+    log.push(`ลอง ${attempts(it,s)} ครั้ง`);
+    if(s.tries.length)log.push("คำตอบ: <b>"+esc(s.tries[s.tries.length-1])+"</b>");
+  }else log.push("ดูคำตอบในกระดาษทดด้านขวา");
   log.push(`ใช้เวลา ${s.secs} วินาที`);
   stg.insertAdjacentHTML("beforeend",`<div class="tlog">${log.join("<br>")}</div>`);
-  const tip=teachTip(it,s);if(tip)stg.insertAdjacentHTML("beforeend",`<div class="teach">${tip}</div>`);
-}
-/* what went wrong, in the teacher's words */
-function teachTip(it,s){
-  const ans=answerOf(it),wrong=s.tries.map(parseAns).filter(v=>Math.abs(v-ans)>1e-9);
-  if(!wrong.length&&!s.wrongDrag&&!s.wrongStart)return "";
-  const out=[];
-  for(const v of wrong){
-    // the classic slip: one move went the wrong way
-    for(let j=0;j<it.m.length;j++){if(Math.abs(ans-2*signed(it.m[j])-v)<1e-9){const [op,b]=it.m[j];
-      out.push(`ตอบ <span class="w">${show(v)}</span> = ไปผิดทางที่ ${op==="-"?M:"+"} ${term(b)} · ${op==="-"?M:"+"}(${b<0?M:"+"}) ต้องไป<b>${signed(it.m[j])>0?"ขวา":"ซ้าย"}</b>`);break;}}
-    if(Math.abs(v+ans)<1e-9&&ans!==0)out.push(`ตอบ <span class="w">${show(v)}</span> = ตัวเลขถูก แต่เครื่องหมายกลับ`);
-  }
-  if(s.wrongStart)out.push("หาจุดเริ่มบนเส้นจำนวนไม่เจอ ลองให้นับจาก 0");
-  if(s.wrongDrag&&!out.length)out.push("ลากผิดระหว่างทาง ดูกระดาษทดว่าคิดทางไหน");
-  return out.join("<br>");
 }
 
 /* ---------- scratch paper (vector strokes, 0..1 of the paper) ---------- */
@@ -556,7 +532,7 @@ $("saveBtn").onclick=()=>{
   for(const it of items){
     const s=src[it.id];if(!s||!s.touched&&!(s.ink&&s.ink.length))continue;
     const ans=answerOf(it),d=document.createElement("div");d.className="it";
-    const tries=s.tries.length?"Answer: "+s.tries.map(t=>esc(t)+(Math.abs(parseAns(t)-ans)<1e-9?" ✓":" ✗")).join(" → "):(s.k>=it.m.length?"= "+show(ans)+" ✓":"");
+    const tries=s.tries.length?"Answer: "+esc(s.tries[s.tries.length-1]):(ans!=null&&s.k>=it.m.length?"= "+show(ans):"");
     d.innerHTML=`<div><div class="pq">${esc(it.id)} &nbsp; ${qHTML(it,{},false)}</div><div class="pa">${tries}</div></div>`;
     if(s.arrows.length)d.firstChild.appendChild(staticLine(it,s,true));
     const red=RED[it.id]||[];
