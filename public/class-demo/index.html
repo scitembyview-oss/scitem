@@ -17,7 +17,7 @@
   color-scheme:light;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%}
+html,body{margin:0;height:100%;overscroll-behavior:none}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:17px;line-height:1.4;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overflow:hidden}
 button{font:600 16px var(--display);color:var(--fg);cursor:pointer;touch-action:manipulation}
 button:focus-visible,input:focus-visible{outline:3px solid var(--peach);outline-offset:2px}
@@ -36,7 +36,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--peach);outline-
 /* ---------- app ---------- */
 #app{height:100dvh;display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,38%);gap:12px;
   padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
-#left{display:flex;flex-direction:column;gap:10px;min-height:0;overflow-y:auto}
+#left{display:flex;flex-direction:column;gap:10px;min-height:0;overflow-y:auto;overscroll-behavior:contain}
 #top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 #top h1{font:700 1.15rem var(--display);margin:0}
 #top .who{color:var(--muted);font-weight:600}
@@ -166,7 +166,7 @@ body.teacher #top h1::after{content:" · จอครู";color:var(--red)}
 <script>
 (function(){
 "use strict";
-const BLOB={"s":{"iter":200000,"salt":"fNkX03lcAz2MdRtDUwGz6A==","iv":"Tfozhq9x/TMzxH+Z","ct":"m2rHVgJMT40TK6G0M6ufEmnbVPtHPyR26R02ZDIll9BPvL+ESHRvjhcdcbY3+uv4NVpEj0v7wqDEBzoLES7lPG5OqnsgdIrCYWcZg8z+NBwxBdVmsPjMVBOHefk4VHmgnPZUr0mZR8pZZQRamjlchhV6CJ3j1DXixmLFlWZholoS492cfNdeVhqM67qHiPlnLxMcZkRcBoYPPPtq+WlgvIYKrAexti8W/vIYUsSNAcfs2oAVdVuNK/DpTCKIZriifyl37CkQ50DA1JJanuEV/kSFfNRDyvdCbGx9PsTJKuEDr5EUDqUJwWh8ejJyM6b/1qs5KjFGDmw8rmbpq0jR7mKrCrbPkOltMbngzltC+TvsNB3ST/o+qCfW8C3OnrXcSFIx5pFy9Nk+7o/86xkfaRDAYxQ8bp9KAXPiz/hyidQr28T+q65xLGTgL4WyjB+uOqFL9UA5cKIuKwOc4T17pgTE6G82CJAHZqqf99Gh0EzFpHbfhHftpcgU5O+hEXIjjqHRMrLg9hdV2KcnaIGUmd0BQ1eirCn5jKZ2QOAgTTAkqd4QlfklMS1yHzN/cHimC2VSrm5AVB8Axpfwtaln4lrgCmAwS2/qIG9HaHvVupgIK/Ero6VCu5+f7vPNRKHxjDw27luSH6OxXqLvOBB5H5PpRDrzkW+HTq4BX+lSAOhDaMZK3A871J0soGpqrXY2eomYPoVqyRNi2Fi/uZnKCiqE2sKN3IGPmnPwRfrfyHr0yiBhlxHDEsq7xO0chKCj3QBNBSOetN5VQqd9an+4GIh4H584bgro3RTEoS+UXkDJFVyw7dNlXnxcHAObWHQ/3n539+HovASv6+0IKLfc78AZamjlItteQXMwLsfE/nSegUoC9M9cSCs48d4Re+Q9BUQ4Opi2LwXdgGFg60RCYrson09N9Shn0ahlJhg8gD3LPycWH8NSCqxDfnxkC2fDhlN5RY1r4KGMC8pLl1zeex2IPWx25Tf31svejFdMoRxyQPELh1GpIhBBKVj0rVjyxuE9AgwbWUbypnAUPG3eKD2BBd3wkAyw0S/3+t3dI3dZ0fp+VyEbaiw="},"t":{"iter":200000,"salt":"giPyXL7Xi9jxRNrsHQ2b4g==","iv":"O4RRjzgv+pTKSy3J","ct":"WRom4IZdFScy+gW/YmC0K9Yr4quNQK0EbXPY61qiQHGGPwt+2OyrDnvGGV6JF7dZt0a16b9jv8FA5YDRpnEtYg2hCDX6n6B0BTRXtWNJb195cJfp/ajBuryj8+k+HXNn7jcoGAIZjgX/CTNvIYt9WS6bxfN49pw92suuK1UlOhl1ztaNMlwk/dUiD3Yikv2nWqRopK3qsS2cjYak9IxWvvPWWD1sX+mYhjVvSXWFzs6qwHIfp3X9KIbb5x9GRhKwt+YKbE2PhVsfYXfM/N8ImnI+qNuPl3E81PlWbn8IHW/ThAeCYnaDK6i8pVNnMHj82Dnn7y9BMPHaQ5FU6PYQxyfauWEXIVkHoLz9+Fh8fFdqmK4BJ8pfT6aS/8HyArv5Y32TyPbL9sL5x3pw5HPrvWE+gnGLO6Fr/aTF9FYP/v2fWJFlnNDguvKCd+LHVC1Xy/Xs8LaeoyZA0rIQZmRdJqPq1yfx1UPIcvy4P6b+WiorVB9Q1iwLP4jPnW3OZeCl8ZXLZKtPk/PclKf4dElUMJW1lgte7f4NlLM4mCLGQCwrn5eu4hMdwM5JX6+Tv/8kdirYDGsC2SSqFA8uOdSJAqbmhPJ6o5NEROHeShzbx4EIxNiQ3nL1pBGtWOjkOsBJw6MnUrCF/IaCKRNde3Ah13HMd8Uzb1f8heTjSIe6CnXflbBuDxS5zY5HHrrY96p988ruy+NeAXzVzT9Pdw5UbaLKemPS0090tL2d8Iw0vKJRbiFJS/nBsLtH5ImAN6cAAbcy8vBu7Kiy+YyXXRWVHORzMYyXiwEyIqrjyLWV6/7aKe7cYcwQWIu7KcpDZUfzeQ4ylnHQL4Kz6LHaDeka83RJTc5bZFJi33hwsvfjnbhCXQAr8vnU0WxbFzEj0R3fG9jBeCzdZLnJ6xx35Xoxkaw7sVYf/GP97SPBq3s0lqxB7j+v8o3bB7V90XrO1QPQR1YLwZmImNiGC2WOgVpnBw7Ji0BllaBzTgvpJXv8q1zq7zEDwS4wpAWJR2LS/BVM/JD61BaBg2cg2yPwJInB1XeeHh/ooQYi89hhboAsxw5JJoZUb8CdTD4="}};
+const BLOB={"s":{"iter":200000,"salt":"4iN3zc2PHGng2TO8s8/MRw==","iv":"BQfCnLbvCrcwi6NQ","ct":"0/alkrN2ym9rb1AebmBOiMGf5TF9925XFNsnaU21z5R3bcLF9ygQkFZymbtlJidInM/JLGBAK3Hw4LyG/GRpv64puUmgSW6jKgrr5v0pFa4xH7UIH8F8iU9kBECFS5o+flr/0Pdg0oiD+yVvLP/BTkxCJ68LcRuQTUZHcXPmwkvhX7Se78Ht9nDz6aUu5JqByeKRXwlfTYH6lBAMgb+jIX0izP9HfAvJg6YP9nRkDEUTjExex1d9+bcEYt2BNQ9DJijLo79XsVoWvgaRponuGKPQ0TJK+xO8+HdN6J9Cwq/gspkAxCVXv/6PS7PIQv/xiHxyXwZmjrRMrtsDulz4zCh1XYDCX9yeReXednxoH8y8g7Vy4X05qJmM4VsSuOWL1guwTCkmgOLLAkCmgE+0HTBfdJOyyidQxorZQSY2EgKwMc3//aUjEJeseuPtiVRxVpWM5lKe1TMrIAlsWztPJ/eFCrW3hft58OgFp/vMEKrSwikvVwyaPg12I3N+XH72YDGpjY9psplJLwD1ajOhu1Rb1vNKZhoB96e6pIxg/BBnvGm4q7ATTSpVzId0t8jpd3Sq/LCsqupsFc86BQvDHMg8EURGfhREgBfq59RTaOsxAi2j9iiblpWmmT4JVhhQP0AJDpqFOu/vE7SRdrrwmmEjrfKRjldDatjX0XKCvLM2p73W6yzIB4+SBjHMggnGpJsR5kttSXFCeEEGqwWQdHovK1oUEkCoczWFUgHe+ztgbdEUIXtzLgKj4tlfiQX+Hcg9SOaWo2YouF9NL9ebbuaSpvooLJkaH/J4PeMm6OYh5Lbdm/FdfxO2LSV4HRD9VVtQRFbBVTcMRwlXPWphKuB+OUmXKnDP49XEa/NewSFvt6kopdhUxoK7bRVdQbvPrzDa50dvyvT5Q43X4HFkyQidPU5Ed7eQF2NLOl22YVKcgjnIW74f64bzbG2s7ObkyT/UNvcSC2dNzLKNy/xEBjb2If1z5PDgQY6jc68HdC4owVDG1XkrpLtcJGdvgJh4dAP9sFBBIVnZN5eXItlR7Mi0wEqLyopwNq8xs/tElk8EzqIboKJUEGQ="},"t":{"iter":200000,"salt":"6o3s3rtmghATqmKoa/65cw==","iv":"Pp6tGswUNdcdyETG","ct":"Q9C0LKU2NAVx7T7VjiGshLN8oEPNzYRy7A5ecA9vXYXL3o8KnE/CUeJ7lyzSfXTwz/ijNUWHHYQjzE9mjVgbgo7OVAIJ5WrWZKeef/UW9zMpgvVeCim62o5hhwxWdHLdfDN0IHtJQVVJbEbS20NPCKMJ76la8rjNXZV33N4BA0aiyKZow5F7PZ2kbFIKB9NK2xnUeuH6ctf5ES/UPxXoNM5s+gR3BrDNrq36uB9slNJ0gjdZM6tbSPKOnaAxV/RjcAJFG+LJUqT6cZeeJgr9fX0SnhgD0iNausDoEtM8EGh9ekXPazkL4bmrAFRn8ldCRYvTdcnbSbTqP658gAFXRpiC28BR+euAZrzZDHd56hDsZHud+APOj08DKQXZXFaGyjDPIfR9rD4TdYUpasPe+dwIOcGrlSyFwOkTNqv9DS5/bf1kOshlkQoy0WiyTjdktlA2AqghwWKdBGEEMF6xX8BqQDSw3bie68k5Ael/Kvicxefk1ssluFP/Nv+Vx0IZfqatKNXr3WxrwHGS7ABdkrowKUa+TjVVWWS0N32uQ9E8y8O6OFHkdY2It4qBErm19tQG58DGjGDqJWv6YRf+TvR5ZusDZTQsmj9zBlim4uSVa/NkhTXPYId2yVWCm1lfrzDq56RF5ljejaPtNuJ4lGX0pfw+Q5jyaZoypOFNcKuZXLZe7+/FicBQXlbV7t5AJUrYlb9wwYArY0q8CnUNAkX6btQhWnvKqa1pi6jxLfYDW7f56qWQmk3NkMjib4HFFyfSlHLNWNJfjGNyNEBMC0PogVt+uxVEkLdWH3P99IbRJZmA+0wDeefUEBaH/pJrmgVruX6Z9d3bCGLXrjXVn9GBdqBcTZnlh3YzkDx+eMIhbiNz6yPDo9J5qk6xPA01w7qg1DNn4+MvTJRIOv1dSScq6YsTYLoT32bhziNyAATHlWWmVY6eQuZd0QFXWRQkuCAApfVAEmvS2oqliioKU57N4ZEISVD+FeO5TeS4yEv4I4Dq5ULASX45mOEFR2z9nhx+waRPk/EMhK2LdoxKadNdue+cPF5HcQiB2jUrCCdT8NQyiqjl2Yc="}};
 const CLASS="demo";
 const NS="http://www.w3.org/2000/svg",M="−";
 const $=id=>document.getElementById(id);
@@ -404,6 +404,9 @@ function renderStudent(it,stg){
     }
     paint();
     let dragging=false,dragTo=null;
+    // iPad Safari can still scroll the page under a drag despite touch-action:none, so block touch scrolling on the line
+    svg.addEventListener("touchstart",e=>e.preventDefault(),{passive:false});
+    svg.addEventListener("touchmove",e=>e.preventDefault(),{passive:false});
     svg.addEventListener("pointerdown",ev=>{
       if(done())return;
       if(!s.started){const v=valueAt(ev);s.touched=true;

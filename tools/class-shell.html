@@ -17,7 +17,7 @@
   color-scheme:light;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%}
+html,body{margin:0;height:100%;overscroll-behavior:none}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:17px;line-height:1.4;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overflow:hidden}
 button{font:600 16px var(--display);color:var(--fg);cursor:pointer;touch-action:manipulation}
 button:focus-visible,input:focus-visible{outline:3px solid var(--peach);outline-offset:2px}
@@ -36,7 +36,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--peach);outline-
 /* ---------- app ---------- */
 #app{height:100dvh;display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,38%);gap:12px;
   padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
-#left{display:flex;flex-direction:column;gap:10px;min-height:0;overflow-y:auto}
+#left{display:flex;flex-direction:column;gap:10px;min-height:0;overflow-y:auto;overscroll-behavior:contain}
 #top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 #top h1{font:700 1.15rem var(--display);margin:0}
 #top .who{color:var(--muted);font-weight:600}
@@ -404,6 +404,9 @@ function renderStudent(it,stg){
     }
     paint();
     let dragging=false,dragTo=null;
+    // iPad Safari can still scroll the page under a drag despite touch-action:none, so block touch scrolling on the line
+    svg.addEventListener("touchstart",e=>e.preventDefault(),{passive:false});
+    svg.addEventListener("touchmove",e=>e.preventDefault(),{passive:false});
     svg.addEventListener("pointerdown",ev=>{
       if(done())return;
       if(!s.started){const v=valueAt(ev);s.touched=true;
