@@ -208,13 +208,13 @@ function parseAns(s){
 }
 const answerOf=it=>it.m==null?null:it.a+it.m.reduce((s,mv)=>s+signed(mv),0);
 const MODES={explore:["m1","1 · Explore"],guess:["m2","2 · Drag and guess"],answer:["m3","3 · Answer"],check:["m4","Check"]};
-const MODES_TH={explore:"โหมดดูภาพ",guess:"โหมดลากแล้วทาย",answer:"โหมดตอบ",check:"โหมดสอบ (โจทย์ + ทด)"};
+const MODES_TH={explore:"โหมดดูภาพ",guess:"โหมดลากแล้วทาย",answer:"โหมดตอบ",check:"โหมดสอบ (โจทย์ + ทด + คำตอบ)"};
 // tries: typed answers; on Explore, the drags
 const attempts=(it,s)=>it.mode==="explore"?s.arrows.length+s.wrongDrag:s.tries.length;
 
 /* ---------- state ---------- */
 let items=[],idx=0,W={},SENT={},RED={},SEEN={};
-function blank(){return {started:false,k:0,pos:null,arrows:[],wrongStart:0,wrongDrag:0,tries:[],ok:null,ink:[],secs:0,touched:false};}
+function blank(){return {started:false,k:0,pos:null,arrows:[],wrongStart:0,wrongDrag:0,tries:[],ok:null,shown:false,ink:[],secs:0,touched:false};}
 function st(i){const id=items[i].id;return W[id]||(W[id]=blank());}
 function persist(){if(!TEACHER)save(K.work,W);}
 
@@ -341,31 +341,39 @@ function renderStudent(it,stg){
   const q=$("q"),ins=$("ins"),fb=$("fb"),lineBox=$("lineBox"),ansArea=$("ansArea");
   const say=(t,ok)=>{fb.textContent=t;fb.className="fb"+(ok===true?" good":ok===false?" bad":"");};
   const done=()=>s.k>=it.m.length&&s.started;
-  const needLine=it.mode==="explore"||it.mode==="guess";
+  const needLine=it.mode==="explore"||it.mode==="guess"||(it.mode==="answer"&&s.shown);
   let typed="";
 
   function answerUI(){
     ansArea.innerHTML="";
-    if(it.mode==="check")return;
     if(it.mode==="explore"){
       if(done()){ansArea.innerHTML=`<div class="result">${esc(qHTML(it,s,false))} = ${show(answerOf(it))}</div>`;
         const r=document.createElement("div");r.className="row";const b=document.createElement("button");b.className="big";b.textContent="Next ▶";b.onclick=()=>go(idx+1);r.appendChild(b);ansArea.appendChild(r);}
       return;
     }
     if(it.mode==="guess"&&!done())return;
+    if(it.mode==="check")typed=s.tries[0]||"";
     if(s.ok){ansArea.innerHTML=`<div class="result">${esc(qHTML(it,s,false))} = ${show(answerOf(it))}</div>`;
       const r=document.createElement("div");r.className="row";const b=document.createElement("button");b.className="big";b.textContent="Next ▶";b.onclick=()=>go(idx+1);r.appendChild(b);ansArea.appendChild(r);return;}
     const row=document.createElement("div");row.className="ansrow";
-    row.innerHTML=`<span style="font:700 1.5rem var(--display)">=</span><div class="ansbox empty" id="ab">?</div>`;
-    const chk=document.createElement("button");chk.className="big";chk.textContent="Check";row.appendChild(chk);
+    row.innerHTML=`<span style="font:700 1.5rem var(--display)">=</span><div class="ansbox${typed?"":" empty"}" id="ab">${esc(typed||"?")}</div>`;
+    const chk=document.createElement("button");chk.className="big";chk.textContent="Check";
+    if(it.mode!=="check")row.appendChild(chk); // Check: the answer is kept for the teacher, no right/wrong
     ansArea.appendChild(row);
     const pad=document.createElement("div");pad.id="pad";
     for(const k of ["1","2","3","4","5","6","7","8","9","0","−",".","/","⌫"]){
       const b=document.createElement("button");b.textContent=k;b.onclick=()=>{
         if(k==="⌫")typed=typed.slice(0,-1);else if(typed.length<8)typed+=k;
-        const ab=$("ab");ab.textContent=typed||"?";ab.classList.toggle("empty",!typed);};
+        const ab=$("ab");ab.textContent=typed||"?";ab.classList.toggle("empty",!typed);
+        if(it.mode==="check"){s.tries=typed?[typed]:[];s.touched=true;persist();}};
       pad.appendChild(b);}
     ansArea.appendChild(pad);
+    if(it.mode==="answer"&&!s.shown){
+      const r=document.createElement("div");r.className="row";r.style.marginTop="6px";
+      const h=document.createElement("button");h.className="ghost";h.textContent="Show the number line";
+      h.onclick=()=>{s.shown=true;s.touched=true;persist();renderStudent(it,stg);};
+      r.appendChild(h);ansArea.appendChild(r);
+    }
     chk.onclick=()=>{
       const v=parseAns(typed);if(isNaN(v)){say("Type a number first.",false);return;}
       s.touched=true;s.tries.push(typed);
@@ -424,7 +432,7 @@ function renderStudent(it,stg){
     };
     svg.addEventListener("pointerup",endDrag);
     svg.addEventListener("pointercancel",()=>{dragging=false;ghost.innerHTML="";});
-  }else ins.textContent=it.mode==="check"?"Show your working and your answer on the paper.":"Work it out on the right, then type the answer.";
+  }else ins.textContent=it.mode==="check"?"Work it out on the paper, then type your answer.":"Work it out on the right, then type the answer.";
   if(s.ok)say("Done.",true);
   answerUI();
 }
@@ -438,12 +446,12 @@ function renderTeacher(it,stg){
     <span class="status">${s?"ส่งเมื่อ "+new Date(s.at).toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"}):"ยังไม่ส่ง"}</span></div>
     <div class="q">${qHTML(it,{},false)}${ans==null?"":` <span style="color:var(--muted)">= ${show(ans)}</span>`}</div>`;
   if(!s){stg.insertAdjacentHTML("beforeend",`<div class="ins">น้องยังไม่ได้ทำข้อนี้ หรือยังไม่ได้เลื่อนออกจากข้อนี้</div>`);renderDots();return;}
-  if(s.arrows.length)stg.appendChild(staticLine(it,s,true));
+  if(s.arrows.length||s.shown)stg.appendChild(staticLine(it,s,true));
   const log=[];
-  if(it.mode!=="check"){
-    log.push(`ลอง ${attempts(it,s)} ครั้ง`);
-    if(s.tries.length)log.push("คำตอบ: <b>"+esc(s.tries[s.tries.length-1])+"</b>");
-  }else log.push("ดูคำตอบในกระดาษทดด้านขวา");
+  if(it.mode!=="check")log.push(`ลอง ${attempts(it,s)} ครั้ง`);
+  if(s.tries.length)log.push("คำตอบ: <b>"+esc(s.tries[s.tries.length-1])+"</b>");
+  else if(it.mode==="check")log.push("ยังไม่ได้ใส่คำตอบ");
+  if(s.shown)log.push("เปิดเส้นจำนวนดู");
   log.push(`ใช้เวลา ${s.secs} วินาที`);
   stg.insertAdjacentHTML("beforeend",`<div class="tlog">${log.join("<br>")}</div>`);
 }
