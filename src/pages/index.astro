@@ -74,6 +74,17 @@ const courseList = (Object.entries(courses) as [CourseId, (typeof courses)[Cours
       <span class="soon-go">ดูรายละเอียด →</span>
     </a>
     <MathTest />
+    <div class="soon live">
+      <span class="soon-tag">เรียนสด</span>
+      <span class="soon-body">
+        <b>ห้องเรียนออนไลน์ <span>บทที่ 3 · Flip the Bar</span></b>
+        <span>น้องทำโจทย์บนเส้นจำนวนและทดเลขบน iPad ครูเห็นงานทุกข้อ (ต้องใช้รหัสจากครู)</span>
+      </span>
+      <span class="live-go">
+        <a href="/class/l3/">นักเรียน →</a>
+        <a href="/class/l3/#teacher">ครู →</a>
+      </span>
+    </div>
   </section>
 
   <section class="teacher" id="teacher">
@@ -181,7 +192,10 @@ const courseList = (Object.entries(courses) as [CourseId, (typeof courses)[Cours
   .soon-body b span { color: var(--muted); font-weight: 400; font-size: 0.95rem; }
   .soon-body > span { color: var(--muted); font-size: 0.95rem; }
   .soon-go { flex: none; color: var(--blue); font-weight: 700; }
-  @media (max-width: 640px) { .soon { flex-wrap: wrap; } .soon-go { width: 100%; } }
+  .live-go { flex: none; display: flex; gap: 16px; }
+  .live-go a { color: var(--blue); font-weight: 700; text-decoration: none; }
+  .live-go a:hover { text-decoration: underline; }
+  @media (max-width: 640px) { .soon { flex-wrap: wrap; } .soon-go, .live-go { width: 100%; } }
 
   .teacher { display: flex; gap: 48px; align-items: center; padding-top: 88px; padding-bottom: 40px; }
   .teacher .photo { width: min(340px, 40%); aspect-ratio: 15 / 16; object-fit: cover; border-radius: 24px; rotate: -2deg; box-shadow: 0 24px 48px -24px rgb(20 33 61 / 0.5); }
