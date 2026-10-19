@@ -257,7 +257,8 @@ const attempts=(it,s)=>it.mode==="explore"?s.arrows.length+s.wrongDrag:s.tries.l
 let items=[],idx=0,W={},SENT={},RED={},SEEN={},ALL={},STU="";
 function blank(){return {started:false,k:0,pos:null,arrows:[],wrongStart:0,wrongDrag:0,tries:[],ok:null,shown:false,ink:[],secs:0,touched:false};}
 function st(i){const id=items[i].id;return W[id]||(W[id]=blank());}
-function persist(){if(!TEACHER)save(K.work,W);}
+let dirty=false;
+function persist(){if(!TEACHER){save(K.work,W);dirty=true;}}
 
 /* ---------- the Sheet (tools/check-sheet.gs): cput/cget = the student's questions, rput/rget = the teacher's red ink ---------- */
 const q3=v=>Math.round(v*1000);
@@ -269,14 +270,14 @@ async function post(body){
 }
 function setNet(t){$("net").textContent=t;}
 let flushing=false;
-async function flush(){
+async function flush(quiet){
   if(!SHEET||TEACHER||flushing)return;
   const out=load(K.out,{}),ids=Object.keys(out);if(!ids.length){setNet("");return;}
   flushing=true;
   try{
     for(const id of ids){await post({action:"cput",cls:CLASS,name:ME.name||"",id,data:JSON.stringify(out[id])});
       const now=load(K.out,{});if(now[id]&&now[id].at===out[id].at){delete now[id];save(K.out,now);}}
-    setNet("");flash("Sent to teacher");
+    setNet("");if(!quiet)flash("Sent to teacher");
   }catch(e){setNet("Saved. Will send when online.");}
   flushing=false;
 }
@@ -325,17 +326,20 @@ function start(){
     $("padLab").textContent="ที่น้องทด · ปากกาแดงของครู";$("penSw").style.background=css("--red");
     $("tUndo").textContent="ย้อน";$("tClear").textContent="ลบหมึกครู";$("tErase").hidden=true;
     SEEN=load(K.seen,{});if(!SHEET)RED=load(K.red,{});
-    const refresh=async()=>{if(await pullAll())render();};
+    let busy=false;
+    const refresh=async()=>{if(busy)return;busy=true;try{if(await pullAll())render();}finally{busy=false;}};
     $("refresh").onclick=refresh;
     $("stu").onchange=()=>{STU=$("stu").value;SENT=ALL[STU]||{};render();};
-    setInterval(refresh,15000);
+    setInterval(refresh,5000);
     if(!SHEET)addEventListener("storage",e=>{if(e.key===K.sent)refresh();});
     render();refresh();
   }else{
     $("who").textContent=ME.name||"";W=load(K.work,{});
     $("penSw").style.background=css("--navy");
     idx=Math.min(ME.idx||0,items.length-1);
-    if(SHEET){setInterval(()=>{flush();pullRed();},20000);addEventListener("online",flush);flush();}
+    // the question she is on goes to the teacher a few seconds after each change, not only when she moves on
+    if(SHEET){setInterval(()=>{if(dirty&&!flushing){dirty=false;leave(true);}else flush(true);},4000);
+      setInterval(pullRed,8000);addEventListener("online",()=>flush(true));flush(true);}
     else{RED=load(K.red,{});addEventListener("storage",e=>{if(e.key===K.red){RED=load(K.red,{});drawRed();}});}
     render();
   }
@@ -344,14 +348,14 @@ function start(){
 
 /* send the question the student is leaving (only if she did something on it) */
 let openedAt=Date.now();
-function leave(){
+function leave(quiet){
   if(TEACHER)return;
   const it=items[idx],s=st(idx);
   s.secs+=Math.round((Date.now()-openedAt)/1000);openedAt=Date.now();
   persist();
   if(!s.touched)return;
   const rec=Object.assign({},s,{at:Date.now()});
-  if(SHEET){rec.ink=packInk(s.ink);const out=load(K.out,{});out[it.id]=rec;save(K.out,out);flush();}
+  if(SHEET){rec.ink=packInk(s.ink);const out=load(K.out,{});out[it.id]=rec;save(K.out,out);flush(quiet);}
   else{const sent=load(K.sent,{});rec.name=ME.name||"";sent[it.id]=rec;save(K.sent,sent);flash("Sent to teacher");}
 }
 function go(i){
