@@ -17,7 +17,12 @@ function doPost(e) {
   } catch (err) {
     return out({ ok: false });
   }
-  return d.action === 'list' ? list(d) : submit(d);
+  if (d.action === 'list') return list(d);
+  if (d.action === 'cput') return classPut(d);
+  if (d.action === 'cget') return classGet(d);
+  if (d.action === 'rput') return redPut(d);
+  if (d.action === 'rget') return redGet(d);
+  return submit(d);
 }
 
 function sheet() {
@@ -91,4 +96,98 @@ function parse(v) {
 
 function out(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ---------- live class (public/class/*): one row per class × student × question, overwritten when the student
+// sends that question again. Big working-out is split over several cells (a cell holds 50,000 characters).
+// No email for these: they arrive every time the student moves to the next question.
+const CLASS_TAB = 'คาบสด';
+const CLASS_HEAD = ['เวลา', 'ห้อง', 'ชื่อ', 'ข้อ', 'เวลาหมึกครู'];
+const PART = 45000, DATA_COLS = 8, RED_COLS = 4; // columns F.. = student's data, then the teacher's red ink
+
+function classSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(CLASS_TAB);
+  if (!sh) {
+    sh = ss.insertSheet(CLASS_TAB);
+    sh.appendRow(CLASS_HEAD.concat(['ข้อมูล']));
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function classRow(sh, cls, name, id, make) {
+  const last = sh.getLastRow();
+  if (last > 1) {
+    const keys = sh.getRange(2, 2, last - 1, 3).getValues();
+    for (let i = keys.length - 1; i >= 0; i--) {
+      if (String(keys[i][0]) === cls && String(keys[i][1]) === name && String(keys[i][2]) === id) return i + 2;
+    }
+  }
+  if (!make) return 0;
+  sh.appendRow([0, text(cls, 40), text(name, 30), text(id, 20), 0]);
+  return sh.getLastRow();
+}
+
+function putParts(sh, row, col, n, str) {
+  const parts = [];
+  for (let i = 0; i < n; i++) parts.push(str.slice(i * PART, (i + 1) * PART));
+  sh.getRange(row, col, 1, n).setNumberFormat('@').setValues([parts]);
+}
+
+function classPut(d) {
+  const data = String(d.data || '');
+  if (!d.cls || !d.name || !d.id || data.length > PART * DATA_COLS) return out({ ok: false });
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sh = classSheet();
+    const row = classRow(sh, String(d.cls), String(d.name).slice(0, 30), String(d.id), true);
+    putParts(sh, row, 6, DATA_COLS, data);
+    sh.getRange(row, 1).setValue(Date.now());
+  } finally {
+    lock.releaseLock();
+  }
+  return out({ ok: true });
+}
+
+function classGet(d) {
+  if (d.pw !== TEACHER_PASSWORD) return out({ ok: false, error: 'pw' });
+  const sh = classSheet();
+  const last = sh.getLastRow();
+  if (last < 2) return out({ ok: true, rows: [] });
+  const since = Number(d.since) || 0;
+  const vals = sh.getRange(2, 1, last - 1, 5 + DATA_COLS + RED_COLS).getValues();
+  const rows = [];
+  for (const r of vals) {
+    if (String(r[1]) !== String(d.cls) || !(Number(r[0]) > since)) continue;
+    rows.push({ at: Number(r[0]), name: String(r[2]), id: String(r[3]), data: r.slice(5, 5 + DATA_COLS).join(''),
+      red: since ? null : r.slice(5 + DATA_COLS).join('') });
+  }
+  return out({ ok: true, rows });
+}
+
+function redPut(d) {
+  if (d.pw !== TEACHER_PASSWORD) return out({ ok: false, error: 'pw' });
+  const red = String(d.red || '');
+  if (!d.cls || !d.name || !d.id || red.length > PART * RED_COLS) return out({ ok: false });
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sh = classSheet();
+    const row = classRow(sh, String(d.cls), String(d.name), String(d.id), false);
+    if (!row) return out({ ok: false });
+    putParts(sh, row, 6 + DATA_COLS, RED_COLS, red);
+    sh.getRange(row, 5).setValue(Date.now());
+  } finally {
+    lock.releaseLock();
+  }
+  return out({ ok: true });
+}
+
+function redGet(d) {
+  const sh = classSheet();
+  const row = classRow(sh, String(d.cls), String(d.name), String(d.id), false);
+  if (!row) return out({ ok: true, red: '' });
+  return out({ ok: true, red: sh.getRange(row, 6 + DATA_COLS, 1, RED_COLS).getValues()[0].join('') });
 }
