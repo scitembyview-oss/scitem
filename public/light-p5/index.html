@@ -644,7 +644,110 @@ svg.casting .shadow, svg.casting .rays, svg.casting .wshade { opacity: 0 }
     };
     box._raf = requestAnimationFrame(grow);
   }
+  // ---- particle pictures (Y7 decks, see tools/y7kit.py) ----
+  // run(): call step(dt, t) every frame for ms, t going 0 → 1; svg gets .running meanwhile
+  function run(svg, ms, step) {
+    if (svg._run) return false;
+    svg._run = true; svg.classList.add('running');
+    const t0 = performance.now(); let last = t0;
+    const f = now => {
+      const t = Math.min(1, (now - t0) / ms);
+      step(Math.min(.05, (now - last) / 1000), t); last = now;
+      if (t < 1) requestAnimationFrame(f); else { svg._run = false; svg.classList.remove('running'); }
+    };
+    requestAnimationFrame(f);
+    return true;
+  }
+  const NS = 'http://www.w3.org/2000/svg';
+  const move = (p, x, y) => p.g.setAttribute('transform', x || y ? `translate(${x.toFixed(1)} ${y.toFixed(1)})` : '');
+  // the particle's own size: its atoms, not the motion tail
+  const pbox = g => { const c = g.querySelector('.tl') ? g.querySelector('circle') : g; return c.getBBox(); };
+  // last 15% of the time: every particle slides back to where it is drawn
+  const home = (ps, t) => {
+    if (t < .85) return false;
+    for (const p of ps) { p.hx ??= p.x; p.hy ??= p.y; const k = 1 - (t - .85) / .15; move(p, p.hx * k, p.hy * k); }
+    return true;
+  };
+  // gas: particles fly in straight lines and bounce off the walls (data-hits: a flash where they hit)
+  function gas(svg) {
+    const W = +svg.dataset.w, H = +svg.dataset.h, v = 70 * (+svg.dataset.v || 1);
+    const ps = [...svg.querySelectorAll('.pt')].map(g => {
+      const a = g.dataset.a != null ? +g.dataset.a : Math.random() * 6.283, s = v * (.8 + Math.random() * .4);
+      return { g, b: pbox(g), x: 0, y: 0, vx: Math.cos(a) * s, vy: Math.sin(a) * s };
+    });
+    const flash = (x, y) => {
+      if (!svg.dataset.hits) return;
+      const c = document.createElementNS(NS, 'circle');
+      c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 6); c.setAttribute('class', 'hitf');
+      svg.appendChild(c); setTimeout(() => c.remove(), 500);
+    };
+    run(svg, 5000, (dt, t) => {
+      if (home(ps, t)) return;
+      for (const p of ps) {
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        const l = p.b.x + p.x, r = l + p.b.width, u = p.b.y + p.y, d = u + p.b.height, cy = (u + d) / 2, cx = (l + r) / 2;
+        if (l < 3) { p.x += 3 - l; p.vx = Math.abs(p.vx); flash(3, cy); }
+        if (r > W - 3) { p.x -= r - W + 3; p.vx = -Math.abs(p.vx); flash(W - 3, cy); }
+        if (u < 3) { p.y += 3 - u; p.vy = Math.abs(p.vy); flash(cx, 3); }
+        if (d > H - 3) { p.y -= d - H + 3; p.vy = -Math.abs(p.vy); flash(cx, H - 3); }
+        move(p, p.x, p.y);
+      }
+    });
+  }
+  // diffusion: particles start bunched in the bottom-left corner and wander out to where they are drawn
+  function diffuse(svg) {
+    const H = +svg.dataset.h;
+    const ps = [...svg.querySelectorAll('.pt')].map(g => {
+      const b = g.getBBox(), sx = 16 + Math.random() * 36, sy = H - 52 + Math.random() * 36;
+      return { g, x0: sx - (b.x + b.width / 2), y0: sy - (b.y + b.height / 2), nx: 0, ny: 0 };
+    });
+    run(svg, 4000, (dt, t) => {
+      const e = t < .1 ? 0 : 1 - Math.pow(1 - (t - .1) / .9, 2), wob = 1 - t;
+      for (const p of ps) {
+        p.nx = Math.max(-9, Math.min(9, p.nx + (Math.random() - .5) * 4));
+        p.ny = Math.max(-9, Math.min(9, p.ny + (Math.random() - .5) * 4));
+        p.g.setAttribute('transform', `translate(${(p.x0 * (1 - e) + p.nx * wob).toFixed(1)} ${(p.y0 * (1 - e) + p.ny * wob).toFixed(1)})`);
+      }
+    });
+  }
+  // Brownian motion: the smoke speck zigzags at random inside the circle
+  function brown(svg) {
+    const s = svg.querySelector('.spk'), vb = svg.viewBox.baseVal, R = +svg.dataset.r;
+    const cx = vb.width / 2, cy = (vb.height - 22) / 2, ox = +s.getAttribute('cx'), oy = +s.getAttribute('cy');
+    const p = { g: s, x: 0, y: 0 }; let vx = 0, vy = 0, kick = 0;
+    run(svg, 5000, (dt, t) => {
+      if (home([p], t)) return;
+      if ((kick -= dt) <= 0) { const a = Math.random() * 6.283, v = 60 + Math.random() * 90; vx = Math.cos(a) * v; vy = Math.sin(a) * v; kick = .08 + Math.random() * .15; }
+      let x = ox + p.x + vx * dt, y = oy + p.y + vy * dt;
+      const d = Math.hypot(x - cx, y - cy);
+      if (d > R) { x = cx + (x - cx) * R / d; y = cy + (y - cy) * R / d; kick = 0; }
+      p.x = x - ox; p.y = y - oy; move(p, p.x, p.y);
+    });
+  }
+  // graphs: a dot runs along the line (class tr) and draws it in orange
+  function trace(svg) {
+    const ln = svg.querySelector('.tr'), L = ln.getTotalLength();
+    const over = ln.cloneNode(); over.removeAttribute('class');
+    over.setAttribute('stroke', '#F59E0B'); over.setAttribute('stroke-width', '5'); over.setAttribute('stroke-linecap', 'round');
+    over.setAttribute('stroke-dasharray', L); over.setAttribute('stroke-dashoffset', L); over.setAttribute('opacity', '.8');
+    const dot = document.createElementNS(NS, 'circle');
+    dot.setAttribute('r', 7); dot.setAttribute('fill', '#DC2626'); dot.setAttribute('stroke', '#fff'); dot.setAttribute('stroke-width', 2);
+    if (!run(svg, 3000, (dt, t) => {
+      const k = Math.min(1, t / .85), q = ln.getPointAtLength(L * k);
+      over.setAttribute('stroke-dashoffset', (L * (1 - k)).toFixed(1));
+      dot.setAttribute('cx', q.x); dot.setAttribute('cy', q.y);
+      if (t >= 1) setTimeout(() => { over.remove(); dot.remove(); }, 300);
+    })) return;
+    svg.append(over, dot);
+  }
   const ACT = {
+    gas, diffuse, brown, trace,
+    vib: el => play(el, 2400),
+    grow: el => play(el, 1800),
+    hits: el => play(el, 1900),
+    crush: el => play(el, 2300),
+    pop: el => play(el, 550),
+    react: el => play(el, 2200),
     glow: el => play(el, 900),
     badge: el => { if (el.classList.toggle('on')) play(el, 600); },
     win: el => { if (el.classList.toggle('on')) { play(el, 600); confetti(el.parentNode, el.style.getPropertyValue('--c')); } },
@@ -718,7 +821,8 @@ svg.casting .shadow, svg.casting .rays, svg.casting .wshade { opacity: 0 }
   function markPen() { if (!penSeen) setPencilOnly(true); }
   const PALM = 36;   // CSS px; contact wider than this is a palm (when the browser reports contact size)
   const contact = e => { const w = Math.max(e.width || 0, e.height || 0); return w > 1 ? w : 0; };
-  const TAP_MS = 400, TAP_PX = 10;   // a pen/finger touch this short and still is a tap on the picture, not ink
+  const TAP_MS = 400, TAP_PX = 10;   // a finger touch this short and still is a tap on the picture, not ink
+  const PEN_TAP_MS = 200, PEN_TAP_PX = 3;   // the pencil has to be a real dot: short marks (Thai tone marks, ticks) stay ink
   function makeInk(canvas) {
     const ictx = canvas.getContext('2d');
     const strokes = [];          // {color, size, erase, pts:[[x,y,p],...]} in 0..1 page coords
@@ -754,10 +858,7 @@ svg.casting .shadow, svg.casting .rays, svg.casting .wshade { opacity: 0 }
     }
     // what is on the page under the pen layer at this point
     function under(e) {
-      canvas.style.pointerEvents = 'none';
-      const el = document.elementFromPoint(e.clientX, e.clientY);
-      canvas.style.pointerEvents = '';
-      return el;
+      return document.elementsFromPoint(e.clientX, e.clientY).find(el => el !== canvas) || null;
     }
     canvas.addEventListener('pointerdown', e => {
       const big = e.pointerType === 'touch' && contact(e) > PALM;
@@ -801,7 +902,8 @@ svg.casting .shadow, svg.casting .rays, svg.casting .wshade { opacity: 0 }
         pend = null;
       }
       if (!cur || e.pointerId !== cur.id) return;
-      if (e.type === 'pointerup' && cur.tapEl && performance.now() - cur.t < TAP_MS && travel(cur) < TAP_PX) { drop(cur); act(cur.tapEl); }
+      const pen = e.pointerType === 'pen';
+      if (e.type === 'pointerup' && cur.tapEl && performance.now() - cur.t < (pen ? PEN_TAP_MS : TAP_MS) && travel(cur) < (pen ? PEN_TAP_PX : TAP_PX)) { drop(cur); act(cur.tapEl); }
       delete cur.touch; delete cur.w; delete cur.tapEl;
       cur = null;
     };
@@ -868,10 +970,13 @@ svg.casting .shadow, svg.casting .rays, svg.casting .wshade { opacity: 0 }
   window.addEventListener('pointerup', touchEnd, true);
   window.addEventListener('pointercancel', touchEnd, true);
   // older iPadOS ignores touch-action in places; also stops the long-press magnifier and double-tap zoom
+  // The pencil is blocked too: otherwise iPadOS Safari sometimes treats a stroke as a selection/scroll
+  // gesture and cancels it (pointercancel), so a line had to be written twice.
   stage.addEventListener('touchstart', e => {
-    if ([...e.changedTouches].some(t => t.touchType === 'stylus')) { markPen(); return; }
+    if ([...e.changedTouches].some(t => t.touchType === 'stylus')) markPen();
     if (mode !== 'hand') e.preventDefault();
   }, { passive: false });
+  stage.addEventListener('touchmove', e => { if (mode !== 'hand') e.preventDefault(); }, { passive: false });
 
   $('prev').onclick = () => go(cur - 1);
   $('next').onclick = () => go(cur + 1);

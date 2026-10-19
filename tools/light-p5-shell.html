@@ -364,7 +364,8 @@
   function markPen() { if (!penSeen) setPencilOnly(true); }
   const PALM = 36;   // CSS px; contact wider than this is a palm (when the browser reports contact size)
   const contact = e => { const w = Math.max(e.width || 0, e.height || 0); return w > 1 ? w : 0; };
-  const TAP_MS = 400, TAP_PX = 10;   // a pen/finger touch this short and still is a tap on the picture, not ink
+  const TAP_MS = 400, TAP_PX = 10;   // a finger touch this short and still is a tap on the picture, not ink
+  const PEN_TAP_MS = 200, PEN_TAP_PX = 3;   // the pencil has to be a real dot: short marks (Thai tone marks, ticks) stay ink
   function makeInk(canvas) {
     const ictx = canvas.getContext('2d');
     const strokes = [];          // {color, size, erase, pts:[[x,y,p],...]} in 0..1 page coords
@@ -400,10 +401,7 @@
     }
     // what is on the page under the pen layer at this point
     function under(e) {
-      canvas.style.pointerEvents = 'none';
-      const el = document.elementFromPoint(e.clientX, e.clientY);
-      canvas.style.pointerEvents = '';
-      return el;
+      return document.elementsFromPoint(e.clientX, e.clientY).find(el => el !== canvas) || null;
     }
     canvas.addEventListener('pointerdown', e => {
       const big = e.pointerType === 'touch' && contact(e) > PALM;
@@ -447,7 +445,8 @@
         pend = null;
       }
       if (!cur || e.pointerId !== cur.id) return;
-      if (e.type === 'pointerup' && cur.tapEl && performance.now() - cur.t < TAP_MS && travel(cur) < TAP_PX) { drop(cur); act(cur.tapEl); }
+      const pen = e.pointerType === 'pen';
+      if (e.type === 'pointerup' && cur.tapEl && performance.now() - cur.t < (pen ? PEN_TAP_MS : TAP_MS) && travel(cur) < (pen ? PEN_TAP_PX : TAP_PX)) { drop(cur); act(cur.tapEl); }
       delete cur.touch; delete cur.w; delete cur.tapEl;
       cur = null;
     };
@@ -514,10 +513,13 @@
   window.addEventListener('pointerup', touchEnd, true);
   window.addEventListener('pointercancel', touchEnd, true);
   // older iPadOS ignores touch-action in places; also stops the long-press magnifier and double-tap zoom
+  // The pencil is blocked too: otherwise iPadOS Safari sometimes treats a stroke as a selection/scroll
+  // gesture and cancels it (pointercancel), so a line had to be written twice.
   stage.addEventListener('touchstart', e => {
-    if ([...e.changedTouches].some(t => t.touchType === 'stylus')) { markPen(); return; }
+    if ([...e.changedTouches].some(t => t.touchType === 'stylus')) markPen();
     if (mode !== 'hand') e.preventDefault();
   }, { passive: false });
+  stage.addEventListener('touchmove', e => { if (mode !== 'hand') e.preventDefault(); }, { passive: false });
 
   $('prev').onclick = () => go(cur - 1);
   $('next').onclick = () => go(cur + 1);
