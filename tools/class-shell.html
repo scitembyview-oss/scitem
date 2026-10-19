@@ -182,15 +182,16 @@ const K={me:"scitem-class:"+CLASS+":me",work:"scitem-class:"+CLASS+":work",sent:
 const load=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}};
 const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 
-/* ---------- gate: the content is encrypted with the class code (AES-GCM, as tools/encrypt-check-keys.mjs) ---------- */
+/* ---------- gate: the content is encrypted with the student code and, separately, the teacher code (AES-GCM, as tools/encrypt-check-keys.mjs) ---------- */
 const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 async function decrypt(code){
+  const B=TEACHER?BLOB.t:BLOB.s;
   const base=await crypto.subtle.importKey("raw",new TextEncoder().encode(code),"PBKDF2",false,["deriveKey"]);
-  const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt:b64(BLOB.salt),iterations:BLOB.iter,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["decrypt"]);
-  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:b64(BLOB.iv)},key,b64(BLOB.ct))));
+  const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt:b64(B.salt),iterations:B.iter,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["decrypt"]);
+  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:b64(B.iv)},key,b64(B.ct))));
 }
 let C=null,ME=load(K.me,{});
-if(TEACHER){$("gTitle").textContent="จอครู";$("gNameL").hidden=true;$("gName").required=false;$("gCodeT").textContent="รหัสห้อง";$("gGo").textContent="เข้า";}
+if(TEACHER){$("gTitle").textContent="จอครู";$("gNameL").hidden=true;$("gName").required=false;$("gCodeT").textContent="รหัสครู";$("gGo").textContent="เข้า";}
 else if(ME.name)$("gName").value=ME.name;
 $("gateForm").addEventListener("submit",async e=>{
   e.preventDefault();$("gErr").textContent="";$("gGo").disabled=true;
