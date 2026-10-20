@@ -270,8 +270,11 @@ const packInk=ink=>ink.map(s=>({c:s.c,e:s.e?1:0,p:s.p.map((v,j)=>j%3===2?Math.ro
 const unpackInk=ink=>(ink||[]).map(s=>({c:s.c,e:!!s.e,p:s.p.map((v,j)=>j%3===2?v/9:v/1000)}));
 async function post(body){
   let r;
-  try{r=await fetch(SHEET,{method:"POST",body:JSON.stringify(body)});}catch(e){throw new Error("fetch: "+e.message);}
-  const t=await r.text();let j;
+  // give up after 25 s, so a request that hangs (wifi dropping on the iPad) cannot stop everything sent after it
+  const ab=new AbortController(),tm=setTimeout(()=>ab.abort(),25000);let t;
+  try{r=await fetch(SHEET,{method:"POST",body:JSON.stringify(body),signal:ab.signal});t=await r.text();}
+  catch(e){throw new Error("fetch: "+e.message);}finally{clearTimeout(tm);}
+  let j;
   // what Google sent back instead of data (a login page, a script error…), so the teacher can tell us
   try{j=JSON.parse(t);}catch(e){throw new Error("HTTP "+r.status+": "+t.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,140));}
   if(!j.ok)throw new Error(j.error||"sheet");return j;
@@ -282,12 +285,28 @@ async function flush(quiet){
   if(!SHEET||TEACHER||flushing)return;
   const out=load(K.out,{}),ids=Object.keys(out);if(!ids.length){setNet("");return;}
   flushing=true;
-  try{
-    for(const id of ids){await post({action:"cput",cls:CLASS,name:ME.name||"",id,data:JSON.stringify(out[id])});
+  // one question that will not go (too much ink, a hiccup) must not hold back the ones after it
+  let failed=0;
+  for(const id of ids){
+    try{await post({action:"cput",cls:CLASS,name:ME.name||"",id,data:fitRec(out[id])});
       const now=load(K.out,{});if(now[id]&&now[id].at===out[id].at){delete now[id];save(K.out,now);}}
-    setNet("");if(!quiet)flash("Sent to teacher");
-  }catch(e){setNet("Saved. Will send when online.");}
+    catch(e){failed++;}
+  }
+  setNet(failed?"Saved. Will send when online.":"");if(!failed&&!quiet)flash("Sent to teacher");
   flushing=false;
+}
+/* the Sheet keeps up to 360 000 characters a question (tools/check-sheet.gs); a long page of pencil can pass that,
+   so drop every other point of each stroke until it fits (the ink on her own screen stays as it is) */
+const SHEET_MAX=340000;
+function fitRec(rec){
+  let s=JSON.stringify(rec),ink=rec.ink||[];
+  const thin=p=>{if(p.length<=6)return p;const o=[];for(let i=0;i<p.length;i+=3)if(i%6===0||i===p.length-3)o.push(p[i],p[i+1],p[i+2]);return o;};
+  while(s.length>SHEET_MAX&&ink.length){
+    const next=ink.map(k=>Object.assign({},k,{p:thin(k.p)}));
+    ink=JSON.stringify(next).length<JSON.stringify(ink).length?next:[];
+    s=JSON.stringify(Object.assign({},rec,{ink}));
+  }
+  return s;
 }
 async function pullRed(){
   if(!SHEET||TEACHER)return;
