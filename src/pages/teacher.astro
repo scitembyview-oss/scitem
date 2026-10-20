@@ -181,18 +181,22 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
     const got = a.split('|');
     return q.answers!.every((ans, i) => same(evalAns(got[i] ?? ''), evalAns(ans)));
   }
+  // Signs Check (public/signs-check/) is checked on the student's iPad and sends ready-made report lines
+  const SIGNS_QUIZ = 'signs-1';
   const score = (r: Row) => keys![r.quiz].questions.filter((q, i) => grade(q, r.answers[i] ?? '')).length;
   const when = (ms: number) => new Date(ms).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
 
   // List: one group per quiz, newest first. Tap a row to open it.
   function draw() {
-    all = [...sheetRows, ...codeRows].filter((r) => keys![r.quiz] || (r.quiz === MATH_QUIZ && !!math && decodeLF(r.answers.join('')))).sort((a, b) => b.at - a.at);
-    const order = [...new Set([...Object.keys(checks), MATH_QUIZ, ...all.map((r) => r.quiz)])];
+    all = [...sheetRows, ...codeRows].filter((r) => keys![r.quiz] || r.quiz === SIGNS_QUIZ || (r.quiz === MATH_QUIZ && !!math && decodeLF(r.answers.join('')))).sort((a, b) => b.at - a.at);
+    const order = [...new Set([...Object.keys(checks), MATH_QUIZ, SIGNS_QUIZ, ...all.map((r) => r.quiz)])];
     const html = order.map((quiz) => {
       const rows = all.map((r, i) => [r, i] as const).filter(([r]) => r.quiz === quiz);
       if (!rows.length) return '';
       if (quiz === MATH_QUIZ) return `<h3>${esc(math!.title)} <span class="cnt">${rows.length} คน</span></h3><ul class="who">${rows.map(([r, i]) =>
         `<li><button type="button" data-i="${i}"><b>${esc(r.name)}</b><span>${when(r.at)}${r.code ? ' · จากรหัส' : ''}</span><em>${mathScore(decodeLF(r.answers.join(''))!)}</em></button></li>`).join('')}</ul>`;
+      if (quiz === SIGNS_QUIZ) return `<h3>Signs Check − (−) <span class="cnt">${rows.length} ครั้ง</span></h3><ul class="who">${rows.map(([r, i]) =>
+        `<li><button type="button" data-i="${i}"><b>${esc(r.name)}</b><span>${when(r.at)}</span><em>${esc((r.answers[1] ?? '').replace(/^Right first try (\d+\/\d+).*/, '$1'))}</em></button></li>`).join('')}</ul>`;
       const n = keys![quiz].questions.length;
       return `<h3>${esc(checks[quiz]?.title ?? keys![quiz].title)} <span class="cnt">${rows.length} คน</span></h3><ul class="who">${rows.map(([r, i]) =>
         `<li><button type="button" data-i="${i}"><b>${esc(r.name)}</b><span>${when(r.at)}${r.code ? ' · จากรหัส' : ''}</span><em>${score(r)}/${n}</em></button></li>`).join('')}</ul>`;
@@ -211,6 +215,8 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
   function open(i: number) {
     const r = all[i];
     if (r.quiz === MATH_QUIZ) return show(`<button type="button" class="ghost" id="back">← กลับไปรายการ</button>${mathReport(decodeLF(r.answers.join(''))!, math!)}`);
+    if (r.quiz === SIGNS_QUIZ) return show(`<button type="button" class="ghost" id="back">← กลับไปรายการ</button>
+      <h2>${esc(r.name)}</h2><p class="hint">ส่งเมื่อ ${when(r.at)}</p><pre class="signs">${r.answers.map(esc).join('\n')}</pre>`);
     const { title, questions } = keys![r.quiz];
     const meta = checks[r.quiz]?.questions;
     const total = r.secs.reduce((a, b) => a + (b || 0), 0);
@@ -353,6 +359,7 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
   .paste { margin-top: 18px; }
   .paste summary { color: var(--muted); cursor: pointer; padding: 6px 0; }
   #detail h2 { margin: 16px 0 4px; font-size: 1.5rem; }
+  #detail :global(.signs) { white-space: pre-wrap; font-size: 0.95rem; line-height: 1.6; background: var(--brand-soft); padding: 14px; border-radius: 12px; overflow-x: auto; }
   #detail :global(.qa) { border-top: 1px solid var(--border); padding: 14px 0 6px; }
   #detail :global(.qh) { margin: 0 0 6px; font-weight: 700; }
   #detail :global(.qh small) { color: var(--muted); font-weight: 400; margin-left: 6px; }

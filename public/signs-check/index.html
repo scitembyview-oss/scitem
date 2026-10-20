@@ -1,0 +1,493 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Signs Check · scitem</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* One item per screen, centred column, big write boxes for Apple Pencil. Single light look (Piano's maths house style). */
+:root{
+  --navy:#2b3a55; --peach:#db9e89; --sage:#729783; --mint:#e9f2eb; --cream:#f8f3ea;
+  --paper:#fffdf9; --ink:#1f2a3d; --muted:#5f6b7d; --line:#d9d2c4; --bad:#b4483a; --badbg:#fbeae6; --pencil:#e8b04a;
+  --display:"Poppins","Avenir Next",system-ui,sans-serif;
+  --body:"Inter","Helvetica Neue",system-ui,sans-serif;
+  --hand:"Caveat","Bradley Hand","Segoe Print",cursive;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:var(--body);font-size:18px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:760px;margin:0 auto;padding-block:20px 48px;display:flex;flex-direction:column;gap:18px}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-weight:700;color:var(--navy);font-size:20px}
+.count{font-family:var(--display);color:var(--muted);font-size:17px;font-variant-numeric:tabular-nums}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:26px 24px;display:flex;flex-direction:column;gap:20px}
+.tag{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--sage)}
+h1{font-family:var(--display);font-size:28px;line-height:1.25;color:var(--navy);margin:0;text-wrap:balance}
+p{margin:0}
+.lead{color:var(--muted)}
+.problem{font-family:var(--display);font-weight:600;font-size:clamp(34px,7vw,48px);color:var(--navy);font-variant-numeric:tabular-nums;white-space:nowrap;overflow-x:auto}
+.step{display:flex;flex-direction:column;gap:8px}
+.step label{font-family:var(--display);font-weight:600;font-size:17px;color:var(--navy)}
+.row{display:flex;align-items:center;gap:12px}
+.eq{font-family:var(--display);font-size:36px;color:var(--navy);min-width:28px;text-align:center}
+input.write{flex:1;min-width:0;height:90px;font-family:var(--display);font-size:38px;font-weight:600;color:var(--ink);
+  background:var(--mint);border:2px solid var(--sage);border-radius:12px;padding:0 18px;font-variant-numeric:tabular-nums}
+input.write::placeholder{font-family:var(--body);font-size:18px;font-weight:500;color:#8a9a90}
+input.write:focus{outline:3px solid var(--peach);outline-offset:2px}
+input.write.wrong{border-color:var(--bad);background:var(--badbg)}
+input.write.right{border-color:var(--sage);background:var(--paper);color:var(--sage)}
+input.write:disabled{opacity:1;-webkit-text-fill-color:var(--sage)}
+.clear{font-family:var(--display);font-weight:600;font-size:16px;padding:12px 16px;border-radius:12px;border:2px solid var(--line);background:var(--paper);color:var(--navy);cursor:pointer;min-height:56px}
+.step.locked{opacity:.35}
+.read{font-size:15px;color:var(--muted);min-height:22px;font-variant-numeric:tabular-nums}
+.msg{font-size:17px;min-height:26px}
+.msg.bad{color:var(--bad);font-weight:600}
+.msg.good{color:var(--sage);font-weight:600}
+.help{background:var(--cream);border:1px dashed var(--peach);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.help b{color:var(--navy)}
+.help svg{width:100%;height:auto}
+.btns{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+button.main,button.ghost{font-family:var(--display);font-weight:600;font-size:20px;border-radius:12px;padding:16px 28px;border:2px solid var(--navy);cursor:pointer;min-height:56px}
+button.main{background:var(--navy);color:var(--paper)}
+button.ghost{background:transparent;color:var(--navy)}
+button:focus-visible,.clear:focus-visible{outline:3px solid var(--peach);outline-offset:2px}
+.worked{display:flex;flex-direction:column;gap:12px}
+.wline{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.wline .lab{font-size:15px;color:var(--muted);min-width:170px}
+.wline .val{font-family:var(--display);font-weight:600;font-size:30px;color:var(--navy)}
+.note{font-size:15px;color:var(--muted)}
+.how{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center}
+.how figure{margin:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.how svg{width:100%;height:auto}
+.how figcaption{font-size:16px;color:var(--ink);font-weight:500}
+.how .arrow{font-family:var(--display);font-size:34px;color:var(--peach)}
+@media (max-width:560px){.how{grid-template-columns:1fr}.how .arrow{text-align:center;transform:rotate(90deg)}}
+.rules{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+.name{height:60px;font-size:22px;font-family:var(--body);border:2px solid var(--line);border-radius:12px;padding:0 14px;width:100%;max-width:360px;background:var(--paper);color:var(--ink)}
+textarea{width:100%;min-height:240px;font-family:ui-monospace,Menlo,monospace;font-size:13px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--paper);color:var(--ink)}
+.small{font-size:14px;color:var(--muted)}
+.link{background:none;border:0;padding:0;color:var(--navy);font-size:15px;cursor:pointer;text-decoration:underline;font-family:var(--body)}
+</style></head><body>
+
+<div class="wrap">
+  <div class="top"><span class="brand">Signs Check</span><span class="count" id="count"></span></div>
+  <div class="card" id="screen"></div>
+  <p class="small" id="foot" hidden>Write in the boxes with your Apple Pencil. <button class="link" id="kb" type="button">My Pencil writing does not work</button></p>
+</div>
+
+<script>
+(function(){
+"use strict";
+var SHEET_URL = "https://script.google.com/macros/s/AKfycbyq7E1RkdI8pARED-cN4XAHeqRNx9BlQMwoY5AYiXF1_MjdPVoosxA7oefBbxgHky0/exec"; // = SHEET_URL in src/data/catalog.ts
+var QUIZ = "signs-1";
+var IDLE_MS = 60000;   // time with no touch or writing longer than this is not counted
+var WAIT_MS = 1300;    // pause after the last stroke before a box is checked
+var KEY = "signscheck-v1";
+
+// Answers are kept only as salted hashes (public repo). a, b = start and amount added, read from the question, for the picture hint.
+var EXAMPLE = {p:"−8 − (−13)", a:-8, b:13};
+var PRACTICE = {id:"p", p:"−5 − (−9)", a:-5, b:9, h:{rw:"8d342e46307be967",an:"fe40bbccd5e95638",ab:"06a024d382a3721a"}};
+var ITEMS = [
+  {id:"1",  p:"−11 − (−18)", a:-11, b:18, h:{rw:"b8192362353d9848",an:"0ca3e0bafc999626",ab:"7efc44ab8a29f80d"}},
+  {id:"2",  p:"−20 − (−6)",  a:-20, b:6,  h:{rw:"4258dde3eb132620",an:"04b80d5984d96565",ab:"1151f40bac955d73"}},
+  {id:"3",  p:"8 − (−5)",    a:8,   b:5,  h:{rw:"29f0125478b2aa42",an:"8ab7ac75a593b0bf",ab:"b83c948211e30f84"}},
+  {id:"4",  p:"−24 − (−37)", a:-24, b:37, h:{rw:"50696818e05ae797",an:"e17113cb6e2145d3",ab:"4dd74457dcbfd407"}},
+  {id:"5",  p:"−52 − (−27)", a:-52, b:27, h:{rw:"d6e65c2cc04e7cf2",an:"39799c48a4a01bed",ab:"198ba014a4b79a01"}},
+  {id:"6",  p:"−15 − (−15)", a:-15, b:15, h:{rw:"1196bf0ac21f66b2",an:"713ad9f43b79ed01",ab:"c039ee0eabc29fac"}},
+  {id:"7",  p:"34 − (−17)",  a:34,  b:17, h:{rw:"b37b1ea9e9191418",an:"a5ac2a3318c5e2c9",ab:"d66454ea68262dd0"}},
+  {id:"8",  p:"−7 − (−30)",  a:-7,  b:30, h:{rw:"07da5c7a84d568f1",an:"f08c3ddf077942d2",ab:"8e104aa1a33480ac"}},
+  {id:"9",  p:"−4 − 11 − (−5)",   h:{rw:"0f4e52583bd4bd61",an:"f50ac23fab2210ce",ab:"01e44ca910e42817"}},
+  {id:"10", p:"−9 − (−3) − (−8)", h:{rw:"17869a74213018e2",an:"fbaf36db0ad779c7",ab:"69c95f6130b72c79"}}
+];
+
+var $ = function(id){return document.getElementById(id);};
+var screen = $("screen");
+var keyboard = false;
+var state = load() || fresh();
+
+function fresh(){return {name:"", started:null, stage:"start", idx:0, practice:null, items:[], finished:null, sent:false, sid:"S"+Date.now().toString(36)};}
+function save(){try{localStorage.setItem(KEY, JSON.stringify(state));}catch(e){}}
+function load(){try{var s=localStorage.getItem(KEY);return s?JSON.parse(s):null;}catch(e){return null;}}
+
+function pretty(s){return s.replace(/-/g," − ").replace(/\+/g," + ").replace(/^ − /,"−").trim();}
+function prettyNum(n){return n<0?"−"+Math.abs(n):String(n);}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+
+// whatever the handwriting turns into -> plain "0-9 + -"
+function norm(s){
+  return String(s||"")
+    .replace(/[−‐-―─━ー一_~﹣－]/g,"-")
+    .replace(/[＋✚]/g,"+")
+    .replace(/[oOＯ]/g,"0").replace(/[lI|ǀ]/g,"1")
+    .replace(/[()\s.,=]/g,"");
+}
+function readable(s){return /^[+-]?\d+([+-]\d+)*$/.test(s);}
+function nums(s){return (String(s).match(/\d+/g)||[]).map(Number);}
+
+function hash(id, s){
+  var data=new TextEncoder().encode("sc1:"+id+":"+s);
+  return crypto.subtle.digest("SHA-256", data).then(function(buf){
+    return Array.prototype.map.call(new Uint8Array(buf),function(x){return ("0"+x.toString(16)).slice(-2);}).join("").slice(0,16);
+  });
+}
+
+// ---------- timing ----------
+var timer=null, t={};
+function startTimer(){
+  var now=Date.now();
+  t={start:now, last:now, active:0, firstWrite:null, tick:now};
+  clearInterval(timer);
+  timer=setInterval(function(){
+    var n=Date.now();
+    if(!document.hidden && n-t.last<IDLE_MS) t.active+=n-t.tick;
+    t.tick=n;
+  },500);
+}
+function stopTimer(){
+  var n=Date.now();
+  if(!document.hidden && n-t.last<IDLE_MS) t.active+=n-t.tick;
+  clearInterval(timer);
+  var r={activeMs:Math.round(t.active), rawMs:n-t.start, firstWriteMs:t.firstWrite};
+  t={};
+  return r;
+}
+function activity(){var n=Date.now(); if(t.start){ if(n-t.last>=IDLE_MS) t.tick=n; t.last=n; }}
+["pointerdown","touchstart","keydown","input"].forEach(function(e){document.addEventListener(e,activity,true);});
+document.addEventListener("visibilitychange",function(){ if(t.start){ t.tick=Date.now(); if(!document.hidden) t.last=Date.now(); } });
+
+// keyboard vs Pencil: typing fires keydown just before input, handwriting does not
+var lastKey=0;
+document.addEventListener("keydown",function(){lastKey=Date.now();},true);
+
+function writeBox(id, ph, disabled){
+  return '<div class="row"><span class="eq">=</span><input class="write" id="'+id+'" type="text" inputmode="'+(keyboard?"text":"none")+'" placeholder="'+ph+'" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done"'+(disabled?" disabled":"")+'>'+
+    '<button class="clear" type="button" data-for="'+id+'">Clear</button></div>';
+}
+screen.addEventListener("click",function(e){
+  var b=e.target.closest && e.target.closest(".clear");
+  if(!b) return;
+  var el=$(b.getAttribute("data-for"));
+  if(!el || el.disabled) return;
+  el.value=""; el.dispatchEvent(new Event("input",{bubbles:true})); el.focus();
+});
+$("kb").onclick=function(){
+  keyboard=true;
+  document.querySelectorAll("input.write").forEach(function(el){el.setAttribute("inputmode","text");});
+  $("kb").textContent="Keyboard is on. Please still write with your Pencil when it works.";
+};
+
+// ---------- screens ----------
+function setCount(s){$("count").textContent=s||"";}
+
+function render(){
+  $("foot").hidden = !(state.stage==="practice"||state.stage==="item"||state.stage==="how");
+  if(state.stage==="start") return showStart();
+  if(state.stage==="how") return showHow();
+  if(state.stage==="example") return showExample();
+  if(state.stage==="practice") return showItem(PRACTICE,"Practice","Practice (not scored)");
+  if(state.stage==="item") return showItem(ITEMS[state.idx],"Question "+(state.idx+1)+" of 10","Question "+(state.idx+1));
+  if(state.stage==="done") return showDone();
+}
+
+function showStart(){
+  setCount("");
+  screen.innerHTML =
+    '<span class="tag">Before you start</span>'+
+    '<h1>10 questions: minus a negative</h1>'+
+    '<p class="lead">In each question you write two lines. First write the question again without the double sign. Then write the answer.</p>'+
+    '<div class="step"><label for="nm">Your name</label><input class="name" id="nm" type="text" autocomplete="off" value="'+esc(state.name||"")+'"></div>'+
+    '<div class="btns"><button class="main" id="go" type="button">Start</button></div>';
+  $("go").onclick=function(){
+    var n=$("nm").value.trim(); if(!n){ $("nm").focus(); return; }
+    state.name=n; state.started=new Date().toISOString(); state.stage="how"; save(); render();
+  };
+}
+
+// picture: Pencil writing in a box, then the same box with typed text
+function pencilPic(){
+  return '<svg viewBox="0 0 300 130" role="img" aria-label="Writing −11 + 18 in the box with Apple Pencil">'+
+    '<rect x="6" y="30" width="288" height="80" rx="12" fill="#e9f2eb" stroke="#729783" stroke-width="2.5"/>'+
+    '<text x="26" y="88" font-family="Caveat, Bradley Hand, cursive" font-size="48" font-weight="600" fill="#1f2a3d">−11 + 18</text>'+
+    '<g transform="translate(212 70) rotate(-35)">'+
+      '<rect x="0" y="-9" width="120" height="18" rx="4" fill="#fffdf9" stroke="#2b3a55" stroke-width="2"/>'+
+      '<rect x="100" y="-9" width="20" height="18" rx="4" fill="#d9d2c4" stroke="#2b3a55" stroke-width="2"/>'+
+      '<polygon points="0,-9 -22,0 0,9" fill="#e8b04a" stroke="#2b3a55" stroke-width="2"/>'+
+      '<polygon points="-15,-3 -22,0 -15,3" fill="#2b3a55"/>'+
+    '</g></svg>';
+}
+function typedPic(){
+  return '<svg viewBox="0 0 300 130" role="img" aria-label="The writing has turned into typed text">'+
+    '<rect x="6" y="30" width="288" height="80" rx="12" fill="#e9f2eb" stroke="#729783" stroke-width="2.5"/>'+
+    '<text x="26" y="84" font-family="Poppins, Avenir Next, sans-serif" font-size="36" font-weight="600" fill="#1f2a3d">−11 + 18</text></svg>';
+}
+
+function showHow(){
+  setCount("How to write");
+  screen.innerHTML =
+    '<span class="tag">How to answer</span>'+
+    '<h1>Write with your Apple Pencil</h1>'+
+    '<div class="how">'+
+      '<figure>'+pencilPic()+'<figcaption>1. Write straight into the green box with your Apple Pencil.</figcaption></figure>'+
+      '<span class="arrow" aria-hidden="true">→</span>'+
+      '<figure>'+typedPic()+'<figcaption>2. Stop writing. Your writing changes into typed text by itself.</figcaption></figure>'+
+    '</div>'+
+    '<ul class="rules">'+
+      '<li>If the line is right, the next box opens by itself. You do not need to press anything.</li>'+
+      '<li>If the box turns red, tap <b>Clear</b> and write the line again.</li>'+
+    '</ul>'+
+    '<div class="step"><label for="try">Try it: write <b>25</b> in the box</label>'+writeBox("try","Write here with your Pencil")+
+      '<div class="read" id="rt"></div><div class="msg" id="mt"></div></div>';
+  var el=$("try"), tm=null;
+  el.addEventListener("input",function(){
+    var v=norm(el.value);
+    $("rt").textContent = v ? "The box says: "+pretty(v) : "";
+    $("mt").textContent=""; $("mt").className="msg"; el.classList.remove("wrong");
+    clearTimeout(tm);
+    if(!v) return;
+    tm=setTimeout(function(){
+      if(v==="25"){
+        el.classList.add("right"); el.disabled=true;
+        $("mt").className="msg good"; $("mt").textContent="Well done. Now look at an example.";
+        setTimeout(function(){ state.stage="example"; save(); render(); }, 1200);
+      }else{
+        el.classList.add("wrong"); $("mt").className="msg bad";
+        $("mt").textContent="The box says "+pretty(v)+". Tap Clear and write 25 again.";
+      }
+    }, WAIT_MS);
+  });
+}
+
+function showExample(){
+  setCount("Example");
+  screen.innerHTML =
+    '<span class="tag">Example</span>'+
+    '<div class="problem">'+EXAMPLE.p+'</div>'+
+    '<div class="worked">'+
+      '<div class="wline"><span class="lab">Line 1: − (−) becomes +</span><span class="val">= −8 + 13</span></div>'+
+      '<div class="wline"><span class="lab">Line 2: the answer</span><span class="val">= 5</span></div>'+
+    '</div>'+
+    '<div class="help">'+numberLine(EXAMPLE.a,EXAMPLE.b,true,true)+
+      '<p class="note">Start at −8. Plus 13 means move 13 to the right. You go past 0 and stop at 5.</p></div>'+
+    '<div class="btns"><button class="main" id="go" type="button">Try one</button></div>';
+  $("go").onclick=function(){ state.stage="practice"; save(); render(); };
+}
+
+function showItem(it, countText, tagText){
+  setCount(countText);
+  var rec={id:it.id, problem:it.p, rewrite:{tries:[]}, answer:{tries:[]}, hint:false, strong:false, pen:0, typed:0};
+  var need=nums(it.p.replace(/−/g,"-")).length;
+  screen.innerHTML =
+    '<span class="tag">'+tagText+'</span>'+
+    '<div class="problem">'+it.p+'</div>'+
+    '<div class="step" id="s1"><label for="in1">Line 1: write it again without − (−)</label>'+writeBox("in1","Write here with your Pencil")+
+      '<div class="read" id="r1"></div><div class="msg" id="m1"></div><div id="h1"></div></div>'+
+    '<div class="step locked" id="s2"><label for="in2">Line 2: the answer</label>'+writeBox("in2","Write the answer here",true)+
+      '<div class="read" id="r2"></div><div class="msg" id="m2"></div><div id="h2"></div></div>';
+  var stepNo=1, busy=false, tms=[null,null], typedFlag=[false,false];
+  startTimer();
+  ["in1","in2"].forEach(function(id,i){
+    var el=$(id);
+    function first(){ if(t.start && t.firstWrite==null) t.firstWrite=Date.now()-t.start; }
+    el.addEventListener("input",function(){
+      first();
+      if(el.value) typedFlag[i] = Date.now()-lastKey<400 ? true : typedFlag[i];
+      var v=norm(el.value);
+      $("r"+(i+1)).textContent = v ? "The box says: "+pretty(v) : "";
+      el.classList.remove("wrong");
+      var m=$("m"+(i+1)); m.textContent=""; m.className="msg";
+      clearTimeout(tms[i]);
+      if(v) tms[i]=setTimeout(function(){check(i+1,false);}, WAIT_MS);
+    });
+    el.addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); clearTimeout(tms[i]); check(i+1,true);} });
+  });
+  setTimeout(function(){ try{$("in1").focus({preventScroll:true});}catch(e){} },50);
+
+  function check(n, forced){
+    if(n!==stepNo || busy) return;
+    var el=$("in"+n), m=$("m"+n), v=norm(el.value);
+    if(!v) return;
+    if(!readable(v)){
+      if(/[0-9]$/.test(v) || forced){ m.className="msg bad"; m.textContent="The box cannot read this. Tap Clear and write it again."; }
+      return;
+    }
+    var step = n===1 ? rec.rewrite : rec.answer;
+    var vv = v.replace(/^\+/,"");
+    if(n===1 && nums(vv).length<need && !forced) return;         // still writing
+    if(n===2 && !/^[+-]?\d+$/.test(vv)){ m.className="msg bad"; m.textContent="Write one number only."; return; }
+    var last=step.tries[step.tries.length-1];
+    if(last && !last.ok && last.wrote===vv) return;                  // same wrong line again, already counted
+    var ms=Date.now()-t.start;
+    busy=true;
+    var key = n===1 ? "r"+vv : "a"+parseInt(vv,10);
+    hash(it.id,key).then(function(h){
+      var ok = h===(n===1?it.h.rw:it.h.an);
+      if(ok) return finish(true,"");
+      if(n===1){
+        var a=nums(vv), b=nums(it.p.replace(/−/g,"-"));
+        return finish(false, a.join(",")!==b.join(",") ? "อ" : "ข");
+      }
+      return hash(it.id,"b"+Math.abs(parseInt(vv,10))).then(function(hb){ finish(false, hb===it.h.ab ? "ท-sign" : "ท-number"); });
+    }).catch(function(){ busy=false; m.className="msg bad"; m.textContent="Open this page from scitem.net to check answers."; });
+
+    function finish(ok, tag){
+      busy=false;
+      step.tries.push({wrote:vv, ok:ok, tag:tag, ms:ms});
+      if(typedFlag[n-1]) rec.typed++; else rec.pen++;
+      if(!ok){
+        el.classList.add("wrong"); m.className="msg bad";
+        m.textContent="Not yet. Tap Clear and write this line again.";
+        var wrongs=step.tries.filter(function(x){return !x.ok;}).length;
+        if(wrongs===2){ rec.hint=true; $("h"+n).innerHTML=hintHtml(it,n,false); }
+        if(wrongs>=3){ rec.strong=true; $("h"+n).innerHTML=hintHtml(it,n,true); }
+        return;
+      }
+      el.classList.remove("wrong"); el.classList.add("right"); el.disabled=true;
+      m.className="msg good"; m.textContent="Right."; $("h"+n).innerHTML="";
+      if(n===1){
+        stepNo=2; $("s2").classList.remove("locked"); var e2=$("in2"); e2.disabled=false;
+        setTimeout(function(){ try{e2.focus({preventScroll:true});}catch(e){} },30);
+      }else{
+        var tm=stopTimer(); rec.activeMs=tm.activeMs; rec.rawMs=tm.rawMs; rec.firstWriteMs=tm.firstWriteMs;
+        stepNo=3;
+        setTimeout(function(){ next(rec); }, 900);
+      }
+    }
+  }
+}
+
+function hintHtml(it,n,strong){
+  if(n===1){
+    var s='<div class="help"><b>Help</b><p>Minus a negative becomes plus: − (−) → +. Keep every number the same.</p>';
+    if(strong) s+='<p>Copy the first number. Change each − (−) into +. Copy the other numbers.</p><p class="note">Example: −8 − (−13) = −8 + 13</p>';
+    return s+'</div>';
+  }
+  if(it.a===undefined) return '<div class="help"><b>Help</b><p>Work left to right: do the first two numbers, then add the last one.</p>'+
+    (strong?'<p class="note">Example: −2 − 3 + 4 → −5 + 4 = −1</p>':'')+'</div>';
+  return '<div class="help"><b>Help</b>'+numberLine(it.a,it.b,strong,false)+'<p>Start at '+prettyNum(it.a)+'. Plus '+it.b+' means move '+it.b+' to the right.'+(strong?' The dot shows where you stop.':'')+'</p></div>';
+}
+
+// still picture: start bar from 0 to a, arrow b to the right
+function numberLine(a,b,showEnd,labelEnd){
+  var end=a+b, lo=Math.min(0,a,end), hi=Math.max(0,a,end);
+  var span=hi-lo, pad=Math.max(2,Math.round(span*0.08)); lo-=pad; hi+=pad;
+  var W=640, L=24, R=616, y=74;
+  var x=function(v){return L+(v-lo)/(hi-lo)*(R-L);};
+  var step = span<=24?1:(span<=60?5:10), lab = span<=12?2:(span<=24?4:(span<=60?10:20));
+  var s='<svg viewBox="0 0 '+W+' 120" role="img" aria-label="number line">';
+  s+='<line x1="'+L+'" y1="'+y+'" x2="'+R+'" y2="'+y+'" stroke="#2b3a55" stroke-width="2"/>';
+  for(var v=Math.ceil(lo/step)*step; v<=hi; v+=step){
+    var big=(v%lab===0)||v===a;
+    s+='<line x1="'+x(v)+'" y1="'+(y-(big?8:5))+'" x2="'+x(v)+'" y2="'+(y+(big?8:5))+'" stroke="#2b3a55" stroke-width="'+(v===0?3:1.5)+'"/>';
+    if(v===0||v===a||(v%lab===0 && Math.abs(v-a)>=lab/2 && (!showEnd || Math.abs(v-end)>=lab/2)) || (labelEnd&&v===end))
+      s+='<text x="'+x(v)+'" y="'+(y+30)+'" font-size="15" text-anchor="middle" fill="#2b3a55" font-family="Inter, sans-serif">'+prettyNum(v)+'</text>';
+  }
+  s+='<rect x="'+Math.min(x(0),x(a))+'" y="'+(y-22)+'" width="'+Math.max(2,Math.abs(x(a)-x(0)))+'" height="12" rx="3" fill="#db9e89"/>';
+  var y2=y-42;
+  s+='<line x1="'+x(a)+'" y1="'+y2+'" x2="'+(x(end)-8)+'" y2="'+y2+'" stroke="#729783" stroke-width="5"/>';
+  s+='<polygon points="'+x(end)+','+y2+' '+(x(end)-12)+','+(y2-7)+' '+(x(end)-12)+','+(y2+7)+'" fill="#729783"/>';
+  s+='<text x="'+((x(a)+x(end))/2)+'" y="'+(y2-10)+'" font-size="15" text-anchor="middle" fill="#2b3a55" font-family="Inter, sans-serif">+'+b+'</text>';
+  if(showEnd) s+='<circle cx="'+x(end)+'" cy="'+y+'" r="7" fill="#2b3a55"/>';
+  return s+'</svg>';
+}
+
+function next(rec){
+  if(state.stage==="practice"){ state.practice=rec; state.stage="item"; state.idx=0; }
+  else{
+    state.items[state.idx]=rec;
+    if(state.idx<9) state.idx++; else { state.stage="done"; state.finished=new Date().toISOString(); }
+  }
+  save(); render(); window.scrollTo(0,0);
+}
+
+// ---------- results (plain lines, each under 100 characters, one per sheet cell) ----------
+function sec(ms){return ms==null?"-":Math.round(ms/1000)+" s";}
+function firstOk(step){return step.tries.length>0 && step.tries[0].ok;}
+function wrongs(step){
+  var w=step.tries.filter(function(x){return !x.ok;});
+  return w.length ? "x"+w.length+" "+w.map(function(x){return pretty(x.wrote)+"["+x.tag+"]";}).join(" ") : "OK";
+}
+function resultLines(){
+  var it=state.items, n=it.length;
+  var score=it.filter(function(r){return firstOk(r.rewrite)&&firstOk(r.answer);}).length;
+  var rw=it.filter(function(r){return firstOk(r.rewrite);}).length;
+  var two=it.slice(0,8).map(function(r){return r.activeMs||0;});
+  var avg=Math.round(two.reduce(function(a,b){return a+b;},0)/Math.max(1,two.length)/1000);
+  var pen=0, typed=0; it.forEach(function(r){pen+=r.pen; typed+=r.typed;});
+  var d=new Date(state.finished||Date.now());
+  var L=[];
+  L.push("Signs Check − (−) · "+state.name+" · "+d.toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}));
+  L.push("Right first try "+score+"/"+n+" · Line 1 right first try "+rw+"/"+n);
+  L.push("Avg Q1-8: "+avg+" s (20 Oct ~64 s) · Q6 −15 − (−15): "+sec(it[5]&&it[5].activeMs)+" (20 Oct 76 s)");
+  L.push("Cross 0 · Q1 / Q4 / Q8: "+sec(it[0]&&it[0].activeMs)+" / "+sec(it[3]&&it[3].activeMs)+" / "+sec(it[7]&&it[7].activeMs));
+  L.push("Checks written with Pencil: "+pen+" · typed: "+typed);
+  L.push("Goal: ≥9/10 first try · Line 1 ≥9/10 · Q1-8 ≤ 40 s");
+  it.forEach(function(r,i){
+    var open = r.rawMs-r.activeMs>5000 ? " (open "+sec(r.rawMs)+")" : "";
+    var help = r.strong?" · strong help":(r.hint?" · help":"");
+    L.push(("Q"+(i+1)+" "+r.problem+" · "+sec(r.activeMs)+open+" · start "+sec(r.firstWriteMs)+help).slice(0,100));
+    L.push(("   line 1 "+wrongs(r.rewrite)+" · answer "+wrongs(r.answer)).slice(0,100));
+  });
+  if(state.practice){
+    var p=state.practice;
+    L.push(("Practice "+p.problem+" · "+sec(p.activeMs)+" · line 1 "+wrongs(p.rewrite)+" · answer "+wrongs(p.answer)).slice(0,100));
+  }
+  L.push("Tags: ท-sign sign slip · ท-number number slip · อ copied a number wrong");
+  L.push("ข − (−) not changed into +  (suggested, please confirm)");
+  return L;
+}
+
+function send(){
+  var st=$("st"), lines=resultLines();
+  st.className="msg"; st.textContent="Sending to Teacher View… please keep this page open.";
+  $("retry").hidden=true;
+  var secs=state.items.map(function(r){return Math.round((r.activeMs||0)/1000);});
+  fetch(SHEET_URL,{method:"POST",body:JSON.stringify({action:"submit",id:state.sid.slice(-20),quiz:QUIZ,name:state.name||"No name",answers:lines,secs:secs})})
+    .then(function(r){return r.json();})
+    .then(function(j){
+      if(!j.ok) throw new Error();
+      state.sent=true; save();
+      st.className="msg good"; st.textContent="Sent to Teacher View. You can close this page.";
+      $("backup").hidden=true;
+    })
+    .catch(function(){
+      st.className="msg bad"; st.textContent="Could not send. Check the internet, then tap Send again.";
+      $("retry").hidden=false; $("backup").hidden=false;
+    });
+}
+
+function showDone(){
+  setCount("Done");
+  var txt=resultLines().join("\n");
+  screen.innerHTML =
+    '<span class="tag">Finished</span>'+
+    '<h1>All done. Thank you!</h1>'+
+    '<p class="msg" id="st"></p>'+
+    '<div class="btns"><button class="main" id="retry" type="button" hidden>Send again</button></div>'+
+    '<div id="backup" hidden class="step">'+
+      '<p class="note">If sending still does not work: tap Copy, then paste it in LINE to Teacher View.</p>'+
+      '<div class="btns"><button class="ghost" id="copy" type="button">Copy</button></div>'+
+      '<textarea id="out" readonly></textarea></div>'+
+    '<button class="link" id="again" type="button">Start again (only if Teacher View asks)</button>';
+  $("out").value=txt;
+  $("retry").onclick=send;
+  $("copy").onclick=function(){
+    var o=$("out");
+    var sel=function(){ o.focus(); o.select(); };
+    try{ navigator.clipboard.writeText(txt).then(function(){ $("copy").textContent="Copied"; },sel); }catch(e){ sel(); }
+  };
+  var armed=false;
+  $("again").onclick=function(){
+    if(!armed){ armed=true; $("again").textContent="Tap again to clear this result and start over"; return; }
+    var name=state.name; state=fresh(); state.name=name; save(); render();
+  };
+  if(state.sent){ $("st").className="msg good"; $("st").textContent="Sent to Teacher View. You can close this page."; }
+  else send();
+}
+
+render();
+})();
+</script>
+</body></html>
