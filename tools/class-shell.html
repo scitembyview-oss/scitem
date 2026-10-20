@@ -265,8 +265,12 @@ const q3=v=>Math.round(v*1000);
 const packInk=ink=>ink.map(s=>({c:s.c,e:s.e?1:0,p:s.p.map((v,j)=>j%3===2?Math.round(v*9):q3(v))}));
 const unpackInk=ink=>(ink||[]).map(s=>({c:s.c,e:!!s.e,p:s.p.map((v,j)=>j%3===2?v/9:v/1000)}));
 async function post(body){
-  const r=await fetch(SHEET,{method:"POST",body:JSON.stringify(body)});
-  const j=await r.json();if(!j.ok)throw new Error(j.error||"sheet");return j;
+  let r;
+  try{r=await fetch(SHEET,{method:"POST",body:JSON.stringify(body)});}catch(e){throw new Error("fetch: "+e.message);}
+  const t=await r.text();let j;
+  // what Google sent back instead of data (a login page, a script error…), so the teacher can tell us
+  try{j=JSON.parse(t);}catch(e){throw new Error("HTTP "+r.status+": "+t.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,140));}
+  if(!j.ok)throw new Error(j.error||"sheet");return j;
 }
 function setNet(t){$("net").textContent=t;}
 let flushing=false;
@@ -308,7 +312,7 @@ async function pullAll(){
     sel.hidden=!names.length;sel.value=STU;
     SENT=ALL[STU]||{};
     return changed;
-  }catch(e){setNet("โหลดไม่ได้ ("+(e.message==="pw"?"รหัสครูไม่ตรงกับในชีท":"เน็ต")+")");return false;}
+  }catch(e){setNet(e.message==="pw"?"โหลดไม่ได้: รหัสครูไม่ตรงกับในชีท":"โหลดไม่ได้ ("+e.message+")");return false;}
 }
 let redT=null;
 function pushRed(){
