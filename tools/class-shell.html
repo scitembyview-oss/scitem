@@ -357,7 +357,9 @@ function start(){
     const refresh=async()=>{if(busy)return;busy=true;try{if(await pullAll())render();}finally{busy=false;}};
     $("refresh").onclick=refresh;
     $("stu").onchange=()=>{STU=$("stu").value;SENT=ALL[STU]||{};render();};
-    setInterval(refresh,5000);
+    // no asking the Sheet while the tab is in the background (another app, screen locked); catch up on return
+    setInterval(()=>{if(!document.hidden)refresh();},5000);
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh();});
     if(!SHEET)addEventListener("storage",e=>{if(e.key===K.sent)refresh();});
     render();refresh();
   }else{
@@ -365,8 +367,12 @@ function start(){
     $("penSw").style.background=css("--navy");
     idx=Math.min(ME.idx||0,items.length-1);
     // the question she is on goes to the teacher a few seconds after each change, not only when she moves on
-    if(SHEET){setInterval(()=>{if(dirty&&!flushing){dirty=false;leave(true);}else flush(true);},4000);
-      setInterval(pullRed,8000);addEventListener("online",()=>flush(true));flush(true);}
+    // paused in the background like the teacher's screen; unsent work goes out as she leaves the tab
+    if(SHEET){setInterval(()=>{if(document.hidden)return;if(dirty&&!flushing){dirty=false;leave(true);}else flush(true);},4000);
+      setInterval(()=>{if(!document.hidden)pullRed();},8000);addEventListener("online",()=>flush(true));flush(true);
+      document.addEventListener("visibilitychange",()=>{
+        if(document.hidden){if(dirty){dirty=false;leave(true);}else flush(true);}
+        else{flush(true);pullRed();}});}
     else{RED=load(K.red,{});addEventListener("storage",e=>{if(e.key===K.red){RED=load(K.red,{});drawRed();}});}
     render();
   }
