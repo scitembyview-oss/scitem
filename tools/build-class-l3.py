@@ -154,6 +154,23 @@ del w[0]["parts"]
 w += [item(f"S10.{3 + i}", q, a, "answer", False) for i, (q, a) in enumerate(K["B3"])]
 w += [item(f"S10.{7 + i}", q, a, "answer", False) for i, (q, a) in enumerate(K["HARD"]["B3"])]
 S.append({"id": "S10", "name": "Word problems and challenge", "items": w})
+# Boss Level: for the ones who finish early (View 2026-10-20). Work backwards, spot the pattern, then the longest algebra.
+# Every answer is one number or one expression, so the answer pad can check it.
+BOSS = [
+    ("Fill the box: −7 − □ = 5", "−12"),
+    ("Fill the box: □ × (−3) − 4 = 14", "−6"),
+    ("Fill the box: −⅔ − □ = ¼", "−11/12"),
+    ("(−2)ⁿ = −32. What is n?", "5"),
+    ("1 − 2 + 3 − 4 + 5 − 6 + … + 99 − 100", "−50"),
+    ("(−1) + (−1)² + (−1)³ + … + (−1)⁹⁹", "−1"),
+    ("The pattern goes 7, 4, 1, −2, … What is the 25th number?", "−65"),
+    ("Two numbers add to −3 and multiply to −10. What is the smaller number?", "−5"),
+    ("(−½)³ ÷ (−¼)² − (−2)", "0"),
+    ("a = −2 and b = −3. Find a²b − ab² − (a − b)³", "5"),
+    ("Simplify: −2[x − 3(1 − x)] − (−4)(2 − x)", "−12x + 14"),
+    ("Solve: −3(2 − x) − (x + 5) = −2(x − 4) + 1", "x = 5"),
+]
+S.append({"id": "S11", "name": "Boss Level", "items": [item(f"S11.{i + 1}", q, a, "answer", False) for i, (q, a) in enumerate(BOSS)]})
 S.append({"id": "X", "name": "Check", "items": [item(f"X.{i + 1}", q, a, "check", False) for i, (q, a) in enumerate(K["C"])]})
 
 Path(sys.argv[2]).write_text(json.dumps({"title": "Lesson 3 · Flip the Bar", "sets": S}, ensure_ascii=False), encoding="utf-8")
