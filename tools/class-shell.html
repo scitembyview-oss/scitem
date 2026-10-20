@@ -57,6 +57,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--peach);outline-
 #sets button.new::after,#stu{font:600 16px var(--display);min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);padding:0 8px}
 .net{color:var(--bad);font-weight:600;font-size:14px}
 .setname{color:var(--muted);font-weight:600;font-size:15px}
+.reveal{align-self:flex-start;min-height:36px;font-size:14px}
+.tans{font-size:16px;color:var(--muted)}
 .q.long{font-size:clamp(1.15rem,2.6vw,1.5rem);text-align:left;line-height:1.45}
 #dots button.ok{background:var(--mint)}
 #dots button.ok2{background:#fbeccd}
@@ -559,7 +561,11 @@ function renderTeacher(it,stg){
   if(s){SEEN[(STU||"")+"|"+it.id]=s.at;save(K.seen,SEEN);}
   stg.innerHTML=`<div class="meta"><span class="code">${esc(it.id)}</span><span class="mode ${mc}">${MODES_TH[it.mode]}</span><span class="setname">${esc(it.set.name)}</span>
     <span class="status">${s?"ส่งเมื่อ "+new Date(s.at).toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"}):"ยังไม่ส่ง"}</span></div>
-    <div class="q${it.q.length>40?" long":""}">${esc(it.q)} <span style="color:var(--muted)">= ${esc(it.ans)}${it.unit?" "+esc(it.unit):""}</span></div>`;
+    <div class="q${it.q.length>40?" long":""}">${esc(it.q)}</div>`;
+  // the student may see this screen (screen share), so the answer stays hidden until the teacher taps
+  const rv=document.createElement("button");rv.className="ghost reveal";rv.textContent="ดูเฉลย";
+  rv.onclick=()=>{rv.outerHTML=`<div class="tans">เฉลย: <b>${esc(it.ans)}${it.unit?" "+esc(it.unit):""}</b></div>`;};
+  stg.appendChild(rv);
   if(!s){stg.insertAdjacentHTML("beforeend",`<div class="ins">น้องยังไม่ได้ทำข้อนี้ หรือยังไม่ได้เลื่อนออกจากข้อนี้</div>`);return;}
   if(it.line&&(s.arrows.length||s.shown))stg.appendChild(staticLine(it,s));
   const log=[];
