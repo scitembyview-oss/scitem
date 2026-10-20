@@ -136,6 +136,52 @@ S.append({"id": "S4", "name": "Times and divide", "items": [item(f"S4.{i + 1}", 
 S.append({"id": "S5", "name": "Mixed (order of operations)", "items": [item(f"S5.{i + 1}", q, a, "answer") for i, (q, _, a) in enumerate(K["A3"])]
           + [item(f"S5.{7 + i}", q, a, "answer") for i, (q, a) in enumerate(K["HARD"]["A3"])]})
 S.append({"id": "CA", "name": "Check A", "items": [item(f"K.{i + 1}", q, a, "check", False) for i, (q, a) in enumerate(K["CA"])]})
+
+
+def step1(code, rows, rwq, hint):
+    """rows: (question, answer, [ways to write it with every sign showing] or None). With a list she writes it
+    again first (step 1) and only then works it out; None = work it out in one go (the last ones of a set)."""
+    out = []
+    for i, (q, a, rw) in enumerate(rows):
+        it = item(f"{code}.{i + 1}", q, a, "answer", False)
+        if rw:
+            it.update(rw=rw, rwq=rwq, rwHint=hint)
+        out.append(it)
+    return out
+
+
+# R5A/R5B: fix-ups after Piano's S5 (View 2026-10-20): she does not see the × hiding before a bracket, and reads ÷ as ×.
+# Pairs that differ only by a bracket or a sign sit next to each other.
+R5A = [
+    ("2(−5)", "−10", ["2×(−5)"]),
+    ("−3(4)", "−12", ["−3×(4)", "−3×4"]),
+    ("5 − 2(3)", "−1", ["5−2×(3)", "5−2×3"]),
+    ("(5 − 2)(3)", "9", ["(5−2)×(3)", "(5−2)×3"]),
+    ("4 − 2(3 − 7)", "12", ["4−2×(3−7)"]),
+    ("(4 − 2)(3 − 7)", "−8", ["(4−2)×(3−7)"]),
+    ("6 − 3(1 − 5)", "18", ["6−3×(1−5)"]),
+    ("−2 − 4(−3 + 1)", "6", ["−2−4×(−3+1)"]),
+    ("10 − 2(−3)(4)", "34", ["10−2×(−3)×(4)", "10−2×(−3)×4"]),
+    ("7 − 3(2 − 5)", "16", None),
+    ("−1 − 2(4 − 9)", "9", None),
+    ("3(−2) − 2(1 − 4)", "0", None),
+]
+R5B = [
+    ("12 ÷ (−3)", "−4", ["12÷(−3)"]),
+    ("12 × (−3)", "−36", ["12×(−3)"]),
+    ("−20 ÷ 5", "−4", ["−20÷5"]),
+    ("−24 ÷ 4 × 2", "−12", ["−24÷4×2"]),
+    ("−24 ÷ (4 × 2)", "−3", ["−24÷(4×2)"]),
+    ("18 ÷ (−6) − 2", "−5", ["18÷(−6)−2"]),
+    ("7 − 12 ÷ (−4)", "10", ["7−12÷(−4)"]),
+    ("−30 ÷ (−5) × (−2)", "−12", ["−30÷(−5)×(−2)"]),
+    ("20 − 36 ÷ (−9)", "24", None),
+    ("−8 × 3 ÷ (−4)", "6", None),
+]
+S.append({"id": "R5A", "name": "Fix-up: the hidden ×", "items": step1(
+    "R5A", R5A, "Step 1: write it again with the hidden × put in.", "Not yet. A number next to a bracket means ×.")})
+S.append({"id": "R5B", "name": "Fix-up: ÷ is not ×", "items": step1(
+    "R5B", R5B, "Step 1: copy it sign by sign. Say ÷ as “divided by”.", "Not yet. Look again: is it ÷ or ×?")})
 for code, name, data, hard in (("S6", "Decimals", K["S6"], K["S6H"]), ("S7", "Fractions", K["S7"], K["S7H"])):
     lined = [(q, a) for q, nl, a in data if nl]
     rest = [(q, a) for q, nl, a in data if not nl]
