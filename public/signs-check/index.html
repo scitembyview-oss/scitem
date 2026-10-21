@@ -310,7 +310,7 @@ function showItem(it, countText, tagText){
   var html='<span class="tag">'+tagText+'</span><div class="problem">'+it.p+'</div>';
   kinds.forEach(function(k,i){
     var n=i+1;
-    if(i===1) html+='<div class="step"><div class="padhead"><span>Working space <small>(write anything here, it stays as your writing)</small></span><button class="clear" id="padclr" type="button">Clear</button></div><canvas class="pad" id="pad"></canvas></div>';
+    if(k==="ans") html+='<div class="step"><div class="padhead"><span>Working space <small>(write anything here, it stays as your writing)</small></span><button class="clear" id="padclr" type="button">Clear</button></div><canvas class="pad" id="pad"></canvas></div>';
     html+='<div class="step'+(i?' locked':'')+'" id="s'+n+'"><label for="in'+n+'">Line '+n+': '+KINDS[k].label+'</label>'+writeBox("in"+n,KINDS[k].ph,i>0)+
       '<div class="read" id="r'+n+'"></div><div class="msg" id="m'+n+'"></div><div id="h'+n+'"></div></div>';
   });
