@@ -250,6 +250,22 @@ window.EXTRA_ACT = {
     raf = requestAnimationFrame(frame);
   },
 };
+// ▶ on the toolbar plays every figure on this page: for when taps on the picture don't get through (e.g. while screen sharing)
+document.addEventListener('DOMContentLoaded', () => {
+  const next = document.getElementById('print'); if (!next) return;
+  const b = document.createElement('button');
+  b.id = 'playAll'; b.title = 'เล่นอนิเมชั่นทุกรูปในหน้านี้ (กดอีกครั้งเพื่อหยุด)';
+  b.innerHTML = '▶<span class="lbl"> เล่นรูป</span>';
+  b.onclick = () => {
+    const figs = [...document.querySelectorAll('.sheet.cur svg[data-anim]')];
+    if (figs.some(s => FIG_RUN.has(s))) figs.forEach(s => FIG_RUN.has(s) && FIG_RUN.get(s)());
+    else figs.forEach(s => EXTRA_ACT.fig(s));
+  };
+  next.before(b);
+  const sync = () => { b.disabled = !document.querySelector('.sheet.cur svg[data-anim]'); };
+  new MutationObserver(sync).observe(document.getElementById('pageNo'), { childList: true, characterData: true, subtree: true });
+  sync();
+});
 
 </script>
 <style>
