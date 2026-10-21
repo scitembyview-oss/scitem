@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Living Things and Weather</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Sarabun:wght@400;600&display=swap">
+<style>
+/* Built by tools/build-sheet-class.mjs from tools/sheet-class-shell.html — edit those, not the built page.
+   A worksheet as a live class. One page, three screens:
+   student (default): the student sheet page by page, write with the pencil, "Send to teacher";
+   #show: the teacher's screen to share on the call — same pages, no answers, the teacher writes, can bring up the student's sent work;
+   #teacher: hidden — what the student sent, the answer key under it, red pen for marking (not shown to the student), save as PDF. */
+:root{
+  --bg:#f8f3ea; --card:#fff; --fg:#1f2836; --muted:#5d6676; --line:#ddd4c6;
+  --navy:#2b3a55; --peach:#db9e89; --sage:#729783; --mint:#e9f2eb; --good:#2f7a4f; --bad:#b03a2e; --red:#d62828; --blue:#1f5fa8;
+  --display:"Poppins","Sarabun",system-ui,sans-serif; --body:"Sarabun","Noto Sans Thai",system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overscroll-behavior:none}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:17px;line-height:1.4;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overflow:hidden}
+button,select{font:600 15px var(--display);color:var(--fg);cursor:pointer;touch-action:manipulation}
+button:focus-visible,input:focus-visible{outline:3px solid var(--peach);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* ---------- gate ---------- */
+#gate{position:fixed;inset:0;display:grid;place-items:center;padding:16px;background:var(--bg);z-index:50}
+#gate form{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px;width:min(420px,100%);display:flex;flex-direction:column;gap:14px}
+#gate h1{font:700 1.5rem var(--display);margin:0}
+#gate label{font:600 15px var(--display);display:flex;flex-direction:column;gap:6px}
+#gate input{font:600 20px var(--display);padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);-webkit-user-select:text;user-select:text}
+#gate .err{color:var(--bad);min-height:1.4em;font-weight:600}
+.big{font:700 1.15rem var(--display);min-height:56px;padding:0 24px;border-radius:14px;border:none;background:var(--navy);color:#fff}
+.big:disabled{opacity:.45}
+
+/* ---------- app ---------- */
+#app{height:100dvh;display:flex;flex-direction:column;
+  padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));gap:8px}
+#bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#bar h1{font:700 1.05rem var(--display);margin:0 4px 0 0;white-space:nowrap}
+#who{color:var(--muted);font-weight:600}
+.sp{flex:1}
+.b{min-width:44px;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);padding:0 10px}
+.b[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.sw{width:22px;height:22px;border-radius:50%;display:inline-block;vertical-align:middle}
+#send{background:var(--sage);color:#fff;border-color:var(--sage);min-width:150px}
+#send.done{background:var(--mint);color:var(--good);border-color:var(--mint)}
+#net{color:var(--bad);font-weight:600;font-size:14px}
+#status{color:var(--good);font-weight:600;font-size:14px;min-width:4em}
+#nav{display:flex;align-items:center;gap:5px}
+#nav .arr{min-width:52px;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-size:18px}
+#dots{display:flex;gap:4px;flex-wrap:wrap;flex:1}
+#dots button{min-width:38px;min-height:38px;border-radius:9px;border:1px solid var(--line);background:var(--card);font:600 13px var(--display);position:relative;padding:0 3px}
+#dots button[aria-current="true"]{outline:3px solid var(--navy);outline-offset:-3px}
+#dots button.sent{background:var(--mint)}
+#dots button.new::after{content:"";position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:#e07a1f;border:2px solid #fff}
+#stu{min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);padding:0 8px}
+#note{font-size:14px;color:var(--muted);font-weight:600}
+#note.red{color:var(--red)}
+
+#scroll{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;border-radius:12px;background:#e9e3d8}
+#page{position:relative;margin:0 auto;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.15)}
+#page img{display:block;width:100%;height:auto;pointer-events:none;-webkit-user-drag:none}
+#page canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#page canvas.ink{pointer-events:auto;touch-action:none}
+body.scrolly #page canvas.ink{touch-action:pan-x pan-y}
+#keyTag{position:absolute;top:8px;right:8px;background:var(--red);color:#fff;font:700 13px var(--display);border-radius:999px;padding:2px 10px}
+
+/* ---------- screens ---------- */
+body.show #bar h1::after{content:" · จอครู (แชร์ได้)";color:var(--blue)}
+body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:var(--red)}
+
+/* ---------- print (Save PDF) ---------- */
+#print{display:none}
+@media print{
+  @page{size:A4;margin:0}
+  html,body{height:auto;overflow:visible;background:#fff}
+  #app,#gate{display:none!important}
+  #print{display:block}
+  #print img{display:block;width:210mm;height:296mm;object-fit:contain;break-after:page}
+}
+</style>
+</head>
+<body>
+<div id="gate">
+  <form id="gateForm" autocomplete="off">
+    <h1 id="gTitle">Scitem Class</h1>
+    <label id="gNameL">Your name<input id="gName" maxlength="30"></label>
+    <label id="gCodeL" hidden>รหัสครู<input id="gCode" type="password"></label>
+    <div class="err" id="gErr" aria-live="polite"></div>
+    <button class="big" id="gGo">Start</button>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <div id="bar">
+    <h1 id="title"></h1><span id="who"></span>
+    <select id="stu" hidden aria-label="นักเรียน"></select>
+    <span class="sp"></span>
+    <button class="b" id="tPen" aria-pressed="true" aria-label="Pen"><span class="sw" id="penSw"></span></button>
+    <button class="b" id="tErase" aria-pressed="false">Eraser</button>
+    <button class="b" id="tHand" aria-pressed="false" title="Finger scrolls the page">✋</button>
+    <button class="b" id="tUndo">Undo</button>
+    <button class="b" id="tClear">Clear</button>
+    <button class="b" id="zOut" aria-label="Smaller">−</button>
+    <button class="b" id="zIn" aria-label="Bigger">+</button>
+    <button class="b" id="tPull" hidden aria-pressed="false">งานน้อง</button>
+    <button class="b" id="tKey" hidden aria-pressed="false">เฉลย</button>
+    <button class="b" id="send">Send to teacher</button>
+    <button class="b" id="saveBtn">Save PDF</button>
+  </div>
+  <div id="nav">
+    <button class="arr" id="prev" aria-label="Previous page">◀</button>
+    <div id="dots"></div>
+    <button class="arr" id="next" aria-label="Next page">▶</button>
+    <span id="status" aria-live="polite"></span><span id="net"></span><span id="note"></span>
+  </div>
+  <div id="scroll"><div id="page"><img id="img" alt=""><canvas id="cPull"></canvas><canvas id="cMine"></canvas><canvas id="cRed"></canvas><span id="keyTag" hidden>เฉลย</span></div></div>
+</div>
+<div id="print"></div>
+
+<script>
+(function(){
+"use strict";
+const CFG={"id":"sci3","title":"Living Things and Weather","pages":19,"sheet":"https://script.google.com/macros/s/AKfycbzIaVMqROaTFaDN36SwCif7pWF_KEE7GroEUj2V5c9BM2gg4Y2v3wXbUOf-P4T0aBygnw/exec"};
+const SHEET=CFG.sheet;                     // Google Apps Script URL (tools/check-sheet.gs); null = this browser only (try-out in two tabs)
+const CLASS=CFG.id,N=CFG.pages;
+const $=id=>document.getElementById(id);
+const SCREEN=location.hash==="#teacher"?"teacher":location.hash==="#show"?"show":"student";
+const TEACHER=SCREEN==="teacher",SHOW=SCREEN==="show",STAFF=TEACHER||SHOW;
+document.body.classList.add(SCREEN);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const P=i=>"p"+String(i+1).padStart(2,"0");          // page id in the Sheet: p01, p02…
+const K={me:"scitem-sc:"+CLASS+":me",work:"scitem-sc:"+CLASS+":work",out:"scitem-sc:"+CLASS+":out",sent:"scitem-sc:"+CLASS+":sent",
+  red:"scitem-sc:"+CLASS+":red",show:"scitem-sc:"+CLASS+":show",seen:"scitem-sc:"+CLASS+":seen"};
+const load=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}};
+const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+
+/* ---------- gate: the student types her name; both teacher screens need the teacher code (it opens the answer key) ---------- */
+const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+// key.json = the answer key pages, AES-GCM with the teacher code (tools/build-sheet-class.mjs); only the teacher screens fetch it
+let KEYBLOB=null;
+async function openKey(code){
+  if(!KEYBLOB)KEYBLOB=await (await fetch("key.json",{cache:"no-cache"})).json();
+  const B=KEYBLOB;
+  const base=await crypto.subtle.importKey("raw",new TextEncoder().encode(code),"PBKDF2",false,["deriveKey"]);
+  const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt:b64(B.salt),iterations:B.iter,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["decrypt"]);
+  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:b64(B.iv)},key,b64(B.ct))));
+}
+let ME=load(K.me,{}),PW="",KEYPAGES=null;
+if(STAFF){$("gTitle").textContent=TEACHER?"จอครู (ซ่อน)":"จอครู (แชร์ให้น้องดู)";$("gNameL").hidden=true;$("gCodeL").hidden=false;$("gGo").textContent="เข้า";}
+else{$("gTitle").textContent=CFG.title;if(ME.name)$("gName").value=ME.name;}
+$("gateForm").addEventListener("submit",async e=>{
+  e.preventDefault();$("gErr").textContent="";
+  if(STAFF){
+    const code=$("gCode").value.trim();$("gGo").disabled=true;
+    try{const k=await openKey(code);if(TEACHER)KEYPAGES=k.pages;}
+    catch(err){$("gErr").textContent="รหัสไม่ถูก";$("gGo").disabled=false;return;}
+    PW=sessionStorage.getItem("scitem-sheet-pw")||code;
+  }else{
+    const n=$("gName").value.trim().slice(0,30);if(!n){$("gErr").textContent="Type your name.";return;}
+    ME.name=n;save(K.me,ME);
+  }
+  $("gate").hidden=true;$("app").hidden=false;start();
+});
+
+/* ---------- state ---------- */
+let idx=0,W={},SENT={},RED={},ALL={},STU="",SEEN={},SHOWINK={},pull=false,keyOn=false;
+// W[pid] = {ink:[...], sentAt, sentLen}: her own pages. ALL[name][pid] = what came from the Sheet. RED[key] = teacher's red ink.
+const mine=()=>W[P(idx)]||(W[P(idx)]={ink:[],sentAt:0,sentLen:-1});
+const redKey=(i=idx)=>TEACHER&&SHEET?STU+"|"+P(i):P(i);
+
+/* ---------- the Sheet: cput/cget = the student's pages, rput/rget = the teacher's red ink (tools/check-sheet.gs) ---------- */
+const q3=v=>Math.round(v*1000);
+const packInk=ink=>ink.map(s=>({c:s.c,e:s.e?1:0,p:s.p.map((v,j)=>j%3===2?Math.round(v*9):q3(v))}));
+const unpackInk=ink=>(ink||[]).map(s=>({c:s.c,e:!!s.e,p:s.p.map((v,j)=>j%3===2?v/9:v/1000)}));
+async function post(body){
+  let r,t;
+  const ab=new AbortController(),tm=setTimeout(()=>ab.abort(),25000);
+  try{r=await fetch(SHEET,{method:"POST",body:JSON.stringify(body),signal:ab.signal});t=await r.text();}
+  catch(e){throw new Error("fetch: "+e.message);}finally{clearTimeout(tm);}
+  let j;try{j=JSON.parse(t);}catch(e){throw new Error("HTTP "+r.status+": "+t.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,140));}
+  if(!j.ok)throw new Error(j.error||"sheet");return j;
+}
+const setNet=t=>{$("net").textContent=t;};
+let flashT;function flash(t){$("status").textContent=t;clearTimeout(flashT);flashT=setTimeout(()=>{$("status").textContent=""},3000);}
+/* a page of pencil can pass what the Sheet keeps (360 000 characters a page): drop every other point until it fits */
+const SHEET_MAX=340000;
+function fitRec(rec){
+  let s=JSON.stringify(rec),ink=rec.ink||[];
+  const thin=p=>{if(p.length<=6)return p;const o=[];for(let i=0;i<p.length;i+=3)if(i%6===0||i===p.length-3)o.push(p[i],p[i+1],p[i+2]);return o;};
+  while(s.length>SHEET_MAX&&ink.length){const next=ink.map(k=>Object.assign({},k,{p:thin(k.p)}));
+    ink=JSON.stringify(next).length<JSON.stringify(ink).length?next:[];s=JSON.stringify(Object.assign({},rec,{ink}));}
+  return s;
+}
+let flushing=false;
+async function flush(){
+  if(!SHEET||STAFF||flushing)return;
+  const out=load(K.out,{}),ids=Object.keys(out);if(!ids.length){setNet("");return;}
+  flushing=true;let failed=0;
+  for(const id of ids){
+    try{await post({action:"cput",cls:CLASS,name:ME.name||"",id,data:fitRec(out[id])});
+      const now=load(K.out,{});if(now[id]&&now[id].at===out[id].at){delete now[id];save(K.out,now);}}
+    catch(e){failed++;}
+  }
+  setNet(failed?"Saved. Will send when online.":"");if(!failed)flash("Sent ✓");
+  flushing=false;
+}
+function sendPage(){
+  const w=mine(),rec={ink:packInk(w.ink),at:Date.now()};
+  w.sentAt=rec.at;w.sentLen=inkSig(w.ink);save(K.work,W);
+  if(SHEET){const out=load(K.out,{});out[P(idx)]=rec;save(K.out,out);flush();}
+  else{const sent=load(K.sent,{});rec.name=ME.name||"";sent[P(idx)]=rec;save(K.sent,sent);flash("Sent ✓");}
+  render();
+}
+const inkSig=ink=>ink.reduce((a,s)=>a+s.p.length+(s.e?7:1),0);
+// View 2026-10-21: the teacher's ink is not shown on the student's screen; red stays on #teacher and in the saved PDF
+const RED_TO_STUDENT=false;
+async function pullRed(){
+  if(STAFF||!RED_TO_STUDENT)return;const id=P(idx);
+  if(!SHEET){RED=load(K.red,{});drawRed();return;}
+  try{const j=await post({action:"rget",cls:CLASS,name:ME.name||"",id});
+    const r=unpackInk(j.red?JSON.parse(j.red):[]);
+    if(JSON.stringify(r)!==JSON.stringify(RED[id]||[])){RED[id]=r;if(P(idx)===id)drawRed();}}catch(e){}
+}
+let lastAt=0;
+async function pullAll(){
+  if(!SHEET){
+    const sent=load(K.sent,{}),all={};
+    for(const [id,r] of Object.entries(sent))(all[r.name]||(all[r.name]={}))[id]=Object.assign({},r,{ink:unpackInk(r.ink)});
+    const s=JSON.stringify(all);if(s===JSON.stringify(ALL))return false;ALL=all;
+  }else{
+    try{
+      const j=await post({action:"cget",cls:CLASS,pw:PW,since:lastAt});setNet("");
+      if(!j.rows.length)return false;
+      for(const r of j.rows){
+        lastAt=Math.max(lastAt,r.at);
+        const d=JSON.parse(r.data);d.ink=unpackInk(d.ink);d.at=r.at;
+        (ALL[r.name]||(ALL[r.name]={}))[r.id]=d;
+        if(r.red!=null&&!RED[r.name+"|"+r.id])RED[r.name+"|"+r.id]=unpackInk(JSON.parse(r.red||"[]"));
+      }
+    }catch(e){
+      if(e.message==="pw"){
+        // the Sheet's password (tools/check-sheet.gs) is not the teacher code: ask once for this tab
+        const p=prompt("รหัสครูในชีท (Apps Script) ไม่ตรงกับรหัสนี้ ใส่รหัสของชีท:");
+        if(p){PW=p.trim();sessionStorage.setItem("scitem-sheet-pw",PW);}
+        setNet("โหลดไม่ได้: รหัสครูไม่ตรงกับในชีท");
+      }else setNet("โหลดไม่ได้ ("+e.message+")");
+      return false;
+    }
+  }
+  const names=Object.keys(ALL);
+  const latest=n=>Math.max(...Object.values(ALL[n]).map(x=>x.at||0));
+  if(names.length&&(!STU||!ALL[STU]))STU=names.sort((a,b)=>latest(b)-latest(a))[0];
+  const sel=$("stu");
+  if(TEACHER&&names.length){if(sel.options.length!==names.length)sel.innerHTML=names.map(n=>`<option>${esc(n)}</option>`).join("");sel.hidden=false;sel.value=STU;}
+  SENT=ALL[STU]||{};
+  return true;
+}
+let redT=null;
+function pushRed(){
+  if(!SHEET){save(K.red,RED);return;}
+  clearTimeout(redT);const key=redKey(),id=P(idx),name=STU;
+  redT=setTimeout(()=>{post({action:"rput",cls:CLASS,pw:PW,name,id,red:JSON.stringify(packInk(RED[key]||[]))}).catch(()=>setNet("ส่งหมึกครูไม่ได้"));},1200);
+}
+
+/* ---------- screens ---------- */
+function start(){
+  $("title").textContent=CFG.title;
+  if(STAFF){
+    $("send").hidden=true;
+    if(TEACHER){
+      $("tKey").hidden=false;$("tErase").hidden=true;$("penSw").style.background="var(--red)";
+      $("tUndo").textContent="ย้อน";$("tClear").textContent="ลบหมึกครู";$("saveBtn").textContent="เซฟ PDF งานน้อง";
+      SEEN=load(K.seen,{});if(!SHEET)RED=load(K.red,{});
+      $("stu").onchange=()=>{STU=$("stu").value;SENT=ALL[STU]||{};render();};
+    }else{
+      $("tPull").hidden=false;$("penSw").style.background="var(--blue)";$("saveBtn").hidden=true;
+      SHOWINK=load(K.show,{});
+    }
+    let busy=false;
+    const refresh=async()=>{if(busy||(SHOW&&!pull))return;busy=true;try{if(await pullAll())render();}finally{busy=false;}};
+    setInterval(()=>{if(!document.hidden)refresh();},5000);
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh();});
+    $("tPull").onclick=()=>{pull=!pull;$("tPull").setAttribute("aria-pressed",pull);if(pull)refresh();render();};
+    $("tKey").onclick=()=>{keyOn=!keyOn;$("tKey").setAttribute("aria-pressed",keyOn);render();};
+    if(TEACHER)refresh();
+    idx=0;
+  }else{
+    $("who").textContent=ME.name||"";W=load(K.work,{});
+    $("penSw").style.background="var(--navy)";
+    idx=Math.min(ME.idx||0,N-1);
+    if(SHEET){setInterval(()=>{if(!document.hidden)flush();},6000);addEventListener("online",flush);flush();}
+    setInterval(()=>{if(!document.hidden)pullRed();},8000);
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden){flush();pullRed();}});
+    if(!SHEET)addEventListener("storage",e=>{if(e.key===K.red)pullRed();});
+    $("send").onclick=sendPage;
+  }
+  for(let i=0;i<N;i++){const b=document.createElement("button");b.textContent=i+1;b.onclick=()=>go(i);$("dots").appendChild(b);}
+  addEventListener("resize",fit);
+  render();pullRed();
+}
+function go(i){if(i<0||i>=N||i===idx)return;idx=i;if(!STAFF){ME.idx=i;save(K.me,ME);}render();$("scroll").scrollTop=0;pullRed();}
+$("prev").onclick=()=>go(idx-1);$("next").onclick=()=>go(idx+1);
+addEventListener("keydown",e=>{if(e.target.tagName==="INPUT")return;if(e.key==="ArrowLeft")go(idx-1);if(e.key==="ArrowRight")go(idx+1);});
+
+function render(){
+  if(TEACHER&&SENT[P(idx)]){SEEN[STU+"|"+P(idx)]=SENT[P(idx)].at;save(K.seen,SEEN);}
+  const img=$("img"),src=TEACHER&&keyOn&&KEYPAGES?"data:image/jpeg;base64,"+KEYPAGES[idx]:"p/"+P(idx)+".jpg";
+  if(img.getAttribute("src")!==src){img.onload=fit;img.src=src;}else fit();
+  $("keyTag").hidden=!(TEACHER&&keyOn);
+  [...$("dots").children].forEach((b,i)=>{
+    b.setAttribute("aria-current",i===idx);
+    const s=TEACHER||SHOW?SENT[P(i)]:null,w=W[P(i)];
+    b.classList.toggle("sent",STAFF?!!s:!!(w&&w.sentAt));
+    b.classList.toggle("new",TEACHER&&!!s&&(SEEN[STU+"|"+P(i)]||0)<s.at);
+  });
+  if(!STAFF){
+    const w=mine(),sent=w.sentAt&&w.sentLen===inkSig(w.ink);
+    $("send").textContent=sent?"Sent ✓":w.sentAt?"Send again":"Send to teacher";$("send").classList.toggle("done",!!sent);
+  }
+  const s=SENT[P(idx)];
+  $("note").className="";
+  if(TEACHER)$("note").textContent=s?`${STU} ส่งหน้านี้ ${new Date(s.at).toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"})}`:"หน้านี้น้องยังไม่ส่ง";
+  else if(SHOW)$("note").textContent=pull?(s?`งานของ ${STU}`:"หน้านี้น้องยังไม่ส่ง"):"";
+}
+
+/* ---------- ink (vector strokes, 0..1 of the page) ---------- */
+let zoom=1;
+let penOnly=(()=>{try{return localStorage.getItem("scitem-pen")==="1"}catch(e){return false}})(); // after the first Apple Pencil touch, fingers scroll instead of writing
+let erase=false,hand=false;
+const cPull=$("cPull"),cMine=$("cMine"),cRed=$("cRed"),x={pull:cPull.getContext("2d"),mine:cMine.getContext("2d"),red:cRed.getContext("2d")};
+const target=TEACHER?cRed:cMine;
+target.classList.add("ink");
+function setScrolly(){document.body.classList.toggle("scrolly",penOnly||hand);}
+function fit(){
+  const sc=$("scroll"),pg=$("page"),img=$("img");
+  const r=img.naturalWidth?img.naturalHeight/img.naturalWidth:1.414;
+  const w=Math.floor(Math.min(sc.clientWidth-16,1100)*zoom);
+  pg.style.width=w+"px";pg.style.height=Math.round(w*r)+"px";
+  const dpr=Math.min(devicePixelRatio||1,1.5); // three layers of a tall page: keep iPad memory low
+  for(const c of [cPull,cMine,cRed]){c.width=Math.floor(w*dpr);c.height=Math.floor(w*r*dpr);}
+  drawAll();
+}
+function drawStroke(ctx,c,s){
+  const w=c.width,h=c.height,pts=s.p;
+  ctx.globalCompositeOperation=s.e?"destination-out":"source-over";
+  ctx.strokeStyle=ctx.fillStyle=s.c;ctx.lineCap=ctx.lineJoin="round";
+  const base=w/420*(s.e?8:1);
+  if(pts.length<4){ctx.beginPath();ctx.arc(pts[0]*w,pts[1]*h,base/1.2,0,7);ctx.fill();return;}
+  for(let i=3;i<pts.length;i+=3){
+    ctx.lineWidth=s.e?base:base*(0.6+0.9*pts[i+2]);
+    ctx.beginPath();ctx.moveTo(pts[i-3]*w,pts[i-2]*h);ctx.lineTo(pts[i]*w,pts[i+1]*h);ctx.stroke();
+  }
+}
+function paint(ctx,c,list){ctx.globalCompositeOperation="source-over";ctx.clearRect(0,0,c.width,c.height);for(const s of list)drawStroke(ctx,c,s);}
+const sentInk=()=>(SENT[P(idx)]&&SENT[P(idx)].ink)||[];
+function myStrokes(){                      // the layer this screen writes on
+  if(TEACHER){const k=redKey();return RED[k]||(RED[k]=[]);}
+  if(SHOW){const k=P(idx);return SHOWINK[k]||(SHOWINK[k]=[]);}
+  return mine().ink;
+}
+function drawAll(){
+  paint(x.pull,cPull,SHOW&&pull?sentInk():[]);
+  paint(x.mine,cMine,TEACHER?sentInk():SHOW?SHOWINK[P(idx)]||[]:mine().ink);
+  drawRed();
+}
+function drawRed(){
+  if(SHOW){paint(x.red,cRed,[]);return;}
+  const r=RED[redKey()]||[];paint(x.red,cRed,r);
+  if(!STAFF){$("note").className=r.length?"red":"";$("note").textContent=r.length?"Red = your teacher's notes":"";}
+}
+const INK=TEACHER?"#d62828":SHOW?"#1f5fa8":"#1f2836";
+function changed(){
+  if(TEACHER)pushRed();else if(SHOW)save(K.show,SHOWINK);else{save(K.work,W);render();}
+}
+let curS=null;
+function ptOf(e){const r=target.getBoundingClientRect();const q=v=>Math.round(v*1000)/1000;
+  return [q((e.clientX-r.left)/r.width),q((e.clientY-r.top)/r.height),e.pointerType==="pen"?q(e.pressure||0.5):0.5];}
+target.addEventListener("pointerdown",e=>{
+  if(e.pointerType==="pen"&&!penOnly){penOnly=true;try{localStorage.setItem("scitem-pen","1")}catch(err){}setScrolly();}
+  if(e.pointerType==="touch"&&(penOnly||hand))return;
+  if(curS||(TEACHER&&!SENT[P(idx)]))return;
+  e.preventDefault();try{target.setPointerCapture(e.pointerId)}catch(err){}
+  curS={id:e.pointerId,s:{c:INK,e:!TEACHER&&erase,p:ptOf(e)}};
+  myStrokes().push(curS.s);
+  drawStroke(TEACHER?x.red:x.mine,target,curS.s);
+});
+target.addEventListener("pointermove",e=>{
+  if(!curS||e.pointerId!==curS.id)return;e.preventDefault();
+  const evs=e.getCoalescedEvents?e.getCoalescedEvents():[],s=curS.s,before=s.p.length;
+  for(const ce of (evs.length?evs:[e])){const p=ptOf(ce),n=s.p.length;
+    if(Math.abs(p[0]-s.p[n-3])+Math.abs(p[1]-s.p[n-2])<0.0012)continue; // keep the Sheet rows small
+    s.p.push(...p);}
+  if(s.p.length>before)drawStroke(TEACHER?x.red:x.mine,target,{c:s.c,e:s.e,p:s.p.slice(Math.max(0,before-3))});
+});
+function endStroke(e){if(!curS||e.pointerId!==curS.id)return;curS=null;changed();}
+target.addEventListener("pointerup",endStroke);target.addEventListener("pointercancel",endStroke);
+// stop iPad Safari turning a pencil stroke into a scroll (see tools/light-p5-shell.html); fingers still scroll in ✋ / pencil mode
+$("page").addEventListener("touchstart",e=>{
+  const stylus=[...e.changedTouches].some(t=>t.touchType==="stylus");
+  if(stylus&&!penOnly){penOnly=true;try{localStorage.setItem("scitem-pen","1")}catch(err){}setScrolly();}
+  if(stylus||!(penOnly||hand))e.preventDefault();},{passive:false});
+$("page").addEventListener("touchmove",e=>{if([...e.touches].some(t=>t.touchType==="stylus")||!(penOnly||hand))e.preventDefault();},{passive:false});
+setScrolly();
+
+const press=(on,off)=>{on.setAttribute("aria-pressed","true");for(const b of off)b.setAttribute("aria-pressed","false");};
+$("tPen").onclick=()=>{erase=false;hand=false;press($("tPen"),[$("tErase"),$("tHand")]);setScrolly();};
+$("tErase").onclick=()=>{erase=true;hand=false;press($("tErase"),[$("tPen"),$("tHand")]);setScrolly();};
+$("tHand").onclick=()=>{hand=!hand;$("tHand").setAttribute("aria-pressed",hand);setScrolly();};
+$("tUndo").onclick=()=>{const l=myStrokes();if(!l.length)return;l.pop();changed();drawAll();};
+$("tClear").onclick=()=>{const l=myStrokes();if(!l.length||!confirm(TEACHER?"ลบหมึกครูในหน้านี้?":SHOW?"ลบหมึกในหน้านี้?":"Clear this page?"))return;l.length=0;changed();drawAll();};
+$("zIn").onclick=()=>{zoom=Math.min(2.5,zoom+0.25);fit();};
+$("zOut").onclick=()=>{zoom=Math.max(0.5,zoom-0.25);fit();};
+
+/* ---------- Save PDF: every page with ink, one A4 each ---------- */
+function pageImage(i,lists){
+  return new Promise(res=>{
+    const im=new Image();
+    im.onload=()=>{
+      const c=document.createElement("canvas");c.width=im.naturalWidth;c.height=im.naturalHeight;const g=c.getContext("2d");g.drawImage(im,0,0);
+      const l=document.createElement("canvas");l.width=c.width;l.height=c.height;const lx=l.getContext("2d");
+      for(const list of lists){lx.clearRect(0,0,l.width,l.height);for(const s of list)drawStroke(lx,l,s);g.drawImage(l,0,0);}
+      res(c.toDataURL("image/jpeg",0.85));
+    };
+    im.src="p/"+P(i)+".jpg";
+  });
+}
+$("saveBtn").onclick=async()=>{
+  const p=$("print");p.innerHTML="";flash("…");
+  for(let i=0;i<N;i++){
+    const ink=TEACHER?(SENT[P(i)]&&SENT[P(i)].ink)||[]:(W[P(i)]&&W[P(i)].ink)||[];
+    const red=RED[redKey(i)]||[];
+    if(!ink.length&&!red.length)continue;
+    const im=document.createElement("img");im.src=await pageImage(i,[ink,red]);p.appendChild(im);
+  }
+  if(!p.children.length){flash(TEACHER?"ยังไม่มีงาน":"Nothing written yet");return;}
+  document.title=CFG.title+" · "+(TEACHER?STU:ME.name||"");
+  setTimeout(()=>window.print(),300);
+};
+})();
+</script>
+</body>
+</html>
