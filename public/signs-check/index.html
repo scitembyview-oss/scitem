@@ -284,7 +284,7 @@ function showExample(){
     '<div class="problem">'+EXAMPLE.p+'</div>'+
     '<div class="worked">'+
       '<div class="wline"><span class="lab">Line 1: − (−) becomes +</span><span class="val">= −8 + 13</span></div>'+
-      '<div class="wline"><span class="lab">Line 2: 13 is bigger than 8 and it is positive, so no − in front: ( big − small )</span><span class="val">= (13 − 8)</span></div>'+
+      '<div class="wline"><span class="lab">Line 2 (absolute): 13 is bigger than 8 and positive, so no sign in front: ( big − small ). Positive answer, so −8 + 13 is OK here too</span><span class="val">= (13 − 8)</span></div>'+
       '<div class="wline"><span class="lab">Line 3: the answer</span><span class="val">= 5</span></div>'+
       '<p class="note">If the bigger number is negative, put − in front: −15 + 4 = −(15 − 4). If both have the same sign, keep it and add: −3 − 7 = −(3 + 7).</p>'+
     '</div>'+
@@ -298,7 +298,8 @@ function showExample(){
 var KINDS = {
   rw:   {label:"Write it again without − (−)", ph:"Write here with your Pencil"},
   pair: {label:"Do the first two numbers together", ph:"Write here with your Pencil"},
-  mag:  {label:"Sign of the bigger number, then ( big − small )", ph:"sign ( big − small )"},
+  mag:  {label:"Absolute: sign ( big − small ) or sign ( a + b )", ph:"( big − small ) or ( a + b )",
+         note:"Answer is positive? No sign needed, and first + second is OK too."},
   ans:  {label:"The answer", ph:"Write the answer here"}
 };
 function showItem(it, countText, tagText){
@@ -311,7 +312,7 @@ function showItem(it, countText, tagText){
   kinds.forEach(function(k,i){
     var n=i+1;
     if(k==="ans") html+='<div class="step"><div class="padhead"><span>Working space <small>(write anything here, it stays as your writing)</small></span><button class="clear" id="padclr" type="button">Clear</button></div><canvas class="pad" id="pad"></canvas></div>';
-    html+='<div class="step'+(i?' locked':'')+'" id="s'+n+'"><label for="in'+n+'">Line '+n+': '+KINDS[k].label+'</label>'+writeBox("in"+n,KINDS[k].ph,i>0)+
+    html+='<div class="step'+(i?' locked':'')+'" id="s'+n+'"><label for="in'+n+'">Line '+n+': '+KINDS[k].label+'</label>'+(KINDS[k].note?'<span class="note">'+KINDS[k].note+'</span>':'')+writeBox("in"+n,KINDS[k].ph,i>0)+
       '<div class="read" id="r'+n+'"></div><div class="msg" id="m'+n+'"></div><div id="h'+n+'"></div></div>';
   });
   screen.innerHTML=html;
@@ -349,14 +350,20 @@ function showItem(it, countText, tagText){
     var vv, key, other=null;
     if(k==="mag"){
       var v=normMag(el.value); if(!v) return;
-      var mm=v.match(/^([+-]?)\((\d+)([+-])(\d+)\)$/);
-      if(!mm){
-        bad("Write it like −(big − small), or (big − small) when the answer is positive.","not in ( ) form",v);
+      var mm=v.match(/^([+-]?)\((\d+)([+-])(\d+)\)$/), fs=v.match(/^([+-]?\d+)([+-]\d+)$/);
+      if(!mm && fs){                                                   // first + second, allowed when the answer is not negative
+        vv=v.replace(/^\+/,"");
+        var c=pairCanon(parseInt(fs[1],10),parseInt(fs[2],10));
+        key="m"+c;
+        other=c.charAt(0)==="-" ? "negative" : null;
+      }else if(!mm){
+        bad("Write it like −(big − small) or −(a + b). No sign needed if the answer is positive.","not in ( ) form",v);
         return;
+      }else{
+        vv=magCanon(mm[1],mm[2],mm[3],mm[4]);
+        key="m"+vv;
+        other=[["ท-sign","m"+magCanon(mm[1]==="-"?"":"-",mm[2],mm[3],mm[4])],["small first","m"+magCanon(mm[1],mm[4],mm[3],mm[2])]];
       }
-      vv=magCanon(mm[1],mm[2],mm[3],mm[4]);
-      key="m"+vv;
-      other=[["ท-sign","m"+magCanon(mm[1]==="-"?"":"-",mm[2],mm[3],mm[4])],["small first","m"+magCanon(mm[1],mm[4],mm[3],mm[2])]];
     }else{
       var v2=norm(el.value); if(!v2) return;
       if(!readable(v2)){ if(/[0-9]$/.test(v2) || forced) bad("The box cannot read this. Tap Clear and write it again.","unreadable",el.value); return; }
@@ -372,7 +379,9 @@ function showItem(it, countText, tagText){
     var ms=Date.now()-t.start;
     busy=true;
     hash(it.id,key).then(function(h){
+      if(k==="mag" && other==="negative") return finish(false, h===it.h.mag ? "answer negative: needs −( )" : "ท-number");
       if(h===it.h[k]) return finish(true,"");
+      if(k==="mag" && other===null) return finish(false,"ท-number");
       if(k==="rw"){ var a=nums(vv), b=nums(it.p.replace(/−/g,"-")); return finish(false, a.join(",")!==b.join(",") ? "อ" : "ข"); }
       if(k==="pair") return finish(false,"ท");
       if(k==="ans") return hash(it.id,"b"+Math.abs(parseInt(vv,10))).then(function(hb){ finish(false, hb===it.h.ab ? "ท-sign" : "ท-number"); });
@@ -407,6 +416,12 @@ function showItem(it, countText, tagText){
       }
     }
   }
+}
+// a + b written plainly → the same canonical sign(big ± small)
+function pairCanon(a,b){
+  if((a<0)===(b<0)) return magCanon(a<0?"-":"",Math.abs(a),"+",Math.abs(b));
+  var big=Math.abs(a)>=Math.abs(b)?a:b;
+  return magCanon(big<0?"-":"",Math.max(Math.abs(a),Math.abs(b)),"-",Math.min(Math.abs(a),Math.abs(b)));
 }
 // sign(big ± small): "+" in front is optional, a sum may be written either way round, 0 has no sign
 function magCanon(sign,x,op,y){
@@ -520,7 +535,7 @@ function attempts(label, step){
   out.push(cur);
   return out;
 }
-var LINE_NAMES={rw:"no − (−)", pair:"first two", mag:"sign( )", ans:"answer"};
+var LINE_NAMES={rw:"no − (−)", pair:"first two", mag:"absolute", ans:"answer"};
 function lineAttempts(r){
   var out=[]; ["rw","pair","mag","ans"].forEach(function(k){ if(r.lines[k]) out=out.concat(attempts(LINE_NAMES[k], r.lines[k])); });
   return out;
@@ -537,7 +552,7 @@ function resultLines(){
   var d=new Date(state.finished||Date.now());
   var L=[];
   L.push("Signs Check − (−) · "+state.name+" · "+d.toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}));
-  L.push("All lines right first try "+score+"/"+n+" · − (−) line "+rw+"/"+n+" · sign( ) line "+mg+"/"+n);
+  L.push("All lines right first try "+score+"/"+n+" · − (−) line "+rw+"/"+n+" · absolute line "+mg+"/"+n);
   L.push("Avg Q1-8: "+avg+" s (20 Oct ~64 s) · Q6 −15 − (−15): "+sec(it[5]&&it[5].activeMs)+" (20 Oct 76 s)");
   L.push("Cross 0 · Q1 / Q4 / Q8: "+sec(it[0]&&it[0].activeMs)+" / "+sec(it[3]&&it[3].activeMs)+" / "+sec(it[7]&&it[7].activeMs));
   L.push("Checks written with Pencil: "+pen+" · typed: "+typed+" · used working space in "+it.filter(function(r){return r.strokes;}).length+"/"+n);
