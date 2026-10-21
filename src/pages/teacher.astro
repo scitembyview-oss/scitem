@@ -297,25 +297,47 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
     return out.filter(([, d]) => Object.keys(d.t!.lines!).length);
   }
 
+  const classPw = () => { try { return sessionStorage.getItem('classPw') || pw; } catch { return pw; } };
+
   async function signsReport(r: Row) {
     const box = $('sdash');
     const run = (r.answers.find((l) => l.startsWith('ink ')) ?? '').slice(4);
     let qs: [number, SignsQ][] = [];
-    try {
-      if (!run || !CLASS_SHEET_URL) throw new Error();
-      const j = await (await fetch(CLASS_SHEET_URL, { method: 'POST', body: JSON.stringify({ action: 'cget', cls: SIGNS_QUIZ, pw }) })).json();
-      if (!j.ok) throw new Error();
-      const order = (id: string) => { const k = id.slice(run.length + 1); return k === 'p' ? 0 : Number(k); };
-      qs = (j.rows as { id: string; data: string }[]).filter((x) => x.id.startsWith(run + '-'))
-        .map((x) => [order(x.id), JSON.parse(x.data) as SignsQ] as [number, SignsQ]).sort((a, b) => a[0] - b[0]);
-    } catch {}
+    // why there may be no working-space ink: sent before ink existed, other password on the class sheet, network, nothing stored
+    let inkNote = '';
+    if (!run) inkNote = 'ผลนี้ส่งมาก่อนที่ระบบจะเก็บที่ทด (ก่อนบ่ายสอง 21 ต.ค.) เลยไม่มีที่ทด';
+    else if (CLASS_SHEET_URL) {
+      try {
+        const j = await (await fetch(CLASS_SHEET_URL, { method: 'POST', body: JSON.stringify({ action: 'cget', cls: SIGNS_QUIZ, pw: classPw() }) })).json();
+        if (!j.ok) inkNote = j.error === 'pw' ? 'pw' : 'โหลดที่ทดไม่สำเร็จ';
+        else {
+          const order = (id: string) => { const k = id.slice(run.length + 1); return k === 'p' ? 0 : Number(k); };
+          qs = (j.rows as { id: string; data: string }[]).filter((x) => x.id.startsWith(run + '-'))
+            .map((x) => [order(x.id), JSON.parse(x.data) as SignsQ] as [number, SignsQ]).sort((a, b) => a[0] - b[0]);
+          if (!qs.length) inkNote = 'ไม่พบที่ทดของรอบนี้ในชีท "คาบสด" (ส่งไม่ถึง)';
+        }
+      } catch { inkNote = 'โหลดที่ทดไม่สำเร็จ'; }
+    }
     for (const [k, t] of parseSignsText(r.answers)) {
       const hit = qs.find(([j]) => j === k);
       if (hit) hit[1].t ??= t.t; else qs.push([k, t]);
     }
     qs.sort((a, b) => a[0] - b[0]);
+    const ink = qs.filter(([, d]) => d.s.length || d.c).map(([k, d]) => {
+      const lines = d.s.map((st) => st.length === 2
+        ? `<circle cx="${st[0]}" cy="${st[1]}" r="1.5" fill="#2b3a55"/>`
+        : `<polyline points="${st.join(' ')}" fill="none" stroke="#2b3a55" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+      return `<div class="ink"><p class="qh">${k ? 'ข้อ ' + k : 'ข้อฝึก'} · ${esc(d.q)}${d.c ? ` <small>กดล้าง ${d.c} ครั้ง</small>` : ''}</p>
+        <svg viewBox="0 0 ${d.w} ${d.h}" role="img" aria-label="ที่ทด">${lines}</svg></div>`;
+    }).join('');
+
+    const inkHtml = `<h3>ที่ทด</h3>${ink ? `<div class="inks">${ink}</div>` : inkNote === 'pw'
+      ? `<form id="cpw" class="cpw"><p class="hint">ชีทห้องเรียนสดใช้รหัสครูคนละตัวกับหน้านี้ ใส่รหัสครูของห้องเรียนสดเพื่อดูที่ทด</p>
+          <input type="password" placeholder="รหัสครูห้องเรียนสด" required> <button>ดูที่ทด</button></form>`
+      : `<p class="hint">${inkNote ? esc(inkNote) : 'น้องไม่ได้ใช้ที่ทด'}</p>`}`;
     const real = qs.filter(([k, d]) => k > 0 && d.t);
-    if (!real.length) return void (box.innerHTML = '<p class="hint">ไม่มีข้อมูลแบบตาราง ดูข้อความผลแบบเต็มด้านล่าง</p>');
+    if (!real.length) box.innerHTML = '<p class="hint">ไม่มีข้อมูลแบบตาราง ดูข้อความผลแบบเต็มด้านล่าง</p>' + inkHtml;
+    else {
 
     const linesOf = (d: SignsQ): Record<string, Line> => d.t!.lines ?? { rw: d.t!.line1!, ans: d.t!.answer! };
     const firstOk = (l?: Line) => !!l && l.tries.length > 0 && l.tries[0].ok;
@@ -345,14 +367,6 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
         ${SIGN_LINES.map(([key]) => cell(L[key])).join('')}
         <td class="na">${help ? 'มีตัวช่วย' : ''}${d.s.length ? (help ? ' · ' : '') + 'ทด' : ''}</td></tr>`;
     };
-    const ink = qs.filter(([, d]) => d.s.length || d.c).map(([k, d]) => {
-      const lines = d.s.map((st) => st.length === 2
-        ? `<circle cx="${st[0]}" cy="${st[1]}" r="1.5" fill="#2b3a55"/>`
-        : `<polyline points="${st.join(' ')}" fill="none" stroke="#2b3a55" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
-      return `<div class="ink"><p class="qh">${k ? 'ข้อ ' + k : 'ข้อฝึก'} · ${esc(d.q)}${d.c ? ` <small>กดล้าง ${d.c} ครั้ง</small>` : ''}</p>
-        <svg viewBox="0 0 ${d.w} ${d.h}" role="img" aria-label="ที่ทด">${lines}</svg></div>`;
-    }).join('');
-
     box.innerHTML = `<div class="tiles">
         <div class="tile"><b>${allFirst}/${real.length}</b><span>ถูกตั้งแต่ครั้งแรก<br>ทุกบรรทัด (เป้า ≥ 9)</span></div>
         <div class="tile${avg > 40 ? ' warn' : ''}"><b>${avg} วิ</b><span>เฉลี่ยต่อข้อ ข้อ 1–8<br>(เป้า ≤ 40 · 20 ต.ค. ~64)</span></div>
@@ -363,7 +377,14 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
         <thead><tr><th>ข้อ</th><th>โจทย์</th><th>เวลา</th>${SIGN_LINES.map(([, n]) => `<th>${n}</th>`).join('')}<th></th></tr></thead>
         <tbody>${[...real, ...qs.filter(([k, d]) => k === 0 && d.t)].map(row).join('')}</tbody></table></div>
       <p class="hint">✓ = ถูกตั้งแต่ครั้งแรก · ✗ n = ผิด n ครั้งก่อนถูก (เขียนอะไรไปบ้าง + ป้าย) · เวลาเกิน 40 วิ เป็นสีส้ม · ป้าย: ท-sign เครื่องหมายพลาด, ท-number ตัวเลขพลาด, อ ลอกเลขผิด, ข ไม่เปลี่ยน − (−) เป็น +</p>
-      ${ink ? `<h3>ที่ทด</h3><div class="inks">${ink}</div>` : run ? '<p class="hint">น้องไม่ได้ใช้ที่ทด</p>' : ''}`;
+      ${inkHtml}`;
+    }
+    $('cpw')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      try { sessionStorage.setItem('classPw', ($('cpw').querySelector('input') as HTMLInputElement).value); } catch {}
+      box.innerHTML = '<p class="hint">กำลังโหลดผล…</p>';
+      signsReport(r);
+    });
   }
 
   function show(html: string) {
