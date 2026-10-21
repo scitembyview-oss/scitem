@@ -65,6 +65,17 @@ button:focus-visible,.clear:focus-visible{outline:3px solid var(--peach);outline
 .how figcaption{font-size:16px;color:var(--ink);font-weight:500}
 .how .arrow{font-family:var(--display);font-size:34px;color:var(--peach)}
 @media (max-width:560px){.how{grid-template-columns:1fr}.how .arrow{text-align:center;transform:rotate(90deg)}}
+.pad{display:block;width:100%;height:230px;border:2px dashed var(--line);border-radius:12px;touch-action:none;cursor:crosshair;
+  background-color:var(--paper);background-image:linear-gradient(var(--mint) 1px,transparent 1px),linear-gradient(90deg,var(--mint) 1px,transparent 1px);background-size:28px 28px}
+.padhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.padhead span{font-family:var(--display);font-weight:600;font-size:17px;color:var(--navy)}
+.padhead small{font-family:var(--body);font-weight:400;color:var(--muted);font-size:15px}
+.sendbox{display:flex;flex-direction:column;align-items:center;gap:6px;padding:26px 16px;border-radius:14px;border:2px solid var(--peach);background:var(--cream);text-align:center}
+.sendbox .dont{font-family:var(--display);font-weight:700;font-size:24px;color:var(--bad)}
+.sendbox .cd{font-family:var(--display);font-weight:700;font-size:96px;line-height:1;color:var(--navy);font-variant-numeric:tabular-nums}
+.sendbox .sub{color:var(--muted);font-size:16px}
+.sendbox.ok{border-color:var(--sage);background:var(--sage)}
+.sendbox.ok .okmsg{font-family:var(--display);font-weight:700;font-size:34px;line-height:1.25;color:var(--paper);text-wrap:balance}
 .rules{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
 .name{height:60px;font-size:22px;font-family:var(--body);border:2px solid var(--line);border-radius:12px;padding:0 14px;width:100%;max-width:360px;background:var(--paper);color:var(--ink)}
 textarea{width:100%;min-height:240px;font-family:ui-monospace,Menlo,monospace;font-size:13px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--paper);color:var(--ink)}
@@ -284,9 +295,12 @@ function showItem(it, countText, tagText){
     '<div class="problem">'+it.p+'</div>'+
     '<div class="step" id="s1"><label for="in1">Line 1: write it again without − (−)</label>'+writeBox("in1","Write here with your Pencil")+
       '<div class="read" id="r1"></div><div class="msg" id="m1"></div><div id="h1"></div></div>'+
+    '<div class="step"><div class="padhead"><span>Working space <small>(write anything here, it stays as your writing)</small></span><button class="clear" id="padclr" type="button">Clear</button></div><canvas class="pad" id="pad"></canvas></div>'+
     '<div class="step locked" id="s2"><label for="in2">Line 2: the answer</label>'+writeBox("in2","Write the answer here",true)+
       '<div class="read" id="r2"></div><div class="msg" id="m2"></div><div id="h2"></div></div>';
   var stepNo=1, busy=false, tms=[null,null], typedFlag=[false,false];
+  rec.strokes=0;
+  setupPad($("pad"), $("padclr"), function(){ rec.strokes++; });
   startTimer();
   ["in1","in2"].forEach(function(id,i){
     var el=$(id);
@@ -358,6 +372,37 @@ function showItem(it, countText, tagText){
   }
 }
 
+// free working space: plain ink, never turned into text. Pencil draws; a finger draws only until a Pencil is seen (palm on the screen).
+var penSeen=false;
+function setupPad(cv, clr, onStroke){
+  var ctx=cv.getContext("2d"), dpr=window.devicePixelRatio||1, drawing=null;
+  function size(){
+    var r=cv.getBoundingClientRect(), img=null;
+    if(cv.width===Math.round(r.width*dpr) && cv.height===Math.round(r.height*dpr)) return;
+    if(cv.width){ img=document.createElement("canvas"); img.width=cv.width; img.height=cv.height; img.getContext("2d").drawImage(cv,0,0); }
+    cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr);
+    if(img) ctx.drawImage(img,0,0);
+    ctx.setTransform(dpr,0,0,dpr,0,0); ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle="#2b3a55"; ctx.lineWidth=2.6;
+  }
+  size(); window.addEventListener("resize", size);
+  function pt(e){ var r=cv.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+  cv.addEventListener("pointerdown",function(e){
+    if(e.pointerType==="pen") penSeen=true;
+    if(e.pointerType==="touch" && penSeen) return;
+    e.preventDefault(); try{cv.setPointerCapture(e.pointerId);}catch(x){}
+    drawing={id:e.pointerId, p:pt(e)};
+    ctx.beginPath(); ctx.arc(drawing.p.x,drawing.p.y,1.2,0,7); ctx.fillStyle="#2b3a55"; ctx.fill();
+    onStroke();
+  });
+  cv.addEventListener("pointermove",function(e){
+    if(!drawing || e.pointerId!==drawing.id) return;
+    var evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
+    evs.forEach(function(ev){ var q=pt(ev); ctx.beginPath(); ctx.moveTo(drawing.p.x,drawing.p.y); ctx.lineTo(q.x,q.y); ctx.stroke(); drawing.p=q; });
+  });
+  ["pointerup","pointercancel","pointerleave"].forEach(function(n){ cv.addEventListener(n,function(e){ if(drawing && e.pointerId===drawing.id) drawing=null; }); });
+  clr.onclick=function(){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,cv.width,cv.height); ctx.restore(); };
+}
+
 function hintHtml(it,n,strong){
   if(n===1){
     var s='<div class="help"><b>Help</b><p>Minus a negative becomes plus: − (−) → +. Keep every number the same.</p>';
@@ -422,11 +467,11 @@ function resultLines(){
   L.push("Right first try "+score+"/"+n+" · Line 1 right first try "+rw+"/"+n);
   L.push("Avg Q1-8: "+avg+" s (20 Oct ~64 s) · Q6 −15 − (−15): "+sec(it[5]&&it[5].activeMs)+" (20 Oct 76 s)");
   L.push("Cross 0 · Q1 / Q4 / Q8: "+sec(it[0]&&it[0].activeMs)+" / "+sec(it[3]&&it[3].activeMs)+" / "+sec(it[7]&&it[7].activeMs));
-  L.push("Checks written with Pencil: "+pen+" · typed: "+typed);
+  L.push("Checks written with Pencil: "+pen+" · typed: "+typed+" · used working space in "+it.filter(function(r){return r.strokes;}).length+"/"+n);
   L.push("Goal: ≥9/10 first try · Line 1 ≥9/10 · Q1-8 ≤ 40 s");
   it.forEach(function(r,i){
     var open = r.rawMs-r.activeMs>5000 ? " (open "+sec(r.rawMs)+")" : "";
-    var help = r.strong?" · strong help":(r.hint?" · help":"");
+    var help = (r.strong?" · strong help":(r.hint?" · help":""))+(r.strokes?" · working "+r.strokes:"");
     L.push(("Q"+(i+1)+" "+r.problem+" · "+sec(r.activeMs)+open+" · start "+sec(r.firstWriteMs)+help).slice(0,100));
     L.push(("   line 1 "+wrongs(r.rewrite)+" · answer "+wrongs(r.answer)).slice(0,100));
   });
@@ -439,21 +484,33 @@ function resultLines(){
   return L;
 }
 
+// countdown 5 → 0; it stays on 0 until the answers have arrived, then the box turns green
+var cdLeft=5, cdTimer=null;
+function startCountdown(){
+  cdLeft=5; $("cd").textContent=cdLeft; clearInterval(cdTimer);
+  cdTimer=setInterval(function(){ if(cdLeft>0){ cdLeft--; $("cd").textContent=cdLeft; } if(cdLeft===0){ clearInterval(cdTimer); showSent(); } },1000);
+}
+function showSent(){
+  if(!state.sent || cdLeft>0) return;
+  var box=$("sendbox"); box.className="sendbox ok";
+  box.innerHTML='<p class="okmsg">Your answers are sent.<br>You can close this page now.</p>';
+}
 function send(){
   var st=$("st"), lines=resultLines();
-  st.className="msg"; st.textContent="Sending to Teacher View… please keep this page open.";
+  st.className="msg"; st.textContent="";
   $("retry").hidden=true;
+  var sub=document.querySelector("#sendbox .sub"); if(sub) sub.textContent="Sending your answers to Teacher View…";
   var secs=state.items.map(function(r){return Math.round((r.activeMs||0)/1000);});
   fetch(SHEET_URL,{method:"POST",body:JSON.stringify({action:"submit",id:state.sid.slice(-20),quiz:QUIZ,name:state.name||"No name",answers:lines,secs:secs})})
     .then(function(r){return r.json();})
     .then(function(j){
       if(!j.ok) throw new Error();
       state.sent=true; save();
-      st.className="msg good"; st.textContent="Sent to Teacher View. You can close this page.";
-      $("backup").hidden=true;
+      $("backup").hidden=true; showSent();
     })
     .catch(function(){
       st.className="msg bad"; st.textContent="Could not send. Check the internet, then tap Send again.";
+      var sub=document.querySelector("#sendbox .sub"); if(sub) sub.textContent="Your answers are not sent yet.";
       $("retry").hidden=false; $("backup").hidden=false;
     });
 }
@@ -464,6 +521,7 @@ function showDone(){
   screen.innerHTML =
     '<span class="tag">Finished</span>'+
     '<h1>All done. Thank you!</h1>'+
+    '<div class="sendbox" id="sendbox"><p class="dont">Don’t close this page</p><div class="cd" id="cd" aria-live="polite">5</div><p class="sub">Sending your answers to Teacher View…</p></div>'+
     '<p class="msg" id="st"></p>'+
     '<div class="btns"><button class="main" id="retry" type="button" hidden>Send again</button></div>'+
     '<div id="backup" hidden class="step">'+
@@ -483,8 +541,8 @@ function showDone(){
     if(!armed){ armed=true; $("again").textContent="Tap again to clear this result and start over"; return; }
     var name=state.name; state=fresh(); state.name=name; save(); render();
   };
-  if(state.sent){ $("st").className="msg good"; $("st").textContent="Sent to Teacher View. You can close this page."; }
-  else send();
+  if(state.sent){ cdLeft=0; showSent(); }
+  else { startCountdown(); send(); }
 }
 
 render();
