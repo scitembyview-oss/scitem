@@ -58,7 +58,7 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
   import mathBlob from '../data/math-keys.json';
   import { MATH_QUIZ, decodeLF, mathScore, mathReport, type MathKeys } from '../lib/math-level';
   import { checks, type Question } from '../data/checks';
-  import { SHEET_URL } from '../data/catalog';
+  import { SHEET_URL, CLASS_SHEET_URL } from '../data/catalog';
 
   type Q = { label: string; kind: 'num' | 'mc'; answers?: string[]; answer?: number; solution: string };
   type Keys = Record<string, { title: string; questions: Q[] }>;
@@ -215,8 +215,12 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
   function open(i: number) {
     const r = all[i];
     if (r.quiz === MATH_QUIZ) return show(`<button type="button" class="ghost" id="back">← กลับไปรายการ</button>${mathReport(decodeLF(r.answers.join(''))!, math!)}`);
-    if (r.quiz === SIGNS_QUIZ) return show(`<button type="button" class="ghost" id="back">← กลับไปรายการ</button>
-      <h2>${esc(r.name)}</h2><p class="hint">ส่งเมื่อ ${when(r.at)}</p><pre class="signs">${r.answers.map(esc).join('\n')}</pre>`);
+    if (r.quiz === SIGNS_QUIZ) {
+      show(`<button type="button" class="ghost" id="back">← กลับไปรายการ</button>
+      <h2>${esc(r.name)}</h2><p class="hint">ส่งเมื่อ ${when(r.at)}</p><pre class="signs">${r.answers.map(esc).join('\n')}</pre>
+      <h3>ที่ทด</h3><div id="ink"><p class="hint">กำลังโหลดที่ทด…</p></div>`);
+      return void signsInk(r);
+    }
     const { title, questions } = keys![r.quiz];
     const meta = checks[r.quiz]?.questions;
     const total = r.secs.reduce((a, b) => a + (b || 0), 0);
@@ -242,6 +246,31 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
       <h2>${esc(r.name)} <span class="cnt">${score(r)}/${questions.length} · ${mmss(total)}</span></h2>
       <p class="hint">${esc(title)} · ส่งเมื่อ ${when(r.at)} · ข้อที่ใช้เวลาเกิน 1 นาทีครึ่งเวลาเป็นสีส้ม</p>${blocks}`);
     $('detail').querySelectorAll('.qa small').forEach((el, k) => (r.secs[k] ?? 0) > 90 && el.classList.add('slow'));
+  }
+
+  // Signs Check working space: one class-sheet row per question (id = "<run>-<question>"), strokes as flat x,y lists
+  async function signsInk(r: Row) {
+    const box = $('ink');
+    const run = (r.answers.find((l) => l.startsWith('ink ')) ?? '').slice(4);
+    if (!run || !CLASS_SHEET_URL) return void (box.innerHTML = '<p class="hint">ไม่มีที่ทด</p>');
+    try {
+      const j = await (await fetch(CLASS_SHEET_URL, { method: 'POST', body: JSON.stringify({ action: 'cget', cls: SIGNS_QUIZ, pw }) })).json();
+      if (!j.ok) throw new Error();
+      const order = (id: string) => { const k = id.slice(run.length + 1); return k === 'p' ? 0 : Number(k); };
+      const rows = (j.rows as { id: string; data: string }[]).filter((x) => x.id.startsWith(run + '-')).sort((a, b) => order(a.id) - order(b.id));
+      if (!rows.length) return void (box.innerHTML = '<p class="hint">น้องไม่ได้ใช้ที่ทด</p>');
+      box.innerHTML = rows.map((x) => {
+        const d = JSON.parse(x.data) as { q: string; w: number; h: number; s: number[][]; c: number };
+        const k = order(x.id);
+        const lines = d.s.map((st) => st.length === 2
+          ? `<circle cx="${st[0]}" cy="${st[1]}" r="1.5" fill="#2b3a55"/>`
+          : `<polyline points="${st.join(' ')}" fill="none" stroke="#2b3a55" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+        return `<div class="ink"><p class="qh">${k ? 'ข้อ ' + k : 'ข้อฝึก'} · ${esc(d.q)}${d.c ? ` <small>กดล้าง ${d.c} ครั้ง</small>` : ''}</p>
+          <svg viewBox="0 0 ${d.w} ${d.h}" role="img" aria-label="ที่ทด">${lines}</svg></div>`;
+      }).join('');
+    } catch {
+      box.innerHTML = '<p class="hint">โหลดที่ทดไม่สำเร็จ ลองเปิดใหม่</p>';
+    }
   }
 
   function show(html: string) {
@@ -359,6 +388,8 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
   .paste { margin-top: 18px; }
   .paste summary { color: var(--muted); cursor: pointer; padding: 6px 0; }
   #detail h2 { margin: 16px 0 4px; font-size: 1.5rem; }
+  #detail :global(.ink svg) { width: 100%; height: auto; background: #fff; border: 1px solid var(--border); border-radius: 12px; }
+  #detail :global(.ink) { margin-bottom: 14px; }
   #detail :global(.signs) { white-space: pre-wrap; font-size: 0.95rem; line-height: 1.6; background: var(--brand-soft); padding: 14px; border-radius: 12px; overflow-x: auto; }
   #detail :global(.qa) { border-top: 1px solid var(--border); padding: 14px 0 6px; }
   #detail :global(.qh) { margin: 0 0 6px; font-weight: 700; }

@@ -193,7 +193,11 @@ $("kb").onclick=function(){
 // ---------- screens ----------
 function setCount(s){$("count").textContent=s||"";}
 
+// time spent on the how-to and example pages
+var pageT0=Date.now();
+function leavePage(name){ state.pages=state.pages||{}; state.pages[name]=Date.now()-pageT0; }
 function render(){
+  pageT0=Date.now();
   $("foot").hidden = !(state.stage==="practice"||state.stage==="item"||state.stage==="how");
   if(state.stage==="start") return showStart();
   if(state.stage==="how") return showHow();
@@ -262,7 +266,7 @@ function showHow(){
       if(v==="25"){
         el.classList.add("right"); el.disabled=true;
         $("mt").className="msg good"; $("mt").textContent="Well done. Now look at an example.";
-        setTimeout(function(){ state.stage="example"; save(); render(); }, 1200);
+        setTimeout(function(){ leavePage("how"); state.stage="example"; save(); render(); }, 1200);
       }else{
         el.classList.add("wrong"); $("mt").className="msg bad";
         $("mt").textContent="The box says "+pretty(v)+". Tap Clear and write 25 again.";
@@ -283,7 +287,7 @@ function showExample(){
     '<div class="help">'+numberLine(EXAMPLE.a,EXAMPLE.b,true,true)+
       '<p class="note">Start at −8. Plus 13 means move 13 to the right. You go past 0 and stop at 5.</p></div>'+
     '<div class="btns"><button class="main" id="go" type="button">Try one</button></div>';
-  $("go").onclick=function(){ state.stage="practice"; save(); render(); };
+  $("go").onclick=function(){ leavePage("example"); state.stage="practice"; save(); render(); };
 }
 
 function showItem(it, countText, tagText){
@@ -300,7 +304,7 @@ function showItem(it, countText, tagText){
       '<div class="read" id="r2"></div><div class="msg" id="m2"></div><div id="h2"></div></div>';
   var stepNo=1, busy=false, tms=[null,null], typedFlag=[false,false];
   rec.strokes=0;
-  setupPad($("pad"), $("padclr"), function(){ rec.strokes++; });
+  var getInk=setupPad($("pad"), $("padclr"), function(){ rec.strokes++; });
   startTimer();
   ["in1","in2"].forEach(function(id,i){
     var el=$(id);
@@ -365,6 +369,7 @@ function showItem(it, countText, tagText){
         setTimeout(function(){ try{e2.focus({preventScroll:true});}catch(e){} },30);
       }else{
         var tm=stopTimer(); rec.activeMs=tm.activeMs; rec.rawMs=tm.rawMs; rec.firstWriteMs=tm.firstWriteMs;
+        var ink=getInk(); if(ink.s.length||ink.c) { rec.ink=ink; sendInk(rec).catch(function(){}); }
         stepNo=3;
         setTimeout(function(){ next(rec); }, 900);
       }
@@ -375,7 +380,7 @@ function showItem(it, countText, tagText){
 // free working space: plain ink, never turned into text. Pencil draws; a finger draws only until a Pencil is seen (palm on the screen).
 var penSeen=false;
 function setupPad(cv, clr, onStroke){
-  var ctx=cv.getContext("2d"), dpr=window.devicePixelRatio||1, drawing=null;
+  var ctx=cv.getContext("2d"), dpr=window.devicePixelRatio||1, drawing=null, strokes=[], clears=0;
   function size(){
     var r=cv.getBoundingClientRect(), img=null;
     if(cv.width===Math.round(r.width*dpr) && cv.height===Math.round(r.height*dpr)) return;
@@ -391,16 +396,19 @@ function setupPad(cv, clr, onStroke){
     if(e.pointerType==="touch" && penSeen) return;
     e.preventDefault(); try{cv.setPointerCapture(e.pointerId);}catch(x){}
     drawing={id:e.pointerId, p:pt(e)};
+    strokes.push([Math.round(drawing.p.x),Math.round(drawing.p.y)]);
     ctx.beginPath(); ctx.arc(drawing.p.x,drawing.p.y,1.2,0,7); ctx.fillStyle="#2b3a55"; ctx.fill();
     onStroke();
   });
   cv.addEventListener("pointermove",function(e){
     if(!drawing || e.pointerId!==drawing.id) return;
     var evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
-    evs.forEach(function(ev){ var q=pt(ev); ctx.beginPath(); ctx.moveTo(drawing.p.x,drawing.p.y); ctx.lineTo(q.x,q.y); ctx.stroke(); drawing.p=q; });
+    var line=strokes[strokes.length-1];
+    evs.forEach(function(ev){ var q=pt(ev); ctx.beginPath(); ctx.moveTo(drawing.p.x,drawing.p.y); ctx.lineTo(q.x,q.y); ctx.stroke(); drawing.p=q; line.push(Math.round(q.x),Math.round(q.y)); });
   });
   ["pointerup","pointercancel","pointerleave"].forEach(function(n){ cv.addEventListener(n,function(e){ if(drawing && e.pointerId===drawing.id) drawing=null; }); });
-  clr.onclick=function(){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,cv.width,cv.height); ctx.restore(); };
+  clr.onclick=function(){ if(strokes.length) clears++; strokes=[]; ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,cv.width,cv.height); ctx.restore(); };
+  return function(){ var r=cv.getBoundingClientRect(); return {w:Math.round(r.width), h:Math.round(r.height), s:strokes, c:clears}; };
 }
 
 function hintHtml(it,n,strong){
@@ -468,9 +476,11 @@ function resultLines(){
   L.push("Avg Q1-8: "+avg+" s (20 Oct ~64 s) · Q6 −15 − (−15): "+sec(it[5]&&it[5].activeMs)+" (20 Oct 76 s)");
   L.push("Cross 0 · Q1 / Q4 / Q8: "+sec(it[0]&&it[0].activeMs)+" / "+sec(it[3]&&it[3].activeMs)+" / "+sec(it[7]&&it[7].activeMs));
   L.push("Checks written with Pencil: "+pen+" · typed: "+typed+" · used working space in "+it.filter(function(r){return r.strokes;}).length+"/"+n);
+  var pg=state.pages||{}, tot=0; it.forEach(function(r){tot+=r.rawMs||0;});
+  L.push("Page time · How to write "+sec(pg.how)+" · Example "+sec(pg.example)+" · Practice "+sec(state.practice&&state.practice.rawMs)+" · 10 questions "+sec(tot));
   L.push("Goal: ≥9/10 first try · Line 1 ≥9/10 · Q1-8 ≤ 40 s");
   it.forEach(function(r,i){
-    var open = r.rawMs-r.activeMs>5000 ? " (open "+sec(r.rawMs)+")" : "";
+    var open = " (on page "+sec(r.rawMs)+")";
     var help = (r.strong?" · strong help":(r.hint?" · help":""))+(r.strokes?" · working "+r.strokes:"");
     L.push(("Q"+(i+1)+" "+r.problem+" · "+sec(r.activeMs)+open+" · start "+sec(r.firstWriteMs)+help).slice(0,100));
     L.push(("   line 1 "+wrongs(r.rewrite)+" · answer "+wrongs(r.answer)).slice(0,100));
@@ -481,7 +491,23 @@ function resultLines(){
   }
   L.push("Tags: ท-sign sign slip · ท-number number slip · อ copied a number wrong");
   L.push("ข − (−) not changed into +  (suggested, please confirm)");
+  L.push("ink "+state.sid);
   return L;
+}
+
+// working-space ink goes to the class sheet (tools/check-sheet.gs cput), one row per question; the teacher page reads it with cget
+var CLASS_SHEET_URL = "https://script.google.com/macros/s/AKfycbzIaVMqROaTFaDN36SwCif7pWF_KEE7GroEUj2V5c9BM2gg4Y2v3wXbUOf-P4T0aBygnw/exec"; // = CLASS_SHEET_URL in src/data/catalog.ts
+function sendInk(rec){
+  if(!rec.ink || rec.inkSent) return Promise.resolve();
+  var data=JSON.stringify({q:rec.problem, w:rec.ink.w, h:rec.ink.h, s:rec.ink.s, c:rec.ink.c});
+  return fetch(CLASS_SHEET_URL,{method:"POST",body:JSON.stringify({action:"cput",cls:QUIZ,name:state.name||"No name",id:state.sid+"-"+rec.id,data:data})})
+    .then(function(r){return r.json();})
+    .then(function(j){ if(!j.ok) throw new Error(); rec.inkSent=true; save(); });
+}
+function sendAllInk(){
+  var all=[state.practice].concat(state.items).filter(Boolean), p=Promise.resolve();
+  all.forEach(function(r){ p=p.then(function(){ return sendInk(r); }); });
+  return p;
 }
 
 // countdown 5 → 0; it stays on 0 until the answers have arrived, then the box turns green
@@ -501,7 +527,9 @@ function send(){
   $("retry").hidden=true;
   var sub=document.querySelector("#sendbox .sub"); if(sub) sub.textContent="Sending your answers to Teacher View…";
   var secs=state.items.map(function(r){return Math.round((r.activeMs||0)/1000);});
-  fetch(SHEET_URL,{method:"POST",body:JSON.stringify({action:"submit",id:state.sid.slice(-20),quiz:QUIZ,name:state.name||"No name",answers:lines,secs:secs})})
+  sendAllInk().then(function(){
+    return fetch(SHEET_URL,{method:"POST",body:JSON.stringify({action:"submit",id:state.sid.slice(-20),quiz:QUIZ,name:state.name||"No name",answers:lines,secs:secs})});
+  })
     .then(function(r){return r.json();})
     .then(function(j){
       if(!j.ok) throw new Error();
