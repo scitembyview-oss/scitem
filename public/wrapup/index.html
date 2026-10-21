@@ -201,30 +201,11 @@ function mkP(ctx){
     push() { ctx.save(); }, pop() { ctx.restore(); }, scale(a, b) { ctx.scale(a, b ?? a); },
   };
 }
-// the circuit animations show which bulbs light, so they are locked with the teacher's code
-async function unlockCircuits() {
-  let pw = null; try { pw = localStorage.getItem('wrapup-code'); } catch (e) {}
-  for (let tries = 0; tries < 3; tries++) {
-    if (!pw) pw = prompt('รหัสครู (สำหรับอนิเมชั่นวงจร)');
-    if (!pw) return false;
-    try {
-      const L = window.CIRCUIT_LOCKED, d = x => Uint8Array.from(atob(x), c => c.charCodeAt(0)), C = crypto.subtle;
-      const base = await C.importKey('raw', new TextEncoder().encode(pw.trim()), 'PBKDF2', false, ['deriveKey']);
-      const key = await C.deriveKey({ name: 'PBKDF2', salt: d(L.s), iterations: 300000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
-      const src = new TextDecoder().decode(await C.decrypt({ name: 'AES-GCM', iv: d(L.i) }, key, d(L.c)));
-      circuitAnim = new Function('T', 'seg', 'ease', 'tag', src)(T, seg, ease, tag);
-      try { localStorage.setItem('wrapup-code', pw.trim()); } catch (e) {}
-      return true;
-    } catch (e) { pw = null; try { localStorage.removeItem('wrapup-code'); } catch (e2) {} }
-  }
-  return false;
-}
 // tap a figure: play its animation over the picture; tap again to stop
 const FIG_RUN = new Map();
 window.EXTRA_ACT = {
   fig(svg) {
     if (FIG_RUN.has(svg)) { FIG_RUN.get(svg)(); return; }
-    if (svg.dataset.anim.startsWith('circuit-') && !circuitAnim) { unlockCircuits().then(ok => ok && EXTRA_ACT.fig(svg)); return; }
     const spec = getAnim(svg.dataset.anim); if (!spec) return;
     const host = svg.parentNode; if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
     const cv = document.createElement('canvas'); cv.className = 'figanim';
