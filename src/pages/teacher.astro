@@ -258,6 +258,45 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
   const SIGN_LINES: [string, string][] = [['rw', 'ไม่มี − (−)'], ['pair', 'สองตัวแรก'], ['mag', 'absolute'], ['ans', 'คำตอบ']];
   const minus = (x: string) => esc(x).replace(/-/g, '−').replace(/([+−])/g, ' $1 ').replace(/^ − /, '−').replace(/\( /g, '(').replace(/\s+/g, ' ').trim();
 
+  // Results sent before the per-question records existed only have the report text; rebuild the same records from it.
+  // Old lines: "   line 1 x1 −11 − 18[ข] · answer OK"; newer: "   line 1: −11 − 18 ✗ข 6s → −11 + 18 ✓ 11s" (wrapped lines start with 6 spaces).
+  const LINE_KEYS: Record<string, string> = { 'line 1': 'rw', 'no − (−)': 'rw', 'first two': 'pair', absolute: 'mag', answer: 'ans' };
+  function parseSignsText(text: string[]): [number, SignsQ][] {
+    const out: [number, SignsQ][] = [];
+    const s = (x?: string) => (x && x !== '-' ? Number(x) * 1000 : 0);
+    let cur: SignsQ | null = null, key = '';
+    const add = (k: string, piece: string) => {
+      const L = (cur!.t!.lines![k] ??= { tries: [], other: [] });
+      let m;
+      if ((m = piece.match(/^\[(.*?)\] (.*) (\d+)s$/))) L.other!.push({ wrote: m[1], why: m[2], ms: +m[3] * 1000 });
+      else if ((m = piece.match(/^(.*) ✓ (\d+)s$/))) L.tries.push({ wrote: m[1], ok: true, tag: '', ms: +m[2] * 1000 });
+      else if ((m = piece.match(/^(.*?) ✗(.*) (\d+)s$/))) L.tries.push({ wrote: m[1], ok: false, tag: m[2], ms: +m[3] * 1000 });
+    };
+    const oldStyle = (part: string) => {
+      const m = part.trim().match(/^(line 1|answer) (.*)$/);
+      if (!m) return;
+      const L = (cur!.t!.lines![LINE_KEYS[m[1]]] = { tries: [] as Try[] });
+      for (const w of m[2].matchAll(/(?:^x\d+ |\] )?(.+?)\[([^\]]*)\]/g)) L.tries.push({ wrote: w[1].trim(), ok: false, tag: w[2], ms: 0 });
+      L.tries.push({ wrote: '', ok: true, tag: '', ms: 0 });
+    };
+    const start = (k: number, q: string, act?: string, page?: string, st?: string) => {
+      cur = { q, w: 0, h: 0, s: [], c: 0, t: { lines: {}, activeMs: s(act), pageMs: s(page ?? act), startMs: s(st) } };
+      out.push([k, cur]);
+      key = '';
+    };
+    for (const line of text) {
+      let m;
+      if ((m = line.match(/^Q(\d+) (.+?) · (\d+) s(?: \((?:open|on page) (\d+) s\))? · start (\d+|-)/))) start(+m[1], m[2], m[3], m[4], m[5]);
+      else if ((m = line.match(/^Practice (.+?) · (\d+) s(.*)$/))) { start(0, m[1], m[2]); m[3].split(' · ').forEach(oldStyle); }
+      else if (!cur) continue;
+      else if ((m = line.match(/^ {3}(line 1|answer|no − \(−\)|first two|absolute): (.*)$/))) { key = LINE_KEYS[m[1]]; m[2].split(' → ').forEach((p) => add(key, p.trim())); }
+      else if (key && /^ {6}\S/.test(line)) line.trim().split(' → ').forEach((p) => add(key, p.trim()));
+      else if (/^ {3}line 1 /.test(line)) line.split(' · ').forEach(oldStyle);
+      else { cur = null; key = ''; }
+    }
+    return out.filter(([, d]) => Object.keys(d.t!.lines!).length);
+  }
+
   async function signsReport(r: Row) {
     const box = $('sdash');
     const run = (r.answers.find((l) => l.startsWith('ink ')) ?? '').slice(4);
@@ -270,6 +309,11 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
       qs = (j.rows as { id: string; data: string }[]).filter((x) => x.id.startsWith(run + '-'))
         .map((x) => [order(x.id), JSON.parse(x.data) as SignsQ] as [number, SignsQ]).sort((a, b) => a[0] - b[0]);
     } catch {}
+    for (const [k, t] of parseSignsText(r.answers)) {
+      const hit = qs.find(([j]) => j === k);
+      if (hit) hit[1].t ??= t.t; else qs.push([k, t]);
+    }
+    qs.sort((a, b) => a[0] - b[0]);
     const real = qs.filter(([k, d]) => k > 0 && d.t);
     if (!real.length) return void (box.innerHTML = '<p class="hint">ไม่มีข้อมูลแบบตาราง ดูข้อความผลแบบเต็มด้านล่าง</p>');
 
@@ -319,7 +363,7 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
         <thead><tr><th>ข้อ</th><th>โจทย์</th><th>เวลา</th>${SIGN_LINES.map(([, n]) => `<th>${n}</th>`).join('')}<th></th></tr></thead>
         <tbody>${[...real, ...qs.filter(([k, d]) => k === 0 && d.t)].map(row).join('')}</tbody></table></div>
       <p class="hint">✓ = ถูกตั้งแต่ครั้งแรก · ✗ n = ผิด n ครั้งก่อนถูก (เขียนอะไรไปบ้าง + ป้าย) · เวลาเกิน 40 วิ เป็นสีส้ม · ป้าย: ท-sign เครื่องหมายพลาด, ท-number ตัวเลขพลาด, อ ลอกเลขผิด, ข ไม่เปลี่ยน − (−) เป็น +</p>
-      ${ink ? `<h3>ที่ทด</h3><div class="inks">${ink}</div>` : '<p class="hint">น้องไม่ได้ใช้ที่ทด</p>'}`;
+      ${ink ? `<h3>ที่ทด</h3><div class="inks">${ink}</div>` : run ? '<p class="hint">น้องไม่ได้ใช้ที่ทด</p>' : ''}`;
   }
 
   function show(html: string) {
