@@ -96,22 +96,23 @@ var SHEET_URL = "https://script.google.com/macros/s/AKfycbyq7E1RkdI8pARED-cN4XAH
 var QUIZ = "signs-1";
 var IDLE_MS = 60000;   // time with no touch or writing longer than this is not counted
 var WAIT_MS = 2000;    // pause after the last stroke before a box is checked
-var KEY = "signscheck-v2";
+var KEY = "signscheck-v3";
 
+// Set of 22 Oct: − (−) with two numbers, sign of the answer only (k = lines), three numbers.
 // Answers are kept only as salted hashes (public repo). a, b = start and amount added, read from the question, for the picture hint.
 var EXAMPLE = {p:"−8 − (−13)", a:-8, b:13};
 var PRACTICE = {id:"p", p:"−5 − (−9)", a:-5, b:9, h:{mag:"684dc9f006c0dcfc",rw:"8d342e46307be967",ans:"fe40bbccd5e95638",ab:"06a024d382a3721a"}};
 var ITEMS = [
-  {id:"1",  p:"−11 − (−18)", a:-11, b:18, h:{mag:"9056c0e340401a91",rw:"b8192362353d9848",ans:"0ca3e0bafc999626",ab:"7efc44ab8a29f80d"}},
-  {id:"2",  p:"−20 − (−6)",  a:-20, b:6,  h:{mag:"80f049bd2676f65f",rw:"4258dde3eb132620",ans:"04b80d5984d96565",ab:"1151f40bac955d73"}},
-  {id:"3",  p:"8 − (−5)",    a:8,   b:5,  h:{mag:"017e588584e5f470",rw:"29f0125478b2aa42",ans:"8ab7ac75a593b0bf",ab:"b83c948211e30f84"}},
-  {id:"4",  p:"−24 − (−37)", a:-24, b:37, h:{mag:"72fafb1a04f82f27",rw:"50696818e05ae797",ans:"e17113cb6e2145d3",ab:"4dd74457dcbfd407"}},
-  {id:"5",  p:"−52 − (−27)", a:-52, b:27, h:{mag:"7aba1625ccc55b60",rw:"d6e65c2cc04e7cf2",ans:"39799c48a4a01bed",ab:"198ba014a4b79a01"}},
-  {id:"6",  p:"−15 − (−15)", a:-15, b:15, h:{mag:"26b89e91db4ad20f",rw:"1196bf0ac21f66b2",ans:"713ad9f43b79ed01",ab:"c039ee0eabc29fac"}},
-  {id:"7",  p:"34 − (−17)",  a:34,  b:17, h:{mag:"6cf7d4c46058d435",rw:"b37b1ea9e9191418",ans:"a5ac2a3318c5e2c9",ab:"d66454ea68262dd0"}},
-  {id:"8",  p:"−7 − (−30)",  a:-7,  b:30, h:{mag:"f4d58e15fc0e9fa1",rw:"07da5c7a84d568f1",ans:"f08c3ddf077942d2",ab:"8e104aa1a33480ac"}},
-  {id:"9",  p:"−4 − 11 − (−5)",   h:{mag:"e15d0c642dd54eda",pair:"d7d6fe7755f981f4",rw:"0f4e52583bd4bd61",ans:"f50ac23fab2210ce",ab:"01e44ca910e42817"}},
-  {id:"10", p:"−9 − (−3) − (−8)", h:{mag:"1562c20bbf00addd",pair:"cc1824ac30df6234",rw:"17869a74213018e2",ans:"fbaf36db0ad779c7",ab:"69c95f6130b72c79"}}
+  {id:"1",p:"−16 − (−9)",a:-16,b:9,h:{mag:"cfe3e90b23498ca3",rw:"14380383d770dbd5",ans:"afe09f1f35739182",ab:"7efc44ab8a29f80d"}},
+  {id:"2",p:"12 − (−19)",a:12,b:19,h:{mag:"c846e149e37e8405",rw:"bbfa7850ef631d05",ans:"0841f6adfc2f759f",ab:"24b6a2ff351de487"}},
+  {id:"3",p:"−23 − (−41)",a:-23,b:41,h:{mag:"5814e7a9a766e792",rw:"54fc1e8fcfc04e02",ans:"297561925be8f68e",ab:"0fad2ee47228ebbd"}},
+  {id:"4",p:"−35 − (−12)",a:-35,b:12,h:{mag:"0baacf8b1b8fa6a2",rw:"6269c2c26de306df",ans:"38acf17e7ddc3329",ab:"9b1a4a3c3ecd0572"}},
+  {id:"5",p:"−27 + 9",a:-27,b:9,k:["mag","ans"],h:{mag:"bad8d83bd2fb19a8",ans:"cb1a9985777cd1fd",ab:"abe592306755ecd5"}},
+  {id:"6",p:"−6 + 21",a:-6,b:21,k:["mag","ans"],h:{mag:"48b9a6e7e61d59e4",ans:"bb0f543fec5d4d35",ab:"919f5b2e16e761e9"}},
+  {id:"7",p:"7 − 15 − (−4)",h:{mag:"55eadf6d468eb163",pair:"ac657794b1e96e08",rw:"498ae475182f99f9",ans:"869067a992afd575",ab:"30053e9b7ecb6d83"}},
+  {id:"8",p:"−6 − (−10) − 9",h:{mag:"fd4659f2d7787e57",pair:"94256a83b1aa862b",rw:"ebfc7005b1a02960",ans:"50dc46ee2ade296a",ab:"1d9e93c28c3d1df1"}},
+  {id:"9",p:"5 − (−8) − 20",h:{mag:"ec460f27835f7942",pair:"c06ea5a65a4472ea",rw:"f16f4ff4fd19e73f",ans:"f502717f22530487",ab:"2a5afaf290da7afe"}},
+  {id:"10",p:"−12 − (−5) − (−3)",h:{mag:"1960675bc7fb7f45",pair:"6f9f9a5d744e7770",rw:"c378d4e4680aa64c",ans:"397c153c0e4bc2d6",ab:"86c62658ecd90aed"}}
 ];
 
 var $ = function(id){return document.getElementById(id);};
@@ -213,8 +214,8 @@ function showStart(){
   setCount("");
   screen.innerHTML =
     '<span class="tag">Before you start</span>'+
-    '<h1>10 questions: minus a negative</h1>'+
-    '<p class="lead">In each question you write two lines. First write the question again without the double sign. Then write the answer.</p>'+
+    '<h1>10 questions: signs</h1>'+
+    '<p class="lead">Each question has a few short lines. Write one line at a time. When a line is right, the next one opens by itself.</p>'+
     '<div class="step"><label for="nm">Your name</label><input class="name" id="nm" type="text" autocomplete="off" value="'+esc(state.name||"")+'"></div>'+
     '<div class="btns"><button class="main" id="go" type="button">Start</button></div>';
   $("go").onclick=function(){
@@ -297,14 +298,15 @@ function showExample(){
 // Lines per question: rewrite without − (−) → (3 numbers only) first two together → sign(big − small) → answer
 var KINDS = {
   rw:   {label:"Write it again without − (−)", ph:"Write here with your Pencil"},
-  pair: {label:"Do the first two numbers together", ph:"Write here with your Pencil"},
-  mag:  {label:"Absolute: sign ( big − small ) or sign ( a + b )", ph:"( big − small ) or ( a + b )",
-         note:"Answer is positive? No sign needed, and first + second is OK too."},
+  pair: {label:"Put the first two numbers together into one number. Copy the last one.", ph:"Write here with your Pencil",
+         ex:["−2 − 11 + 1 → −13 + 1"]},
+  mag:  {label:"Absolute: the size in brackets, the answer's sign in front", ph:"Write here with your Pencil",
+         ex:["−2 + 11 → (11 − 2) &nbsp;answer is +, no sign", "−11 + 2 → −(11 − 2) &nbsp;answer is −, put − in front", "−2 − 11 → −(11 + 2) &nbsp;both −, add them"]},
   ans:  {label:"The answer", ph:"Write the answer here"}
 };
 function showItem(it, countText, tagText){
   setCount(countText);
-  var kinds = it.a===undefined ? ["rw","pair","mag","ans"] : ["rw","mag","ans"];
+  var kinds = it.k || (it.a===undefined ? ["rw","pair","mag","ans"] : ["rw","mag","ans"]);
   var rec={id:it.id, problem:it.p, lines:{}, hint:false, strong:false, pen:0, typed:0, strokes:0};
   kinds.forEach(function(k){ rec.lines[k]={tries:[]}; });
   var need=nums(it.p.replace(/−/g,"-")).length;
@@ -312,7 +314,7 @@ function showItem(it, countText, tagText){
   kinds.forEach(function(k,i){
     var n=i+1;
     if(k==="ans") html+='<div class="step"><div class="padhead"><span>Working space <small>(write anything here, it stays as your writing)</small></span><button class="clear" id="padclr" type="button">Clear</button></div><canvas class="pad" id="pad"></canvas></div>';
-    html+='<div class="step'+(i?' locked':'')+'" id="s'+n+'"><label for="in'+n+'">Line '+n+': '+KINDS[k].label+'</label>'+(KINDS[k].note?'<span class="note">'+KINDS[k].note+'</span>':'')+writeBox("in"+n,KINDS[k].ph,i>0)+
+    html+='<div class="step'+(i?' locked':'')+'" id="s'+n+'"><label for="in'+n+'">Line '+n+': '+KINDS[k].label+'</label>'+(KINDS[k].ex?'<span class="note">'+KINDS[k].ex.join('<br>')+'</span>':'')+writeBox("in"+n,KINDS[k].ph,i>0)+
       '<div class="read" id="r'+n+'"></div><div class="msg" id="m'+n+'"></div><div id="h'+n+'"></div></div>';
   });
   screen.innerHTML=html;
@@ -324,7 +326,6 @@ function showItem(it, countText, tagText){
     function first(){ if(t.start && t.firstWrite==null) t.firstWrite=Date.now()-t.start; }
     el.addEventListener("input",function(){
       first();
-      if(el.value) typedFlag[i] = Date.now()-lastKey<400 ? true : typedFlag[i];
       var v=k==="mag"?normMag(el.value):norm(el.value);
       $("r"+(i+1)).textContent = v ? "The box says: "+pretty(v) : "";
       el.classList.remove("wrong");
@@ -357,7 +358,9 @@ function showItem(it, countText, tagText){
         key="m"+c;
         other=c.charAt(0)==="-" ? "negative" : null;
       }else if(!mm){
-        bad("Write it like −(big − small) or −(a + b). No sign needed if the answer is positive.","not in ( ) form",v);
+        var open=(v.match(/\(/g)||[]).length, shut=(v.match(/\)/g)||[]).length;
+        if(!forced && (open>shut || /[-+(]$/.test(v))) return;          // still writing
+        bad("Write numbers only, like (11 − 2) or −(11 − 2).","not in ( ) form",v);
         return;
       }else{
         vv=magCanon(mm[1],mm[2],mm[3],mm[4]);
@@ -394,13 +397,13 @@ function showItem(it, countText, tagText){
     function finish(ok, tag){
       busy=false;
       step.tries.push({wrote:vv, ok:ok, tag:tag, ms:ms});
-      if(typedFlag[n-1]) rec.typed++; else rec.pen++;
+      if(keyboard) rec.typed++; else rec.pen++;
       if(!ok){
         el.classList.add("wrong"); m.className="msg bad";
         m.textContent="Not yet. Tap Clear and write this line again.";
         var wrongs=step.tries.filter(function(x){return !x.ok;}).length;
         if(wrongs===2){ rec.hint=true; $("h"+n).innerHTML=hintHtml(it,k,false); }
-        if(wrongs>=3){ rec.strong=true; $("h"+n).innerHTML=hintHtml(it,k,true); }
+        if(wrongs>=3){ rec.strong=true; $("h"+n).innerHTML=hintHtml(it,k,true)+copyLine(it,k); }
         return;
       }
       el.classList.remove("wrong"); el.classList.add("right"); el.disabled=true;
@@ -469,6 +472,16 @@ function setupPad(cv, clr, onStroke){
   return function(){ var r=cv.getBoundingClientRect(); return {w:Math.round(r.width), h:Math.round(r.height), s:strokes, c:clears}; };
 }
 
+// after 3 wrong tries on a working line: show the line to copy so the question never gets stuck
+function copyLine(it,k){
+  if(k==="ans") return "";
+  var rw=it.p.replace(/−/g,"-").replace(/\s/g,"").replace(/-\(-(\d+)\)/g,"+$1").replace(/\+\(-(\d+)\)/g,"-$1");
+  var t=rw.match(/[+-]?\d+/g).map(Number);
+  if(t.length===3) t=[t[0]+t[1],t[2]];
+  var pair=t[0]+(t[1]<0?"":"+")+t[1];
+  var line = k==="rw" ? rw : k==="pair" ? pair : pairCanon(t[0],t[1]);
+  return '<div class="help"><b>Copy this line</b><p class="copy">'+pretty(line).replace(/\( /g,"(").replace(/ \)/g,")")+'</p></div>';
+}
 function hintHtml(it,k,strong){
   if(k==="rw"){
     var s='<div class="help"><b>Help</b><p>Minus a negative becomes plus: − (−) → +. Keep every number the same.</p>';
@@ -522,11 +535,12 @@ function next(rec){
 function sec(ms){return ms==null?"-":Math.round(ms/1000)+" s";}
 function firstOk(step){return step.tries.length>0 && step.tries[0].ok;}
 // "−11 − 18 ✗ข 6s → −11 + 18 ✓ 11s", time from the start of the question; split into lines under 100 characters
+// "−11 − 18 ✗ข 6s → −11 + 18 ✓ 11s", time from the start of the question; boxes the page could not read are only counted
+// (they are all in the per-question record); split into lines under 100 characters
 function attempts(label, step){
-  var all=step.tries.map(function(x){ return {ms:x.ms, t:pretty(x.wrote)+(x.ok?" ✓":" ✗"+x.tag)}; })
-    .concat((step.other||[]).map(function(x){ return {ms:x.ms, t:"["+String(x.wrote).slice(0,12)+"] "+x.why}; }))
-    .sort(function(a,b){return a.ms-b.ms;})
-    .map(function(x){ return x.t+" "+Math.round(x.ms/1000)+"s"; });
+  var all=step.tries.map(function(x){ return pretty(x.wrote)+(x.ok?" ✓":" ✗"+x.tag)+" "+Math.round(x.ms/1000)+"s"; });
+  var o=(step.other||[]).length;
+  if(o) all[all.length-1]=(all[all.length-1]||"")+" (+"+o+" unread)";
   var out=[], cur="   "+label+": ";
   all.forEach(function(a,i){
     var piece=(i?" → ":"")+a;
@@ -536,29 +550,37 @@ function attempts(label, step){
   return out;
 }
 var LINE_NAMES={rw:"no − (−)", pair:"first two", mag:"absolute", ans:"answer"};
+// lines right at the first try with nothing else written share one line: "   ✓ no − (−) 9s · answer 21s"
 function lineAttempts(r){
-  var out=[]; ["rw","pair","mag","ans"].forEach(function(k){ if(r.lines[k]) out=out.concat(attempts(LINE_NAMES[k], r.lines[k])); });
+  var out=[], easy=[];
+  ["rw","pair","mag","ans"].forEach(function(k){
+    var st=r.lines[k]; if(!st) return;
+    if(st.tries.length===1 && st.tries[0].ok && !(st.other||[]).length) easy.push(LINE_NAMES[k]+" "+Math.round(st.tries[0].ms/1000)+"s");
+    else out=out.concat(attempts(LINE_NAMES[k], st));
+  });
+  if(easy.length) out.unshift("   ✓ "+easy.join(" · "));
   return out;
 }
 function resultLines(){
   var it=state.items, n=it.length;
   var allFirst=function(r){ return Object.keys(r.lines).every(function(k){return firstOk(r.lines[k]);}); };
   var score=it.filter(allFirst).length;
-  var rw=it.filter(function(r){return firstOk(r.lines.rw);}).length;
-  var mg=it.filter(function(r){return firstOk(r.lines.mag);}).length;
+  var has=function(k){ return it.filter(function(r){return r.lines[k];}); };
+  var rw=has("rw").filter(function(r){return firstOk(r.lines.rw);}).length, nrw=has("rw").length;
+  var mg=has("mag").filter(function(r){return firstOk(r.lines.mag);}).length;
   var two=it.slice(0,8).map(function(r){return r.activeMs||0;});
   var avg=Math.round(two.reduce(function(a,b){return a+b;},0)/Math.max(1,two.length)/1000);
+  var avgOf=function(a,b){ var x=it.slice(a,b); return Math.round(x.reduce(function(s,r){return s+(r.activeMs||0);},0)/Math.max(1,x.length)/1000)+" s"; };
   var pen=0, typed=0; it.forEach(function(r){pen+=r.pen; typed+=r.typed;});
   var d=new Date(state.finished||Date.now());
   var L=[];
-  L.push("Signs Check − (−) · "+state.name+" · "+d.toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}));
-  L.push("All lines right first try "+score+"/"+n+" · − (−) line "+rw+"/"+n+" · absolute line "+mg+"/"+n);
-  L.push("Avg Q1-8: "+avg+" s (20 Oct ~64 s) · Q6 −15 − (−15): "+sec(it[5]&&it[5].activeMs)+" (20 Oct 76 s)");
-  L.push("Cross 0 · Q1 / Q4 / Q8: "+sec(it[0]&&it[0].activeMs)+" / "+sec(it[3]&&it[3].activeMs)+" / "+sec(it[7]&&it[7].activeMs));
+  L.push("Signs Check − (−) 22 Oct set · "+state.name+" · "+d.toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}));
+  L.push("All lines right first try "+score+"/"+n+" · − (−) line "+rw+"/"+nrw+" · absolute line "+mg+"/"+n);
+  L.push("Avg Q1-8: "+avg+" s (21 Oct ~38 s without Q2) · 2 numbers Q1-4 "+avgOf(0,4)+" · sign only Q5-6 "+avgOf(4,6)+" · 3 numbers Q7-10 "+avgOf(6,10));
   L.push("Checks written with Pencil: "+pen+" · typed: "+typed+" · used working space in "+it.filter(function(r){return r.strokes;}).length+"/"+n);
   var pg=state.pages||{}, tot=0; it.forEach(function(r){tot+=r.rawMs||0;});
   L.push("Page time · How to write "+sec(pg.how)+" · Example "+sec(pg.example)+" · Practice "+sec(state.practice&&state.practice.rawMs)+" · 10 questions "+sec(tot));
-  L.push("Goal: ≥9/10 all lines first try · Q1-8 ≤ 40 s");
+  L.push("Goal: absolute line first try ≥8/10 · 3-number − (−) line ≥3/4 · no question over 2 min");
   L.push("ink "+state.sid);
   it.forEach(function(r,i){
     var open = " (on page "+sec(r.rawMs)+")";
