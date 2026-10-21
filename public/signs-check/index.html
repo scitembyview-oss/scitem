@@ -96,22 +96,22 @@ var SHEET_URL = "https://script.google.com/macros/s/AKfycbyq7E1RkdI8pARED-cN4XAH
 var QUIZ = "signs-1";
 var IDLE_MS = 60000;   // time with no touch or writing longer than this is not counted
 var WAIT_MS = 2000;    // pause after the last stroke before a box is checked
-var KEY = "signscheck-v1";
+var KEY = "signscheck-v2";
 
 // Answers are kept only as salted hashes (public repo). a, b = start and amount added, read from the question, for the picture hint.
 var EXAMPLE = {p:"−8 − (−13)", a:-8, b:13};
-var PRACTICE = {id:"p", p:"−5 − (−9)", a:-5, b:9, h:{rw:"8d342e46307be967",an:"fe40bbccd5e95638",ab:"06a024d382a3721a"}};
+var PRACTICE = {id:"p", p:"−5 − (−9)", a:-5, b:9, h:{mag:"684dc9f006c0dcfc",rw:"8d342e46307be967",ans:"fe40bbccd5e95638",ab:"06a024d382a3721a"}};
 var ITEMS = [
-  {id:"1",  p:"−11 − (−18)", a:-11, b:18, h:{rw:"b8192362353d9848",an:"0ca3e0bafc999626",ab:"7efc44ab8a29f80d"}},
-  {id:"2",  p:"−20 − (−6)",  a:-20, b:6,  h:{rw:"4258dde3eb132620",an:"04b80d5984d96565",ab:"1151f40bac955d73"}},
-  {id:"3",  p:"8 − (−5)",    a:8,   b:5,  h:{rw:"29f0125478b2aa42",an:"8ab7ac75a593b0bf",ab:"b83c948211e30f84"}},
-  {id:"4",  p:"−24 − (−37)", a:-24, b:37, h:{rw:"50696818e05ae797",an:"e17113cb6e2145d3",ab:"4dd74457dcbfd407"}},
-  {id:"5",  p:"−52 − (−27)", a:-52, b:27, h:{rw:"d6e65c2cc04e7cf2",an:"39799c48a4a01bed",ab:"198ba014a4b79a01"}},
-  {id:"6",  p:"−15 − (−15)", a:-15, b:15, h:{rw:"1196bf0ac21f66b2",an:"713ad9f43b79ed01",ab:"c039ee0eabc29fac"}},
-  {id:"7",  p:"34 − (−17)",  a:34,  b:17, h:{rw:"b37b1ea9e9191418",an:"a5ac2a3318c5e2c9",ab:"d66454ea68262dd0"}},
-  {id:"8",  p:"−7 − (−30)",  a:-7,  b:30, h:{rw:"07da5c7a84d568f1",an:"f08c3ddf077942d2",ab:"8e104aa1a33480ac"}},
-  {id:"9",  p:"−4 − 11 − (−5)",   h:{rw:"0f4e52583bd4bd61",an:"f50ac23fab2210ce",ab:"01e44ca910e42817"}},
-  {id:"10", p:"−9 − (−3) − (−8)", h:{rw:"17869a74213018e2",an:"fbaf36db0ad779c7",ab:"69c95f6130b72c79"}}
+  {id:"1",  p:"−11 − (−18)", a:-11, b:18, h:{mag:"9056c0e340401a91",rw:"b8192362353d9848",ans:"0ca3e0bafc999626",ab:"7efc44ab8a29f80d"}},
+  {id:"2",  p:"−20 − (−6)",  a:-20, b:6,  h:{mag:"80f049bd2676f65f",rw:"4258dde3eb132620",ans:"04b80d5984d96565",ab:"1151f40bac955d73"}},
+  {id:"3",  p:"8 − (−5)",    a:8,   b:5,  h:{mag:"017e588584e5f470",rw:"29f0125478b2aa42",ans:"8ab7ac75a593b0bf",ab:"b83c948211e30f84"}},
+  {id:"4",  p:"−24 − (−37)", a:-24, b:37, h:{mag:"72fafb1a04f82f27",rw:"50696818e05ae797",ans:"e17113cb6e2145d3",ab:"4dd74457dcbfd407"}},
+  {id:"5",  p:"−52 − (−27)", a:-52, b:27, h:{mag:"7aba1625ccc55b60",rw:"d6e65c2cc04e7cf2",ans:"39799c48a4a01bed",ab:"198ba014a4b79a01"}},
+  {id:"6",  p:"−15 − (−15)", a:-15, b:15, h:{mag:"26b89e91db4ad20f",rw:"1196bf0ac21f66b2",ans:"713ad9f43b79ed01",ab:"c039ee0eabc29fac"}},
+  {id:"7",  p:"34 − (−17)",  a:34,  b:17, h:{mag:"6cf7d4c46058d435",rw:"b37b1ea9e9191418",ans:"a5ac2a3318c5e2c9",ab:"d66454ea68262dd0"}},
+  {id:"8",  p:"−7 − (−30)",  a:-7,  b:30, h:{mag:"f4d58e15fc0e9fa1",rw:"07da5c7a84d568f1",ans:"f08c3ddf077942d2",ab:"8e104aa1a33480ac"}},
+  {id:"9",  p:"−4 − 11 − (−5)",   h:{mag:"e15d0c642dd54eda",pair:"d7d6fe7755f981f4",rw:"0f4e52583bd4bd61",ans:"f50ac23fab2210ce",ab:"01e44ca910e42817"}},
+  {id:"10", p:"−9 − (−3) − (−8)", h:{mag:"1562c20bbf00addd",pair:"cc1824ac30df6234",rw:"17869a74213018e2",ans:"fbaf36db0ad779c7",ab:"69c95f6130b72c79"}}
 ];
 
 var $ = function(id){return document.getElementById(id);};
@@ -128,12 +128,14 @@ function prettyNum(n){return n<0?"−"+Math.abs(n):String(n);}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
 
 // whatever the handwriting turns into -> plain "0-9 + -"
-function norm(s){
+function norm(s){ return normMag(s).replace(/[()]/g,""); }
+// same, but keeps the brackets for the sign(big − small) line
+function normMag(s){
   return String(s||"")
     .replace(/[−‐-―─━ー一_~﹣－]/g,"-")
     .replace(/[＋✚]/g,"+")
     .replace(/[oOＯ]/g,"0").replace(/[lI|ǀ]/g,"1")
-    .replace(/[()\s.,=]/g,"");
+    .replace(/[\s.,=]/g,"");
 }
 function readable(s){return /^[+-]?\d+([+-]\d+)*$/.test(s);}
 function nums(s){return (String(s).match(/\d+/g)||[]).map(Number);}
@@ -282,7 +284,9 @@ function showExample(){
     '<div class="problem">'+EXAMPLE.p+'</div>'+
     '<div class="worked">'+
       '<div class="wline"><span class="lab">Line 1: − (−) becomes +</span><span class="val">= −8 + 13</span></div>'+
-      '<div class="wline"><span class="lab">Line 2: the answer</span><span class="val">= 5</span></div>'+
+      '<div class="wline"><span class="lab">Line 2: 13 is bigger than 8 and it is positive, so no − in front: ( big − small )</span><span class="val">= (13 − 8)</span></div>'+
+      '<div class="wline"><span class="lab">Line 3: the answer</span><span class="val">= 5</span></div>'+
+      '<p class="note">If the bigger number is negative, put − in front: −20 + 6 = −(20 − 6). If both have the same sign, keep it and add: −6 − 9 = −(6 + 9).</p>'+
     '</div>'+
     '<div class="help">'+numberLine(EXAMPLE.a,EXAMPLE.b,true,true)+
       '<p class="note">Start at −8. Plus 13 means move 13 to the right. You go past 0 and stop at 5.</p></div>'+
@@ -290,29 +294,37 @@ function showExample(){
   $("go").onclick=function(){ leavePage("example"); state.stage="practice"; save(); render(); };
 }
 
+// Lines per question: rewrite without − (−) → (3 numbers only) first two together → sign(big − small) → answer
+var KINDS = {
+  rw:   {label:"Write it again without − (−)", ph:"Write here with your Pencil"},
+  pair: {label:"Do the first two numbers together", ph:"Write here with your Pencil"},
+  mag:  {label:"Sign of the bigger number, then ( big − small )", ph:"sign ( big − small )"},
+  ans:  {label:"The answer", ph:"Write the answer here"}
+};
 function showItem(it, countText, tagText){
   setCount(countText);
-  var rec={id:it.id, problem:it.p, rewrite:{tries:[]}, answer:{tries:[]}, hint:false, strong:false, pen:0, typed:0};
+  var kinds = it.a===undefined ? ["rw","pair","mag","ans"] : ["rw","mag","ans"];
+  var rec={id:it.id, problem:it.p, lines:{}, hint:false, strong:false, pen:0, typed:0, strokes:0};
+  kinds.forEach(function(k){ rec.lines[k]={tries:[]}; });
   var need=nums(it.p.replace(/−/g,"-")).length;
-  screen.innerHTML =
-    '<span class="tag">'+tagText+'</span>'+
-    '<div class="problem">'+it.p+'</div>'+
-    '<div class="step" id="s1"><label for="in1">Line 1: write it again without − (−)</label>'+writeBox("in1","Write here with your Pencil")+
-      '<div class="read" id="r1"></div><div class="msg" id="m1"></div><div id="h1"></div></div>'+
-    '<div class="step"><div class="padhead"><span>Working space <small>(write anything here, it stays as your writing)</small></span><button class="clear" id="padclr" type="button">Clear</button></div><canvas class="pad" id="pad"></canvas></div>'+
-    '<div class="step locked" id="s2"><label for="in2">Line 2: the answer</label>'+writeBox("in2","Write the answer here",true)+
-      '<div class="read" id="r2"></div><div class="msg" id="m2"></div><div id="h2"></div></div>';
-  var stepNo=1, busy=false, tms=[null,null], typedFlag=[false,false];
-  rec.strokes=0;
+  var html='<span class="tag">'+tagText+'</span><div class="problem">'+it.p+'</div>';
+  kinds.forEach(function(k,i){
+    var n=i+1;
+    if(i===1) html+='<div class="step"><div class="padhead"><span>Working space <small>(write anything here, it stays as your writing)</small></span><button class="clear" id="padclr" type="button">Clear</button></div><canvas class="pad" id="pad"></canvas></div>';
+    html+='<div class="step'+(i?' locked':'')+'" id="s'+n+'"><label for="in'+n+'">Line '+n+': '+KINDS[k].label+'</label>'+writeBox("in"+n,KINDS[k].ph,i>0)+
+      '<div class="read" id="r'+n+'"></div><div class="msg" id="m'+n+'"></div><div id="h'+n+'"></div></div>';
+  });
+  screen.innerHTML=html;
+  var stepNo=1, busy=false, tms=[], typedFlag=[];
   var getInk=setupPad($("pad"), $("padclr"), function(){ rec.strokes++; });
   startTimer();
-  ["in1","in2"].forEach(function(id,i){
-    var el=$(id);
+  kinds.forEach(function(k,i){
+    var el=$("in"+(i+1));
     function first(){ if(t.start && t.firstWrite==null) t.firstWrite=Date.now()-t.start; }
     el.addEventListener("input",function(){
       first();
       if(el.value) typedFlag[i] = Date.now()-lastKey<400 ? true : typedFlag[i];
-      var v=norm(el.value);
+      var v=k==="mag"?normMag(el.value):norm(el.value);
       $("r"+(i+1)).textContent = v ? "The box says: "+pretty(v) : "";
       el.classList.remove("wrong");
       var m=$("m"+(i+1)); m.textContent=""; m.className="msg";
@@ -332,32 +344,42 @@ function showItem(it, countText, tagText){
   }
   function check(n, forced){
     if(n!==stepNo || busy) return;
-    var el=$("in"+n), m=$("m"+n), v=norm(el.value);
-    if(!v) return;
-    var step = n===1 ? rec.rewrite : rec.answer;
-    if(!readable(v)){
-      if(/[0-9]$/.test(v) || forced){
-        m.className="msg bad"; m.textContent="The box cannot read this. Tap Clear and write it again.";
-        logOther(step, el.value, "unreadable");
+    var k=kinds[n-1], el=$("in"+n), m=$("m"+n), step=rec.lines[k];
+    var bad=function(msg,why,raw){ m.className="msg bad"; m.textContent=msg; logOther(step, raw, why); };
+    var vv, key, other=null;
+    if(k==="mag"){
+      var v=normMag(el.value); if(!v) return;
+      var mm=v.match(/^([+-]?)\((\d+)([+-])(\d+)\)$/);
+      if(!mm){
+        bad("Write it like −(big − small), or (big − small) when the answer is positive.","not in ( ) form",v);
+        return;
       }
-      return;
+      vv=magCanon(mm[1],mm[2],mm[3],mm[4]);
+      key="m"+vv;
+      other=[["ท-sign","m"+magCanon(mm[1]==="-"?"":"-",mm[2],mm[3],mm[4])],["small first","m"+magCanon(mm[1],mm[4],mm[3],mm[2])]];
+    }else{
+      var v2=norm(el.value); if(!v2) return;
+      if(!readable(v2)){ if(/[0-9]$/.test(v2) || forced) bad("The box cannot read this. Tap Clear and write it again.","unreadable",el.value); return; }
+      vv=v2.replace(/^\+/,"");
+      if(k==="rw" && nums(vv).length<need && !forced) return;          // still writing
+      if(k==="pair" && nums(vv).length<2 && !forced) return;
+      if(k==="ans" && !/^[+-]?\d+$/.test(vv)){ bad("Write one number only.","not one number",vv); return; }
+      if(k==="ans") vv=String(parseInt(vv,10));
+      key={rw:"r",pair:"q",ans:"a"}[k]+vv;
     }
-    var vv = v.replace(/^\+/,"");
-    if(n===1 && nums(vv).length<need && !forced) return;         // still writing
-    if(n===2 && !/^[+-]?\d+$/.test(vv)){ m.className="msg bad"; m.textContent="Write one number only."; logOther(step, vv, "not one number"); return; }
     var last=step.tries[step.tries.length-1];
     if(last && !last.ok && last.wrote===vv) return;                  // same wrong line still in the box, already counted
     var ms=Date.now()-t.start;
     busy=true;
-    var key = n===1 ? "r"+vv : "a"+parseInt(vv,10);
     hash(it.id,key).then(function(h){
-      var ok = h===(n===1?it.h.rw:it.h.an);
-      if(ok) return finish(true,"");
-      if(n===1){
-        var a=nums(vv), b=nums(it.p.replace(/−/g,"-"));
-        return finish(false, a.join(",")!==b.join(",") ? "อ" : "ข");
-      }
-      return hash(it.id,"b"+Math.abs(parseInt(vv,10))).then(function(hb){ finish(false, hb===it.h.ab ? "ท-sign" : "ท-number"); });
+      if(h===it.h[k]) return finish(true,"");
+      if(k==="rw"){ var a=nums(vv), b=nums(it.p.replace(/−/g,"-")); return finish(false, a.join(",")!==b.join(",") ? "อ" : "ข"); }
+      if(k==="pair") return finish(false,"ท");
+      if(k==="ans") return hash(it.id,"b"+Math.abs(parseInt(vv,10))).then(function(hb){ finish(false, hb===it.h.ab ? "ท-sign" : "ท-number"); });
+      return Promise.all(other.map(function(o){return hash(it.id,o[1]);})).then(function(hs){
+        var hit=other.filter(function(o,j){return hs[j]===it.h.mag;})[0];
+        finish(false, hit?hit[0]:"ท-number");
+      });
     }).catch(function(){ busy=false; m.className="msg bad"; m.textContent="Open this page from scitem.net to check answers."; });
 
     function finish(ok, tag){
@@ -368,23 +390,31 @@ function showItem(it, countText, tagText){
         el.classList.add("wrong"); m.className="msg bad";
         m.textContent="Not yet. Tap Clear and write this line again.";
         var wrongs=step.tries.filter(function(x){return !x.ok;}).length;
-        if(wrongs===2){ rec.hint=true; $("h"+n).innerHTML=hintHtml(it,n,false); }
-        if(wrongs>=3){ rec.strong=true; $("h"+n).innerHTML=hintHtml(it,n,true); }
+        if(wrongs===2){ rec.hint=true; $("h"+n).innerHTML=hintHtml(it,k,false); }
+        if(wrongs>=3){ rec.strong=true; $("h"+n).innerHTML=hintHtml(it,k,true); }
         return;
       }
       el.classList.remove("wrong"); el.classList.add("right"); el.disabled=true;
       m.className="msg good"; m.textContent="Right."; $("h"+n).innerHTML="";
-      if(n===1){
-        stepNo=2; $("s2").classList.remove("locked"); var e2=$("in2"); e2.disabled=false;
+      if(n<kinds.length){
+        stepNo=n+1; $("s"+stepNo).classList.remove("locked"); var e2=$("in"+stepNo); e2.disabled=false;
         setTimeout(function(){ try{e2.focus({preventScroll:true});}catch(e){} },30);
       }else{
         var tm=stopTimer(); rec.activeMs=tm.activeMs; rec.rawMs=tm.rawMs; rec.firstWriteMs=tm.firstWriteMs;
         rec.ink=getInk(); sendInk(rec).catch(function(){});
-        stepNo=3;
+        stepNo=99;
         setTimeout(function(){ next(rec); }, 900);
       }
     }
   }
+}
+// sign(big ± small): "+" in front is optional, a sum may be written either way round, 0 has no sign
+function magCanon(sign,x,op,y){
+  x=parseInt(x,10); y=parseInt(y,10);
+  if(op==="+" && y>x){ var z=x; x=y; y=z; }
+  var s = sign==="-" ? "-" : "";
+  if(op==="-" && x===y) s="";
+  return s+"("+x+op+y+")";
 }
 
 // free working space: plain ink, never turned into text. Pencil draws; a finger draws only until a Pencil is seen (palm on the screen).
@@ -424,14 +454,19 @@ function setupPad(cv, clr, onStroke){
   return function(){ var r=cv.getBoundingClientRect(); return {w:Math.round(r.width), h:Math.round(r.height), s:strokes, c:clears}; };
 }
 
-function hintHtml(it,n,strong){
-  if(n===1){
+function hintHtml(it,k,strong){
+  if(k==="rw"){
     var s='<div class="help"><b>Help</b><p>Minus a negative becomes plus: − (−) → +. Keep every number the same.</p>';
     if(strong) s+='<p>Copy the first number. Change each − (−) into +. Copy the other numbers.</p><p class="note">Example: −8 − (−13) = −8 + 13</p>';
     return s+'</div>';
   }
-  if(it.a===undefined) return '<div class="help"><b>Help</b><p>Work left to right: do the first two numbers, then add the last one.</p>'+
-    (strong?'<p class="note">Example: −2 − 3 + 4 → −5 + 4 = −1</p>':'')+'</div>';
+  if(k==="pair") return '<div class="help"><b>Help</b><p>Do only the first two numbers. Copy the last number as it is.</p>'+
+    (strong?'<p class="note">Example: −2 − 3 + 4 → −5 + 4</p>':'')+'</div>';
+  if(k==="mag") return '<div class="help"><b>Help</b><p>Look at the two numbers without their signs. The bigger one wins: its sign goes in front. Then write ( big − small ).</p>'+
+    '<p>If both numbers have the same sign, keep that sign and add them: −6 − 9 → −(6 + 9).</p>'+
+    (strong?'<p class="note">Examples: −8 + 13 → (13 − 8) · −20 + 6 → −(20 − 6) · 8 + 5 → (8 + 5)</p>':'')+'</div>';
+  if(it.a===undefined) return '<div class="help"><b>Help</b><p>Work out the brackets, then put the sign in front.</p>'+
+    (strong?'<p class="note">Example: −(15 − 5) = −10</p>':'')+'</div>';
   return '<div class="help"><b>Help</b>'+numberLine(it.a,it.b,strong,false)+'<p>Start at '+prettyNum(it.a)+'. Plus '+it.b+' means move '+it.b+' to the right.'+(strong?' The dot shows where you stop.':'')+'</p></div>';
 }
 
@@ -485,34 +520,41 @@ function attempts(label, step){
   out.push(cur);
   return out;
 }
+var LINE_NAMES={rw:"no − (−)", pair:"first two", mag:"sign( )", ans:"answer"};
+function lineAttempts(r){
+  var out=[]; ["rw","pair","mag","ans"].forEach(function(k){ if(r.lines[k]) out=out.concat(attempts(LINE_NAMES[k], r.lines[k])); });
+  return out;
+}
 function resultLines(){
   var it=state.items, n=it.length;
-  var score=it.filter(function(r){return firstOk(r.rewrite)&&firstOk(r.answer);}).length;
-  var rw=it.filter(function(r){return firstOk(r.rewrite);}).length;
+  var allFirst=function(r){ return Object.keys(r.lines).every(function(k){return firstOk(r.lines[k]);}); };
+  var score=it.filter(allFirst).length;
+  var rw=it.filter(function(r){return firstOk(r.lines.rw);}).length;
+  var mg=it.filter(function(r){return firstOk(r.lines.mag);}).length;
   var two=it.slice(0,8).map(function(r){return r.activeMs||0;});
   var avg=Math.round(two.reduce(function(a,b){return a+b;},0)/Math.max(1,two.length)/1000);
   var pen=0, typed=0; it.forEach(function(r){pen+=r.pen; typed+=r.typed;});
   var d=new Date(state.finished||Date.now());
   var L=[];
   L.push("Signs Check − (−) · "+state.name+" · "+d.toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}));
-  L.push("Right first try "+score+"/"+n+" · Line 1 right first try "+rw+"/"+n);
+  L.push("All lines right first try "+score+"/"+n+" · − (−) line "+rw+"/"+n+" · sign( ) line "+mg+"/"+n);
   L.push("Avg Q1-8: "+avg+" s (20 Oct ~64 s) · Q6 −15 − (−15): "+sec(it[5]&&it[5].activeMs)+" (20 Oct 76 s)");
   L.push("Cross 0 · Q1 / Q4 / Q8: "+sec(it[0]&&it[0].activeMs)+" / "+sec(it[3]&&it[3].activeMs)+" / "+sec(it[7]&&it[7].activeMs));
   L.push("Checks written with Pencil: "+pen+" · typed: "+typed+" · used working space in "+it.filter(function(r){return r.strokes;}).length+"/"+n);
   var pg=state.pages||{}, tot=0; it.forEach(function(r){tot+=r.rawMs||0;});
   L.push("Page time · How to write "+sec(pg.how)+" · Example "+sec(pg.example)+" · Practice "+sec(state.practice&&state.practice.rawMs)+" · 10 questions "+sec(tot));
-  L.push("Goal: ≥9/10 first try · Line 1 ≥9/10 · Q1-8 ≤ 40 s");
+  L.push("Goal: ≥9/10 all lines first try · Q1-8 ≤ 40 s");
   L.push("ink "+state.sid);
   it.forEach(function(r,i){
     var open = " (on page "+sec(r.rawMs)+")";
     var help = (r.strong?" · strong help":(r.hint?" · help":""))+(r.strokes?" · working "+r.strokes:"");
     L.push(("Q"+(i+1)+" "+r.problem+" · "+sec(r.activeMs)+open+" · start "+sec(r.firstWriteMs)+help).slice(0,100));
-    L.push.apply(L, attempts("line 1", r.rewrite).concat(attempts("answer", r.answer)));
+    L.push.apply(L, lineAttempts(r));
   });
   if(state.practice){
     var p=state.practice;
     L.push("Practice "+p.problem+" · "+sec(p.activeMs));
-    L.push.apply(L, attempts("line 1", p.rewrite).concat(attempts("answer", p.answer)));
+    L.push.apply(L, lineAttempts(p));
   }
   L.push("Tags: ท-sign sign slip · ท-number number slip · อ copied a number wrong");
   L.push("ข − (−) not changed into +  (suggested, please confirm)");
@@ -524,7 +566,7 @@ var CLASS_SHEET_URL = "https://script.google.com/macros/s/AKfycbzIaVMqROaTFaDN36
 function sendInk(rec){
   if(!rec.ink || rec.inkSent) return Promise.resolve();
   var data=JSON.stringify({q:rec.problem, w:rec.ink.w, h:rec.ink.h, s:rec.ink.s, c:rec.ink.c,
-    t:{line1:rec.rewrite, answer:rec.answer, activeMs:rec.activeMs, pageMs:rec.rawMs, startMs:rec.firstWriteMs}});
+    t:{lines:rec.lines, activeMs:rec.activeMs, pageMs:rec.rawMs, startMs:rec.firstWriteMs}});
   return fetch(CLASS_SHEET_URL,{method:"POST",body:JSON.stringify({action:"cput",cls:QUIZ,name:state.name||"No name",id:state.sid+"-"+rec.id,data:data})})
     .then(function(r){return r.json();})
     .then(function(j){ if(!j.ok) throw new Error(); rec.inkSent=true; save(); });
