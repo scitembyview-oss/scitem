@@ -217,9 +217,10 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
     if (r.quiz === MATH_QUIZ) return show(`<button type="button" class="ghost" id="back">← กลับไปรายการ</button>${mathReport(decodeLF(r.answers.join(''))!, math!)}`);
     if (r.quiz === SIGNS_QUIZ) {
       show(`<button type="button" class="ghost" id="back">← กลับไปรายการ</button>
-      <h2>${esc(r.name)}</h2><p class="hint">ส่งเมื่อ ${when(r.at)}</p><pre class="signs">${r.answers.map(esc).join('\n')}</pre>
-      <h3>ที่ทด</h3><div id="ink"><p class="hint">กำลังโหลดที่ทด…</p></div>`);
-      return void signsInk(r);
+      <h2>${esc(r.name)}</h2><p class="hint">Signs Check − (−) · ส่งเมื่อ ${when(r.at)}</p>
+      <div id="sdash"><p class="hint">กำลังโหลดผล…</p></div>
+      <details class="raw"><summary>ข้อความผลแบบเต็ม</summary><pre class="signs">${r.answers.map(esc).join('\n')}</pre></details>`);
+      return void signsReport(r);
     }
     const { title, questions } = keys![r.quiz];
     const meta = checks[r.quiz]?.questions;
@@ -248,29 +249,77 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
     $('detail').querySelectorAll('.qa small').forEach((el, k) => (r.secs[k] ?? 0) > 90 && el.classList.add('slow'));
   }
 
-  // Signs Check working space: one class-sheet row per question (id = "<run>-<question>"), strokes as flat x,y lists
-  async function signsInk(r: Row) {
-    const box = $('ink');
+  // Signs Check dashboard: the student page stores one class-sheet row per question (id = "<run>-<question>")
+  // holding every attempt per line, the times and the working-space strokes; the report lines are the fallback.
+  type Try = { wrote: string; ok: boolean; tag: string; ms: number };
+  type Line = { tries: Try[]; other?: { wrote: string; why: string; ms: number }[] };
+  type SignsQ = { q: string; w: number; h: number; s: number[][]; c: number;
+    t?: { lines?: Record<string, Line>; line1?: Line; answer?: Line; activeMs?: number; pageMs?: number; startMs?: number } };
+  const SIGN_LINES: [string, string][] = [['rw', 'ไม่มี − (−)'], ['pair', 'สองตัวแรก'], ['mag', 'absolute'], ['ans', 'คำตอบ']];
+  const minus = (x: string) => esc(x).replace(/-/g, '−').replace(/([+−])/g, ' $1 ').replace(/^ − /, '−').replace(/\( /g, '(').replace(/\s+/g, ' ').trim();
+
+  async function signsReport(r: Row) {
+    const box = $('sdash');
     const run = (r.answers.find((l) => l.startsWith('ink ')) ?? '').slice(4);
-    if (!run || !CLASS_SHEET_URL) return void (box.innerHTML = '<p class="hint">ไม่มีที่ทด</p>');
+    let qs: [number, SignsQ][] = [];
     try {
+      if (!run || !CLASS_SHEET_URL) throw new Error();
       const j = await (await fetch(CLASS_SHEET_URL, { method: 'POST', body: JSON.stringify({ action: 'cget', cls: SIGNS_QUIZ, pw }) })).json();
       if (!j.ok) throw new Error();
       const order = (id: string) => { const k = id.slice(run.length + 1); return k === 'p' ? 0 : Number(k); };
-      const rows = (j.rows as { id: string; data: string }[]).filter((x) => x.id.startsWith(run + '-') && /"s":\[\[|"c":[1-9]/.test(x.data)).sort((a, b) => order(a.id) - order(b.id));
-      if (!rows.length) return void (box.innerHTML = '<p class="hint">น้องไม่ได้ใช้ที่ทด</p>');
-      box.innerHTML = rows.map((x) => {
-        const d = JSON.parse(x.data) as { q: string; w: number; h: number; s: number[][]; c: number };
-        const k = order(x.id);
-        const lines = d.s.map((st) => st.length === 2
-          ? `<circle cx="${st[0]}" cy="${st[1]}" r="1.5" fill="#2b3a55"/>`
-          : `<polyline points="${st.join(' ')}" fill="none" stroke="#2b3a55" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
-        return `<div class="ink"><p class="qh">${k ? 'ข้อ ' + k : 'ข้อฝึก'} · ${esc(d.q)}${d.c ? ` <small>กดล้าง ${d.c} ครั้ง</small>` : ''}</p>
-          <svg viewBox="0 0 ${d.w} ${d.h}" role="img" aria-label="ที่ทด">${lines}</svg></div>`;
-      }).join('');
-    } catch {
-      box.innerHTML = '<p class="hint">โหลดที่ทดไม่สำเร็จ ลองเปิดใหม่</p>';
-    }
+      qs = (j.rows as { id: string; data: string }[]).filter((x) => x.id.startsWith(run + '-'))
+        .map((x) => [order(x.id), JSON.parse(x.data) as SignsQ] as [number, SignsQ]).sort((a, b) => a[0] - b[0]);
+    } catch {}
+    const real = qs.filter(([k, d]) => k > 0 && d.t);
+    if (!real.length) return void (box.innerHTML = '<p class="hint">ไม่มีข้อมูลแบบตาราง ดูข้อความผลแบบเต็มด้านล่าง</p>');
+
+    const linesOf = (d: SignsQ): Record<string, Line> => d.t!.lines ?? { rw: d.t!.line1!, ans: d.t!.answer! };
+    const firstOk = (l?: Line) => !!l && l.tries.length > 0 && l.tries[0].ok;
+    const secs = (ms?: number) => Math.round((ms ?? 0) / 1000);
+    const allFirst = real.filter(([, d]) => Object.values(linesOf(d)).every(firstOk)).length;
+    const two = real.filter(([k]) => k <= 8).map(([, d]) => secs(d.t!.activeMs));
+    const avg = two.length ? Math.round(two.reduce((a, b) => a + b, 0) / two.length) : 0;
+    const total = real.reduce((a, [, d]) => a + secs(d.t!.pageMs), 0);
+    const tags: Record<string, number> = {};
+    let wrong = 0;
+    for (const [, d] of real) for (const l of Object.values(linesOf(d))) for (const t of l.tries) if (!t.ok) { wrong++; tags[t.tag || '-'] = (tags[t.tag || '-'] ?? 0) + 1; }
+    const maxT = Math.max(64, ...real.map(([, d]) => secs(d.t!.activeMs)));
+    const mmss2 = (s: number) => s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : `${s} วิ`;
+
+    const cell = (l?: Line) => {
+      if (!l) return '<td class="na">–</td>';
+      const bad = l.tries.filter((t) => !t.ok);
+      if (!bad.length) return '<td class="ok">✓</td>';
+      return `<td class="no"><b>✗ ${bad.length}</b>${bad.map((t) => `<span>${minus(t.wrote)} <i>${esc(t.tag)}</i></span>`).join('')}</td>`;
+    };
+    const row = ([k, d]: [number, SignsQ]) => {
+      const L = linesOf(d), t = secs(d.t!.activeMs);
+      const help = L && Object.values(L).some((l) => l.tries.filter((x) => !x.ok).length >= 2);
+      return `<tr${k ? '' : ' class="practice"'}><th>${k || 'ฝึก'}</th><td class="q">${esc(d.q)}</td>
+        <td class="time"><span class="num${t > 40 ? ' slow' : ''}">${mmss2(t)}</span><div class="sbar"><div style="width:${Math.min(100, (t / maxT) * 100)}%"></div></div>
+          <small>เริ่มเขียน ${secs(d.t!.startMs)} วิ</small></td>
+        ${SIGN_LINES.map(([key]) => cell(L[key])).join('')}
+        <td class="na">${help ? 'มีตัวช่วย' : ''}${d.s.length ? (help ? ' · ' : '') + 'ทด' : ''}</td></tr>`;
+    };
+    const ink = qs.filter(([, d]) => d.s.length || d.c).map(([k, d]) => {
+      const lines = d.s.map((st) => st.length === 2
+        ? `<circle cx="${st[0]}" cy="${st[1]}" r="1.5" fill="#2b3a55"/>`
+        : `<polyline points="${st.join(' ')}" fill="none" stroke="#2b3a55" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+      return `<div class="ink"><p class="qh">${k ? 'ข้อ ' + k : 'ข้อฝึก'} · ${esc(d.q)}${d.c ? ` <small>กดล้าง ${d.c} ครั้ง</small>` : ''}</p>
+        <svg viewBox="0 0 ${d.w} ${d.h}" role="img" aria-label="ที่ทด">${lines}</svg></div>`;
+    }).join('');
+
+    box.innerHTML = `<div class="tiles">
+        <div class="tile"><b>${allFirst}/${real.length}</b><span>ถูกตั้งแต่ครั้งแรก<br>ทุกบรรทัด (เป้า ≥ 9)</span></div>
+        <div class="tile${avg > 40 ? ' warn' : ''}"><b>${avg} วิ</b><span>เฉลี่ยต่อข้อ ข้อ 1–8<br>(เป้า ≤ 40 · 20 ต.ค. ~64)</span></div>
+        <div class="tile"><b>${mmss2(total)}</b><span>เวลารวม 10 ข้อ</span></div>
+        <div class="tile${wrong ? ' warn' : ''}"><b>${wrong}</b><span>ครั้งที่เขียนผิด${Object.keys(tags).length ? '<br>' + Object.entries(tags).map(([t, n]) => `${esc(t)} ${n}`).join(' · ') : ''}</span></div>
+      </div>
+      <div class="tablewrap"><table class="stable">
+        <thead><tr><th>ข้อ</th><th>โจทย์</th><th>เวลา</th>${SIGN_LINES.map(([, n]) => `<th>${n}</th>`).join('')}<th></th></tr></thead>
+        <tbody>${[...real, ...qs.filter(([k, d]) => k === 0 && d.t)].map(row).join('')}</tbody></table></div>
+      <p class="hint">✓ = ถูกตั้งแต่ครั้งแรก · ✗ n = ผิด n ครั้งก่อนถูก (เขียนอะไรไปบ้าง + ป้าย) · เวลาเกิน 40 วิ เป็นสีส้ม · ป้าย: ท-sign เครื่องหมายพลาด, ท-number ตัวเลขพลาด, อ ลอกเลขผิด, ข ไม่เปลี่ยน − (−) เป็น +</p>
+      ${ink ? `<h3>ที่ทด</h3><div class="inks">${ink}</div>` : '<p class="hint">น้องไม่ได้ใช้ที่ทด</p>'}`;
   }
 
   function show(html: string) {
@@ -388,6 +437,31 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
   .paste { margin-top: 18px; }
   .paste summary { color: var(--muted); cursor: pointer; padding: 6px 0; }
   #detail h2 { margin: 16px 0 4px; font-size: 1.5rem; }
+  #detail :global(.tiles) { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 14px 0; }
+  #detail :global(.tile) { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+  #detail :global(.tile b) { font-size: 1.7rem; line-height: 1.1; color: var(--brand); font-variant-numeric: tabular-nums; }
+  #detail :global(.tile.warn b) { color: #b45309; }
+  #detail :global(.tile span) { color: var(--muted); font-size: 0.88rem; line-height: 1.35; }
+  #detail :global(.tablewrap) { overflow-x: auto; margin: 6px 0 8px; }
+  #detail :global(.stable) { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 0.95rem; }
+  #detail :global(.stable th), #detail :global(.stable td) { border-bottom: 1px solid var(--border); padding: 8px 8px; text-align: left; vertical-align: top; }
+  #detail :global(.stable thead th) { color: var(--muted); font-size: 0.82rem; font-weight: 700; white-space: nowrap; }
+  #detail :global(.stable td.q) { white-space: nowrap; font-weight: 600; }
+  #detail :global(.stable td.ok) { color: #15803d; font-weight: 700; font-size: 1.1rem; }
+  #detail :global(.stable td.no) { color: #b91c1c; background: #fdf0ee; }
+  #detail :global(.stable td.no span) { display: block; font-size: 0.85rem; color: var(--ink, #14213d); white-space: nowrap; }
+  #detail :global(.stable td.no i) { font-style: normal; color: #b91c1c; font-size: 0.8rem; }
+  #detail :global(.stable td.na) { color: var(--muted); font-size: 0.85rem; }
+  #detail :global(.stable td.time) { min-width: 120px; }
+  #detail :global(.stable .num) { font-weight: 700; font-variant-numeric: tabular-nums; }
+  #detail :global(.stable .num.slow) { color: #b45309; }
+  #detail :global(.stable .sbar) { display: block; height: 6px; min-width: 90px; background: var(--brand-soft); border-radius: 3px; margin: 4px 0; }
+  #detail :global(.stable .sbar div) { height: 100%; background: var(--brand); border-radius: 3px; }
+  #detail :global(.stable small) { color: var(--muted); font-size: 0.78rem; }
+  #detail :global(.stable tr.practice) { opacity: 0.6; }
+  #detail :global(.inks) { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+  #detail :global(.raw) { margin-top: 16px; }
+  #detail :global(.raw summary) { color: var(--muted); cursor: pointer; padding: 6px 0; }
   #detail :global(.ink svg) { width: 100%; height: auto; background: #fff; border: 1px solid var(--border); border-radius: 12px; }
   #detail :global(.ink) { margin-bottom: 14px; }
   #detail :global(.signs) { white-space: pre-wrap; font-size: 0.95rem; line-height: 1.6; background: var(--brand-soft); padding: 14px; border-radius: 12px; overflow-x: auto; }
