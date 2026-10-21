@@ -286,7 +286,7 @@ function showExample(){
       '<div class="wline"><span class="lab">Line 1: − (−) becomes +</span><span class="val">= −8 + 13</span></div>'+
       '<div class="wline"><span class="lab">Line 2: 13 is bigger than 8 and it is positive, so no − in front: ( big − small )</span><span class="val">= (13 − 8)</span></div>'+
       '<div class="wline"><span class="lab">Line 3: the answer</span><span class="val">= 5</span></div>'+
-      '<p class="note">If the bigger number is negative, put − in front: −20 + 6 = −(20 − 6). If both have the same sign, keep it and add: −6 − 9 = −(6 + 9).</p>'+
+      '<p class="note">If the bigger number is negative, put − in front: −15 + 4 = −(15 − 4). If both have the same sign, keep it and add: −3 − 7 = −(3 + 7).</p>'+
     '</div>'+
     '<div class="help">'+numberLine(EXAMPLE.a,EXAMPLE.b,true,true)+
       '<p class="note">Start at −8. Plus 13 means move 13 to the right. You go past 0 and stop at 5.</p></div>'+
@@ -463,8 +463,8 @@ function hintHtml(it,k,strong){
   if(k==="pair") return '<div class="help"><b>Help</b><p>Do only the first two numbers. Copy the last number as it is.</p>'+
     (strong?'<p class="note">Example: −2 − 3 + 4 → −5 + 4</p>':'')+'</div>';
   if(k==="mag") return '<div class="help"><b>Help</b><p>Look at the two numbers without their signs. The bigger one wins: its sign goes in front. Then write ( big − small ).</p>'+
-    '<p>If both numbers have the same sign, keep that sign and add them: −6 − 9 → −(6 + 9).</p>'+
-    (strong?'<p class="note">Examples: −8 + 13 → (13 − 8) · −20 + 6 → −(20 − 6) · 8 + 5 → (8 + 5)</p>':'')+'</div>';
+    '<p>If both numbers have the same sign, keep that sign and add them: −3 − 7 → −(3 + 7).</p>'+
+    (strong?'<p class="note">Examples: −8 + 13 → (13 − 8) · −15 + 4 → −(15 − 4) · 6 + 2 → (6 + 2)</p>':'')+'</div>';
   if(it.a===undefined) return '<div class="help"><b>Help</b><p>Work out the brackets, then put the sign in front.</p>'+
     (strong?'<p class="note">Example: −(15 − 5) = −10</p>':'')+'</div>';
   return '<div class="help"><b>Help</b>'+numberLine(it.a,it.b,strong,false)+'<p>Start at '+prettyNum(it.a)+'. Plus '+it.b+' means move '+it.b+' to the right.'+(strong?' The dot shows where you stop.':'')+'</p></div>';
