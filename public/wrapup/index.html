@@ -9,6 +9,210 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Fredoka:wght@300..700&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
 <meta name="robots" content="noindex">
+<script>
+const T = {circ:'#2463d6', elec:'#d98f00', proc:'#118466', rock:'#9c5427', eq:'#6a47cf', warn:'#c8321e', ink:'#1b2130', paper:'#ffffff', gold:'#ffc21a'};
+const ease = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
+const seg = (t, a, b) => ease((t - a) / (b - a));
+function tag(p, s, x, y, col, size = 9, align){
+  p.textSize(size); p.textStyle(p.BOLD); const w = p.textWidth(s) + 5;
+  const x0 = align === 'left' ? x : x - w / 2;
+  p.noStroke(); p.fill(255, 255, 255, 235); p.rect(x0, y - size * .85, w, size * 1.2, 2);
+  p.fill(col); p.textAlign(p.LEFT, p.BASELINE); p.text(s, x0 + 2.5, y);
+}
+function evenOdd(p, col, alpha, shapes){
+  const c = p.drawingContext; c.save(); c.beginPath();
+  for (const s of shapes){ if (s[0] === 'r') c.rect(s[1], s[2], s[3], s[4]); else { c.moveTo(s[1] + s[3], s[2]); c.arc(s[1], s[2], s[3], 0, Math.PI * 2); } }
+  const k = p.color(col); k.setAlpha(alpha); c.fillStyle = k.toString(); c.fill('evenodd'); c.restore();
+}
+function glow(p, x, y, g){
+  if (g <= 0) return;
+  p.noStroke();
+  for (let i = 5; i > 0; i--){ p.fill(255, 205, 40, 34 * g); p.circle(x, y, 14 + i * 4.2 * g); }
+  p.fill(255, 214, 60, 150 * g); p.circle(x, y, 13);
+}
+function walker(path){
+  const segs = []; let L = 0;
+  for (let i = 0; i < path.length - 1; i++){ const a = path[i], b = path[i + 1], d = Math.hypot(b[0] - a[0], b[1] - a[1]); segs.push([a, b, L, d]); L += d; }
+  return {L, at(s){ s = ((s % L) + L) % L; const q = segs.find(z => s >= z[2] && s <= z[2] + z[3]) || segs[segs.length - 1]; const f = (s - q[2]) / q[3]; return [q[0][0] + (q[1][0] - q[0][0]) * f, q[0][1] + (q[1][1] - q[0][1]) * f]; }};
+}
+function dots(p, path, t, speed, col, gap = 9, r = 3){
+  const w = walker(path); p.noStroke(); p.fill(col);
+  for (let s = (t * speed) % gap; s < w.L; s += gap){ const [x, y] = w.at(s); p.circle(x, y, r); }
+}
+function pulseRing(p, x, y, t, col){ const a = (t * 1.4) % 1; p.noFill(); const k = p.color(col); k.setAlpha(255 * (1 - a)); p.stroke(k); p.strokeWeight(1.6); p.circle(x, y, 10 + a * 18); }
+
+const ANIM = {
+  toolkit:{vb:[160,160], draw(p, t){
+    const a = -Math.PI / 4, cx = 80, cy = 80, R = 64;
+    const r1 = seg(t, 0, 1.4);
+    p.stroke(T.warn); p.strokeWeight(4); p.line(cx, cy, cx + R * Math.cos(a) * r1, cy + R * Math.sin(a) * r1);
+    if (r1 >= 1) tag(p, 'r', 108, 64, T.warn, 14);
+    const d1 = seg(t, 1.6, 3);
+    if (d1 > 0){ p.stroke(T.ink); p.strokeWeight(3.5); p.line(16, 80, 16 + 128 * d1, 80); if (d1 >= 1) tag(p, 'd = 2r', 48, 100, T.ink, 11); }
+    const c1 = seg(t, 3.2, 6);
+    if (c1 > 0){ p.noFill(); p.stroke(T.circ); p.strokeWeight(6); p.arc(cx, cy, 2 * R, 2 * R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(.001, c1));
+      const e = -Math.PI / 2 + Math.PI * 2 * c1; p.noStroke(); p.fill(T.circ); p.circle(cx + R * Math.cos(e), cy + R * Math.sin(e), 9);
+      if (c1 >= 1) tag(p, 'C = 2πr  (around)', 80, 10, T.circ, 10); }
+    const a1 = seg(t, 6.3, 8.3);
+    if (a1 > 0){ p.noStroke(); p.fill(36, 99, 214, 70); p.circle(cx, cy, 2 * R * a1); if (a1 >= 1) tag(p, 'A = πr²  (inside)', 80, 156, T.circ, 10); }
+  }, dur:9},
+  semi:{vb:[120,64], draw(p, t){
+    const cx = 60, cy = 56, R = 50, c1 = seg(t, 0, 2.4);
+    if (c1 > 0){ p.noFill(); p.stroke(T.circ); p.strokeWeight(4); p.arc(cx, cy, 2 * R, 2 * R, Math.PI, Math.PI + Math.PI * Math.max(.001, c1));
+      const e = Math.PI + Math.PI * c1; p.noStroke(); p.fill(T.circ); p.circle(cx + R * Math.cos(e), cy + R * Math.sin(e), 6); }
+    if (c1 >= 1) tag(p, 'half of C', 60, 27, T.circ, 8.5);
+    const s1 = seg(t, 2.6, 4);
+    if (s1 > 0){ p.stroke(T.warn); p.strokeWeight(4); p.line(110, 56, 110 - 100 * s1, 56); }
+    if (s1 >= 1) tag(p, '+ straight edge', 60, 39, T.warn, 8.5);
+  }, dur:4.5},
+  path:{vb:[200,200], draw(p, t){
+    const r1 = seg(t, 0, 1.2), r2 = seg(t, 1.4, 2.4);
+    p.strokeWeight(4); p.stroke(T.circ); p.line(100, 100, 100 + 60 * r1, 100);
+    if (r2 > 0){ p.stroke(T.warn); p.line(160, 100, 160 + 30 * r2, 100); }
+    if (r2 >= 1) tag(p, 'big r = 14 + 7', 132, 70, T.warn, 12);
+    const b = seg(t, 2.8, 3.8);
+    if (b > 0 && t < 5) evenOdd(p, T.circ, 90 * b, [['c', 100, 100, 90]]);
+    if (t >= 5 && t < 6.5){ evenOdd(p, T.circ, 90, [['c', 100, 100, 90]]); p.noStroke(); p.fill(255, 255, 255, 220 * seg(t, 5, 6)); p.circle(100, 100, 120); tag(p, '− garden', 100, 130, T.ink, 12); }
+    if (t >= 6.5){ evenOdd(p, T.circ, 70 + 60 * Math.sin(t * 3), [['c', 100, 100, 90], ['c', 100, 100, 60]]); tag(p, 'path = big − garden', 100, 124, T.circ, 12); }
+  }, dur:9},
+  square:{vb:[160,160], draw(p, t){
+    const s1 = seg(t, 0, 1.2);
+    if (s1 > 0 && t < 3){ p.noFill(); p.stroke(T.warn); p.strokeWeight(4); p.rect(10, 10, 140, 140); tag(p, 'square: side 14', 80, 30, T.warn, 11); }
+    const c1 = seg(t, 1.6, 3);
+    if (c1 > 0 && t < 3.6){ p.noStroke(); p.fill(36, 99, 214, 60); p.circle(80, 80, 140 * c1); }
+    if (t >= 1.6 && t < 3.6) tag(p, 'circle: d = 14, r = 7', 80, 108, T.circ, 11);
+    if (t >= 3.6){ evenOdd(p, T.warn, 60 + 60 * Math.sin(t * 3), [['r', 10, 10, 140, 140], ['c', 80, 80, 70]]); tag(p, 'left = square − circle', 80, 84, T.ink, 11); }
+  }, dur:8},
+  r2r:{vb:[200,200], draw(p, t){
+    const a = seg(t, 0, 1.4), b = seg(t, 1.6, 3.2);
+    p.strokeWeight(6);
+    p.stroke(T.warn); p.line(10, 100, 10 + 60 * a, 100);
+    if (a >= 1) tag(p, '2r', 40, 92, T.warn, 14);
+    if (b > 0){ p.stroke(T.eq); p.line(70, 100, 70 + 120 * b, 100); }
+    if (b >= 1) tag(p, '4r', 130, 92, T.eq, 14);
+    if (t > 3.4){ tag(p, 'big d = 6r, so big r = 3r', 100, 20, T.ink, 12); }
+    if (t > 4.6) evenOdd(p, T.circ, 60 + 60 * Math.sin((t - 4.6) * 3), [['c', 100, 100, 90], ['c', 40, 100, 30], ['c', 130, 100, 60]]);
+    if (t > 4.6) tag(p, 'shaded = big − small − middle', 100, 194, T.circ, 11);
+  }, dur:9},
+  vir:{vb:[140,120], loop:true, draw(p, t){
+    const k = Math.floor(t / 2.4) % 3, L = [[70, 42, 'V = I × R'], [45, 92, 'I = V ÷ R'], [92, 92, 'R = V ÷ I']][k];
+    p.noStroke(); p.fill(T.ink); p.circle(L[0], L[1], 30); p.fill(255); p.textAlign(p.CENTER, p.CENTER); p.textSize(18); p.textStyle(p.BOLD); p.text('?', L[0], L[1] + 1);
+    tag(p, L[2], 2, 12, T.elec, 11, 'left');
+  }},
+  bal:{vb:[220,110], draw(p, t){
+    const L = [[35,54],[46,54],[40.5,45]], R = [[190.5,36],[201.5,45],[207,54]];
+    const h = seg(t, 0, 1), up = seg(t, 1.4, 3);
+    if (t < 1.4){ p.noFill(); p.stroke(T.warn); p.strokeWeight(1.8); [...L, ...R].forEach(([x, y]) => p.circle(x, y, 13 + 2 * Math.sin(t * 8) * h)); tag(p, 'take 3 from BOTH sides', 110, 12, T.warn, 9); return; }
+    p.noStroke(); p.fill(255); [...L, ...R].forEach(([x, y]) => p.circle(x, y, 12.5));
+    if (up < 1){ p.stroke(T.ink); p.strokeWeight(1.5); p.fill(255, 255, 255, 255 * (1 - up)); [...L, ...R].forEach(([x, y]) => p.circle(x, y - up * 30, 10)); }
+    if (t > 3.1){ p.noStroke(); p.fill(255); p.rect(10, 72, 40, 13); p.rect(172, 72, 30, 13); p.fill(T.ink); p.textSize(11); p.textStyle(p.BOLD); p.textAlign(p.LEFT, p.BASELINE); p.text('x', 14, 82); p.text('?', 178, 82); tag(p, 'still balanced: x = ?', 110, 12, T.eq, 9); }
+  }, dur:5},
+  bars:{vb:[200,110], draw(p, t){
+    const B = [[54, 15], [98, 45], [142, 75]];
+    B.forEach(([x, h], i) => {
+      const g = seg(t, i * .5, i * .5 + 1.8);
+      p.noStroke(); p.fill(255); p.rect(x - 1, 95 - h - 1, 30, h + 1);
+      p.fill(17, 132, 102, 60); p.stroke(T.proc); p.strokeWeight(1.8); p.rect(x, 95 - h * g, 28, h * g);
+      const top = 95 - h * g; p.stroke(T.proc); p.strokeWeight(1.6); p.line(x + 14, top, x + 14, top - 7);
+      p.noStroke(); p.fill(T.proc); p.ellipse(x + 10.5, top - 6, 7, 3.6); p.ellipse(x + 17.5, top - 8, 7, 3.6);
+    });
+  }, dur:3},
+  rockcycle:{vb:[300,190], loop:true, draw(p, t){
+    const A = [[[150,34],[232,66]], [[232,92],[210,150]], [[158,163],[116,163]], [[50,150],[54,92]], [[80,66],[140,34]]];
+    const LAB = [[200,34], [226,118], [104,136], [0,118], [48,30]];
+    const NODE = [[200,68,90], [160,152,80], [2,152,110], [0,68,112], [110,10,80]];
+    const per = 2.2, k = Math.floor(t / per) % 5, f = ease((t % per) / per);
+    const [a, b] = A[k];
+    p.noFill(); p.stroke(T.rock); p.strokeWeight(3); p.rect(LAB[k][0] - 2, LAB[k][1] - 2, 68, 20, 4);
+    p.noStroke(); p.fill(T.warn); p.circle(a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, 9);
+    if (f > .85){ const n = NODE[k]; p.noFill(); p.stroke(T.rock); p.strokeWeight(3); p.rect(n[0] - 2, n[1] - 2, n[2] + 4, 26, 13); }
+  }},
+  track:{vb:[220,90], loop:true, draw(p, t){
+    const L = 200 + 2 * Math.PI * 35, s = (t * 70) % (L + 60), q = Math.min(s, L);
+    p.noFill(); p.stroke(T.warn); p.strokeWeight(4);
+    const top = Math.min(q, 100); p.line(60, 10, 60 + top, 10);
+    let r = q - 100;
+    if (r > 0){ const a = Math.min(r, Math.PI * 35) / 35; p.arc(160, 45, 70, 70, -Math.PI / 2, -Math.PI / 2 + Math.max(a, .001)); }
+    r = q - 100 - Math.PI * 35;
+    if (r > 0){ const b = Math.min(r, 100); p.line(160, 80, 160 - b, 80); }
+    r = q - 200 - Math.PI * 35;
+    if (r > 0){ const a = Math.min(r, Math.PI * 35) / 35; p.arc(60, 45, 70, 70, Math.PI / 2, Math.PI / 2 + Math.max(a, .001)); }
+    if (s >= L) tag(p, '1 lap = 2 straights + 1 whole circle', 110, 50, T.ink, 8.5);
+  }},
+  four:{vb:[160,160], draw(p, t){
+    const C = [[45,45],[115,45],[45,115],[115,115]];
+    C.forEach(([x, y], i) => { const g = seg(t, i * .5, i * .5 + 1); if (g > 0 && t < 3.6){ p.noStroke(); p.fill(36, 99, 214, 70); p.circle(x, y, 70 * g); } });
+    if (t > 1.2 && t < 3.6) tag(p, 'each d = 14', 80, 84, T.circ, 11);
+    if (t >= 3.6){ evenOdd(p, T.warn, 60 + 60 * Math.sin(t * 3), [['r', 10, 10, 140, 140], ...C.map(([x, y]) => ['c', x, y, 35])]); tag(p, 'square − 4 circles', 80, 84, T.ink, 11); }
+  }, dur:8},
+};
+const getAnim = k => ANIM[k];
+// tiny stand-in for the few p5.js calls the figure animations use, drawn on a plain canvas
+function mkP(ctx){
+  let doFill = true, doStroke = true, tAlign = 'left', tBase = 'alphabetic', tSize = 12, tBold = false;
+  const col = a => {
+    if (a.length === 1 && typeof a[0] === 'object') return a[0].toString();
+    if (a.length === 1 && typeof a[0] === 'string') return a[0];
+    if (a.length <= 2) { const g = a[0]; return `rgba(${g},${g},${g},${a.length > 1 ? a[1] / 255 : 1})`; }
+    return `rgba(${a[0]},${a[1]},${a[2]},${a.length > 3 ? Math.max(0, Math.min(255, a[3])) / 255 : 1})`;
+  };
+  const font = () => { ctx.font = `${tBold ? 700 : 400} ${tSize}px Archivo, system-ui, sans-serif`; };
+  const paint = () => { if (doFill) ctx.fill(); if (doStroke) ctx.stroke(); };
+  let shape = null;
+  return {
+    BOLD: 'bold', NORMAL: 'normal', LEFT: 'left', CENTER: 'center', RIGHT: 'right', BASELINE: 'alphabetic',
+    drawingContext: ctx,
+    color(c) { const m = /^#(..)(..)(..)$/.exec(c), v = m ? m.slice(1).map(x => parseInt(x, 16)) : [0, 0, 0]; let al = 255;
+      return { setAlpha(x) { al = x; }, toString() { return `rgba(${v[0]},${v[1]},${v[2]},${Math.max(0, Math.min(255, al)) / 255})`; } }; },
+    fill(...a) { doFill = true; ctx.fillStyle = col(a); }, noFill() { doFill = false; },
+    stroke(...a) { doStroke = true; ctx.strokeStyle = col(a); }, noStroke() { doStroke = false; },
+    strokeWeight(w) { ctx.lineWidth = w; },
+    line(x1, y1, x2, y2) { if (!doStroke) return; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); },
+    circle(x, y, d) { ctx.beginPath(); ctx.arc(x, y, Math.max(0, d / 2), 0, Math.PI * 2); paint(); },
+    ellipse(x, y, w, h) { ctx.beginPath(); ctx.ellipse(x, y, Math.max(0, w / 2), Math.max(0, h / 2), 0, 0, Math.PI * 2); paint(); },
+    rect(x, y, w, h, r) { ctx.beginPath(); if (r && ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); paint(); },
+    arc(x, y, w, h, a0, a1) { ctx.beginPath(); ctx.ellipse(x, y, w / 2, h / 2, 0, a0, a1); if (doStroke) ctx.stroke(); },
+    beginShape() { shape = []; }, vertex(x, y) { shape.push([x, y]); },
+    endShape() { ctx.beginPath(); shape.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); if (doStroke) ctx.stroke(); },
+    textSize(s) { tSize = s; }, textStyle(s) { tBold = s === 'bold'; },
+    textAlign(h, v) { tAlign = h; tBase = v === 'center' ? 'middle' : 'alphabetic'; },
+    textWidth(s) { font(); return ctx.measureText(s).width; },
+    text(s, x, y) { font(); ctx.textAlign = tAlign; ctx.textBaseline = tBase; if (doFill) ctx.fillText(s, x, y); },
+    push() { ctx.save(); }, pop() { ctx.restore(); }, scale(a, b) { ctx.scale(a, b ?? a); },
+  };
+}
+// tap a figure: play its animation over the picture; tap again to stop
+const FIG_RUN = new Map();
+window.EXTRA_ACT = {
+  fig(svg) {
+    if (FIG_RUN.has(svg)) { FIG_RUN.get(svg)(); return; }
+    const spec = getAnim(svg.dataset.anim); if (!spec) return;
+    const host = svg.parentNode; if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+    const cv = document.createElement('canvas'); cv.className = 'figanim';
+    // SVG has no offsetLeft: place the canvas from screen boxes, undoing the page's scale
+    const sr = svg.getBoundingClientRect(), hr = host.getBoundingClientRect();
+    const W = svg.clientWidth || sr.width, H = svg.clientHeight || sr.height, z = sr.width / W || 1, R = 3;
+    Object.assign(cv.style, { position: 'absolute', left: (sr.left - hr.left) / z - host.clientLeft + 'px', top: (sr.top - hr.top) / z - host.clientTop + 'px', width: W + 'px', height: H + 'px', pointerEvents: 'none' });
+    cv.width = W * R; cv.height = H * R; host.appendChild(cv);
+    const ctx = cv.getContext('2d'), p = mkP(ctx), k = Math.min(W / spec.vb[0], H / spec.vb[1]);
+    const ox = (W - spec.vb[0] * k) / 2, oy = (H - spec.vb[1] * k) / 2, t0 = performance.now();
+    let raf = 0;
+    const stop = () => { cancelAnimationFrame(raf); cv.remove(); FIG_RUN.delete(svg); };
+    FIG_RUN.set(svg, stop);
+    const frame = now => {
+      if (!svg.closest('.sheet.cur')) { stop(); return; }
+      let t = (now - t0) / 1000; if (!spec.loop && spec.dur) t = Math.min(t, spec.dur);
+      ctx.setTransform(R, 0, 0, R, 0, 0); ctx.clearRect(0, 0, W, H);
+      ctx.translate(ox, oy); ctx.scale(k, k); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      p.fill(255); p.stroke(0); p.strokeWeight(1);
+      spec.draw(p, t);
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+  },
+};
+
+</script>
 <style>
   :root { --bg: #1d2230; --ink: #1f2937; --bar: #ffffff; --barline: #e5e7eb; --on: #111827; }
   html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; overscroll-behavior: none; }
@@ -300,6 +504,8 @@ html.ink .draw{border-color:var(--t)}
 .lines span{position:relative}
 
 .sheet .page{page-break-after:auto;margin:0}
+svg[data-anim]{cursor:pointer}
+@media print{.figanim{display:none}.sheet{width:210mm!important;height:296.5mm!important}.sheet .page{height:296.5mm}}
 
 </style>
 </head>
@@ -400,7 +606,7 @@ html.ink .draw{border-color:var(--t)}
 <div class="sheet"><section class="page t-circ">
   <div class="strip"><span class="chip"><svg class="ico"><use href="#i-circle"/></svg>Circles</span><span>Part 1 · Toolkit</span></div>
   <div class="title"><div class="kicker">Circle word problems</div><h2>Your circle toolkit</h2></div>
-  <div class="band" style="grid-template-columns:46mm 1fr;align-items:center;gap:6mm"><svg data-anim="toolkit" viewBox="0 0 160 160" width="46mm" height="46mm">
+  <div class="band" style="grid-template-columns:46mm 1fr;align-items:center;gap:6mm"><svg class="tap" data-act="fig" data-anim="toolkit" viewBox="0 0 160 160" width="46mm" height="46mm">
   <circle cx="80" cy="80" r="64" class="fg-shade"/>
   <line x1="16" y1="80" x2="144" y2="80" class="fg-stroke" stroke-dasharray="5 4"/>
   <line x1="80" y1="80" x2="125.3" y2="34.7" class="fg-accent"/>
@@ -430,13 +636,13 @@ html.ink .draw{border-color:var(--t)}
   <div class="strip"><span class="chip"><svg class="ico"><use href="#i-circle"/></svg>Circles</span><span>Part 2 · Step by step</span></div>
   <div class="title"><div class="kicker">Circle word problems</div><h2>Six steps, fewer hints each time</h2></div>
   <div class="task"><div class="num">2</div><div class="body"><p>A round field has a radius of <b>35 m</b>. A fence costs <b>15 baht per metre</b>. How much does it cost to fence all the way round? <span class="muted">(π = 22/7)</span></p><div class="steps"><div class="srow"><div class="lab"><span class="badge sm">1</span>Around or inside?</div><div class="val"></div></div><div class="srow"><div class="lab"><span class="badge sm">2</span>Formula</div><div class="val"></div></div><div class="srow"><div class="lab"><span class="badge sm">3</span>Find r</div><div class="val"></div></div><div class="srow"><div class="lab"><span class="badge sm">4</span>Substitute</div><div class="val"></div></div><div class="srow"><div class="lab"><span class="badge sm">5</span>Calculate</div><div class="val"></div></div><div class="srow"><div class="lab"><span class="badge sm">6</span>Units + answer</div><div class="val"></div></div></div></div></div>
-<div class="task"><div class="num">3</div><div class="body"><div class="cols" style="grid-template-columns:1fr 40mm;align-items:center"><p>A window is a <b>semicircle</b> 140 cm wide. Find its <b>perimeter</b>. <span class="muted">(π = 22/7)</span></p><svg data-anim="semi" viewBox="0 0 120 64" width="40mm"><path d="M10 56 A50 50 0 0 1 110 56 Z" class="fg-shade"/><text x="40" y="52" font-size="11">140 cm</text></svg></div><div class="margin-steps"><svg class="ico" style="color:var(--circ)"><use href="#i-steps"/></svg>No hints this time. Use the 6 steps on your own.</div><div class="work" style="--h:41mm"></div><div class="answer">Answer <span class="blank"></span> cm</div></div></div>
+<div class="task"><div class="num">3</div><div class="body"><div class="cols" style="grid-template-columns:1fr 40mm;align-items:center"><p>A window is a <b>semicircle</b> 140 cm wide. Find its <b>perimeter</b>. <span class="muted">(π = 22/7)</span></p><svg class="tap" data-act="fig" data-anim="semi" viewBox="0 0 120 64" width="40mm"><path d="M10 56 A50 50 0 0 1 110 56 Z" class="fg-shade"/><text x="40" y="52" font-size="11">140 cm</text></svg></div><div class="margin-steps"><svg class="ico" style="color:var(--circ)"><use href="#i-steps"/></svg>No hints this time. Use the 6 steps on your own.</div><div class="work" style="--h:41mm"></div><div class="answer">Answer <span class="blank"></span> cm</div></div></div>
   <div class="foot"><span>Wrap-up Day · Circles</span><span>5</span></div>
 </section><canvas class="ink"></canvas></div>
 <div class="sheet"><section class="page t-circ">
   <div class="strip"><span class="chip"><svg class="ico"><use href="#i-circle"/></svg>Circles</span><span>Part 2 · On your own</span></div>
   <div class="title"><div class="kicker">Circle word problems</div><h2>On your own</h2></div>
-  <div class="task"><div class="num">4</div><div class="body"><div class="cols" style="grid-template-columns:1fr 44mm;align-items:center"><p>A round garden has a radius of <b>14 m</b>. A path <b>7 m wide</b> goes all the way round it. Find the <b>area of the path</b>. <span class="muted">(π = 22/7)</span></p><svg data-anim="path" viewBox="0 0 200 200" width="44mm" height="44mm">
+  <div class="task"><div class="num">4</div><div class="body"><div class="cols" style="grid-template-columns:1fr 44mm;align-items:center"><p>A round garden has a radius of <b>14 m</b>. A path <b>7 m wide</b> goes all the way round it. Find the <b>area of the path</b>. <span class="muted">(π = 22/7)</span></p><svg class="tap" data-act="fig" data-anim="path" viewBox="0 0 200 200" width="44mm" height="44mm">
   <circle cx="100" cy="100" r="90" class="fg-shade"/><circle cx="100" cy="100" r="60" class="fg-hole"/>
   <line x1="100" y1="100" x2="160" y2="100" class="fg-accent"/><circle cx="100" cy="100" r="3" class="fg-dot"/>
   <line x1="160" y1="100" x2="190" y2="100" class="fg-stroke" stroke-dasharray="3 3"/>
@@ -449,7 +655,7 @@ html.ink .draw{border-color:var(--t)}
 <div class="sheet"><section class="page t-circ">
   <div class="strip"><span class="chip"><svg class="ico"><use href="#i-circle"/></svg>Circles</span><span>Part 2 · On your own</span></div>
   <div class="title"><div class="kicker">Circle word problems</div><h2>On your own</h2></div>
-  <div class="task"><div class="num">5</div><div class="body"><div class="cols" style="grid-template-columns:1fr 40mm;align-items:center"><p>The biggest possible circle is cut out of a square with sides of <b>14 cm</b>. Find the area that is left. <span class="muted">(π = 22/7)</span></p><svg data-anim="square" viewBox="0 0 160 160" width="40mm" height="40mm">
+  <div class="task"><div class="num">5</div><div class="body"><div class="cols" style="grid-template-columns:1fr 40mm;align-items:center"><p>The biggest possible circle is cut out of a square with sides of <b>14 cm</b>. Find the area that is left. <span class="muted">(π = 22/7)</span></p><svg class="tap" data-act="fig" data-anim="square" viewBox="0 0 160 160" width="40mm" height="40mm">
   <rect x="10" y="10" width="140" height="140" class="fg-shade"/><circle cx="80" cy="80" r="70" class="fg-hole"/>
   <text x="62" y="160" font-size="0"></text><text x="64" y="84" font-size="14">14 cm</text>
   <line x1="10" y1="80" x2="150" y2="80" class="fg-stroke" stroke-dasharray="4 4"/>
@@ -460,7 +666,7 @@ html.ink .draw{border-color:var(--t)}
   <div class="strip"><span class="chip"><svg class="ico"><use href="#i-circle"/></svg>Circles</span><span>Part 3 · Circles inside circles</span></div>
   <div class="title"><div class="kicker">Circle word problems</div><h2>Two circles inside a big circle</h2></div>
   <div class="band" style="grid-template-columns:1fr 42mm;align-items:center;gap:5mm">
-  <p>A small circle (radius <b>r</b>) and a middle circle (radius <b>2r</b>) touch each other. They fit exactly inside a big circle. The <b>shaded part</b> is the big circle without the two smaller circles. <span class="muted">Use π = 22/7.</span></p><svg data-anim="r2r" viewBox="0 0 200 200" width="42mm" height="42mm">
+  <p>A small circle (radius <b>r</b>) and a middle circle (radius <b>2r</b>) touch each other. They fit exactly inside a big circle. The <b>shaded part</b> is the big circle without the two smaller circles. <span class="muted">Use π = 22/7.</span></p><svg class="tap" data-act="fig" data-anim="r2r" viewBox="0 0 200 200" width="42mm" height="42mm">
   <circle cx="100" cy="100" r="90" class="fg-shade"/><circle cx="40" cy="100" r="30" class="fg-hole"/><circle cx="130" cy="100" r="60" class="fg-hole"/>
   <line x1="40" y1="100" x2="40" y2="70" class="fg-accent"/><line x1="130" y1="100" x2="130" y2="40" class="fg-accent"/>
   <circle cx="40" cy="100" r="2.6" class="fg-dot"/><circle cx="130" cy="100" r="2.6" class="fg-dot"/>
@@ -475,7 +681,7 @@ html.ink .draw{border-color:var(--t)}
 <div class="sheet"><section class="page t-circ">
   <div class="strip"><span class="chip"><svg class="ico"><use href="#i-circle"/></svg>Circles</span><span>Part 3 · Circles inside circles</span></div>
   <div class="title"><div class="kicker">Circle word problems</div><h2>Work backwards: find 2r</h2></div>
-  <div class="band" style="grid-template-columns:1fr 30mm;align-items:center;gap:5mm"><p>Same picture as number 6: circles of radius <b>r</b> and <b>2r</b> inside a big circle. Now we know the shaded area and work backwards.</p><svg data-anim="r2r" viewBox="0 0 200 200" width="30mm" height="30mm">
+  <div class="band" style="grid-template-columns:1fr 30mm;align-items:center;gap:5mm"><p>Same picture as number 6: circles of radius <b>r</b> and <b>2r</b> inside a big circle. Now we know the shaded area and work backwards.</p><svg class="tap" data-act="fig" data-anim="r2r" viewBox="0 0 200 200" width="30mm" height="30mm">
   <circle cx="100" cy="100" r="90" class="fg-shade"/><circle cx="40" cy="100" r="30" class="fg-hole"/><circle cx="130" cy="100" r="60" class="fg-hole"/>
   <line x1="40" y1="100" x2="40" y2="70" class="fg-accent"/><line x1="130" y1="100" x2="130" y2="40" class="fg-accent"/>
   <circle cx="40" cy="100" r="2.6" class="fg-dot"/><circle cx="130" cy="100" r="2.6" class="fg-dot"/>
@@ -502,13 +708,13 @@ html.ink .draw{border-color:var(--t)}
   <div class="strip"><span class="chip"><svg class="ico"><use href="#i-bolt"/></svg>Electricity</span><span>Part 2 · Will it light?</span></div>
   <div class="title"><div class="kicker">Electricity</div><h2>Will it light?</h2></div>
   <div class="cue say"><svg class="ico"><use href="#i-say"/></svg>Say it first for each circuit. Then write your answer. We will check each one on screen.</div>
-<div class="cgrid"><div class="ctile"><div class="cap"><span class="badge sm">1</span>Does the bulb light?</div><svg data-anim="circuit-open" viewBox="0 0 120 86"><line x1="14" y1="20" x2="53" y2="20" class="c-wire"/><line x1="67" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="72" x2="52" y2="72" class="c-wire"/><line x1="68" y1="72" x2="106" y2="72" class="c-wire"/><line x1="14" y1="20" x2="14" y2="36" class="c-wire"/><line x1="14" y1="52" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="6" y1="41" x2="22" y2="41" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="47" x2="18.5" y2="47" class="c-plate" stroke-width="3.4"/><circle cx="60" cy="20" r="7" class="c-bulb"/><path d="M55.1 15.1 L64.9 24.9 M64.9 15.1 L55.1 24.9" class="c-wire" stroke-width="1.4"/><circle cx="52" cy="72" r="1.8" class="c-bulb"/><circle cx="68" cy="72" r="1.8" class="c-bulb"/><line x1="52" y1="72" x2="66" y2="62" class="c-wire"/><text x="46" y="83" class="c-small">switch open</text></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div><div class="ctile"><div class="cap"><span class="badge sm">2</span>Does the bulb light?</div><svg data-anim="circuit-plastic" viewBox="0 0 120 86"><line x1="14" y1="20" x2="53" y2="20" class="c-wire"/><line x1="67" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="72" x2="44" y2="72" class="c-wire"/><line x1="76" y1="72" x2="106" y2="72" class="c-wire"/><line x1="14" y1="20" x2="14" y2="36" class="c-wire"/><line x1="14" y1="52" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="6" y1="41" x2="22" y2="41" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="47" x2="18.5" y2="47" class="c-plate" stroke-width="3.4"/><circle cx="60" cy="20" r="7" class="c-bulb"/><path d="M55.1 15.1 L64.9 24.9 M64.9 15.1 L55.1 24.9" class="c-wire" stroke-width="1.4"/><rect x="42" y="68" width="36" height="8" rx="2" class="c-obj"/><text x="40" y="83" class="c-small">plastic ruler</text></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div><div class="ctile"><div class="cap"><span class="badge sm">3</span>Does the bulb light?</div><svg data-anim="circuit-steel" viewBox="0 0 120 86"><line x1="14" y1="20" x2="53" y2="20" class="c-wire"/><line x1="67" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="72" x2="44" y2="72" class="c-wire"/><line x1="76" y1="72" x2="106" y2="72" class="c-wire"/><line x1="14" y1="20" x2="14" y2="36" class="c-wire"/><line x1="14" y1="52" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="6" y1="41" x2="22" y2="41" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="47" x2="18.5" y2="47" class="c-plate" stroke-width="3.4"/><circle cx="60" cy="20" r="7" class="c-bulb"/><path d="M55.1 15.1 L64.9 24.9 M64.9 15.1 L55.1 24.9" class="c-wire" stroke-width="1.4"/><rect x="42" y="68" width="36" height="8" rx="2" class="c-obj"/><text x="44" y="83" class="c-small">steel spoon</text></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div><div class="ctile"><div class="cap"><span class="badge sm">4</span>Brighter or dimmer than with one cell?</div><svg data-anim="circuit-twocells" viewBox="0 0 120 86"><line x1="14" y1="20" x2="53" y2="20" class="c-wire"/><line x1="67" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="72" x2="106" y2="72" class="c-wire"/><line x1="14" y1="20" x2="14" y2="30" class="c-wire"/><line x1="14" y1="58" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="6" y1="34" x2="22" y2="34" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="40" x2="18.5" y2="40" class="c-plate" stroke-width="3.4"/><line x1="6" y1="48" x2="22" y2="48" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="54" x2="18.5" y2="54" class="c-plate" stroke-width="3.4"/><circle cx="60" cy="20" r="7" class="c-bulb"/><path d="M55.1 15.1 L64.9 24.9 M64.9 15.1 L55.1 24.9" class="c-wire" stroke-width="1.4"/><line x1="14" y1="40" x2="14" y2="48" class="c-wire"/></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div><div class="ctile"><div class="cap"><span class="badge sm">5</span>Brighter or dimmer than one bulb alone?</div><svg data-anim="circuit-series" viewBox="0 0 120 86"><line x1="14" y1="20" x2="38" y2="20" class="c-wire"/><line x1="52" y1="20" x2="68" y2="20" class="c-wire"/><line x1="82" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="72" x2="106" y2="72" class="c-wire"/><line x1="14" y1="20" x2="14" y2="36" class="c-wire"/><line x1="14" y1="52" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="6" y1="41" x2="22" y2="41" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="47" x2="18.5" y2="47" class="c-plate" stroke-width="3.4"/><circle cx="45" cy="20" r="7" class="c-bulb"/><path d="M40.1 15.1 L49.9 24.9 M49.9 15.1 L40.1 24.9" class="c-wire" stroke-width="1.4"/><text x="42.6" y="10" class="c-txt">A</text><circle cx="75" cy="20" r="7" class="c-bulb"/><path d="M70.1 15.1 L79.9 24.9 M79.9 15.1 L70.1 24.9" class="c-wire" stroke-width="1.4"/><text x="72.6" y="10" class="c-txt">B</text></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div><div class="ctile"><div class="cap"><span class="badge sm">6</span>Does bulb A light?</div><svg data-anim="circuit-seriesbroken" viewBox="0 0 120 86"><line x1="14" y1="20" x2="38" y2="20" class="c-wire"/><line x1="52" y1="20" x2="68" y2="20" class="c-wire"/><line x1="82" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="72" x2="106" y2="72" class="c-wire"/><line x1="14" y1="20" x2="14" y2="36" class="c-wire"/><line x1="14" y1="52" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="6" y1="41" x2="22" y2="41" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="47" x2="18.5" y2="47" class="c-plate" stroke-width="3.4"/><circle cx="45" cy="20" r="7" class="c-bulb"/><path d="M40.1 15.1 L49.9 24.9 M49.9 15.1 L40.1 24.9" class="c-wire" stroke-width="1.4"/><text x="42.6" y="10" class="c-txt">A</text><circle cx="75" cy="20" r="7" class="c-bulb" stroke-dasharray="3 2"/><path d="M71 19 l2.5 2.5 l2 -3 l2 3 l2 -2.5" class="c-wire" stroke-width="1.4"/><text x="64" y="36" class="c-small">broken</text><text x="72.6" y="10" class="c-txt">B</text></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div><div class="ctile"><div class="cap"><span class="badge sm">7</span>Does bulb A light?</div><svg data-anim="circuit-parallelbroken" viewBox="0 0 120 86"><line x1="14" y1="20" x2="53" y2="20" class="c-wire"/><line x1="67" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="46" x2="53" y2="46" class="c-wire"/><line x1="67" y1="46" x2="106" y2="46" class="c-wire"/><line x1="14" y1="20" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="14" y1="72" x2="57" y2="72" class="c-wire"/><line x1="63" y1="72" x2="106" y2="72" class="c-wire"/><line x1="57" y1="64" x2="57" y2="80" class="c-plate" stroke-width="1.6"/><line x1="63" y1="67.5" x2="63" y2="76.5" class="c-plate" stroke-width="3.4"/><circle cx="60" cy="20" r="7" class="c-bulb"/><path d="M55.1 15.1 L64.9 24.9 M64.9 15.1 L55.1 24.9" class="c-wire" stroke-width="1.4"/><text x="57.6" y="10" class="c-txt">A</text><circle cx="60" cy="46" r="7" class="c-bulb" stroke-dasharray="3 2"/><path d="M56 45 l2.5 2.5 l2 -3 l2 3 l2 -2.5" class="c-wire" stroke-width="1.4"/><text x="49" y="62" class="c-small">broken</text><text x="72" y="40" class="c-txt">B</text></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div><div class="ctile"><div class="cap"><span class="badge sm">8</span>What happens to A and B?</div><svg data-anim="circuit-seriesshort" viewBox="0 0 120 86"><line x1="14" y1="20" x2="38" y2="20" class="c-wire"/><line x1="52" y1="20" x2="68" y2="20" class="c-wire"/><line x1="82" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="72" x2="106" y2="72" class="c-wire"/><line x1="14" y1="20" x2="14" y2="36" class="c-wire"/><line x1="14" y1="52" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="6" y1="41" x2="22" y2="41" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="47" x2="18.5" y2="47" class="c-plate" stroke-width="3.4"/><circle cx="45" cy="20" r="7" class="c-bulb"/><path d="M40.1 15.1 L49.9 24.9 M49.9 15.1 L40.1 24.9" class="c-wire" stroke-width="1.4"/><text x="42.6" y="10" class="c-txt">A</text><circle cx="75" cy="20" r="7" class="c-bulb"/><path d="M70.1 15.1 L79.9 24.9 M79.9 15.1 L70.1 24.9" class="c-wire" stroke-width="1.4"/><text x="72.6" y="10" class="c-txt">B</text><path d="M64 20 V3 H86 V20" class="c-short"/><text x="89" y="11" class="c-small">wire</text></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div><div class="ctile"><div class="cap"><span class="badge sm">9</span>What happens?</div><svg data-anim="circuit-cellshort" viewBox="0 0 120 86"><line x1="14" y1="20" x2="53" y2="20" class="c-wire"/><line x1="67" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="72" x2="106" y2="72" class="c-wire"/><line x1="14" y1="20" x2="14" y2="36" class="c-wire"/><line x1="14" y1="52" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="6" y1="41" x2="22" y2="41" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="47" x2="18.5" y2="47" class="c-plate" stroke-width="3.4"/><circle cx="60" cy="20" r="7" class="c-bulb"/><path d="M55.1 15.1 L64.9 24.9 M64.9 15.1 L55.1 24.9" class="c-wire" stroke-width="1.4"/><path d="M14 30 H4 V60 H14" class="c-short"/><text x="18" y="64" class="c-small">wire</text></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div></div>
+<div class="cgrid"><div class="ctile"><div class="cap"><span class="badge sm">1</span>Does the bulb light?</div><svg viewBox="0 0 120 86"><line x1="14" y1="20" x2="53" y2="20" class="c-wire"/><line x1="67" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="72" x2="52" y2="72" class="c-wire"/><line x1="68" y1="72" x2="106" y2="72" class="c-wire"/><line x1="14" y1="20" x2="14" y2="36" class="c-wire"/><line x1="14" y1="52" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="6" y1="41" x2="22" y2="41" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="47" x2="18.5" y2="47" class="c-plate" stroke-width="3.4"/><circle cx="60" cy="20" r="7" class="c-bulb"/><path d="M55.1 15.1 L64.9 24.9 M64.9 15.1 L55.1 24.9" class="c-wire" stroke-width="1.4"/><circle cx="52" cy="72" r="1.8" class="c-bulb"/><circle cx="68" cy="72" r="1.8" class="c-bulb"/><line x1="52" y1="72" x2="66" y2="62" class="c-wire"/><text x="46" y="83" class="c-small">switch open</text></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div><div class="ctile"><div class="cap"><span class="badge sm">2</span>Does the bulb light?</div><svg viewBox="0 0 120 86"><line x1="14" y1="20" x2="53" y2="20" class="c-wire"/><line x1="67" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="72" x2="44" y2="72" class="c-wire"/><line x1="76" y1="72" x2="106" y2="72" class="c-wire"/><line x1="14" y1="20" x2="14" y2="36" class="c-wire"/><line x1="14" y1="52" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="6" y1="41" x2="22" y2="41" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="47" x2="18.5" y2="47" class="c-plate" stroke-width="3.4"/><circle cx="60" cy="20" r="7" class="c-bulb"/><path d="M55.1 15.1 L64.9 24.9 M64.9 15.1 L55.1 24.9" class="c-wire" stroke-width="1.4"/><rect x="42" y="68" width="36" height="8" rx="2" class="c-obj"/><text x="40" y="83" class="c-small">plastic ruler</text></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div><div class="ctile"><div class="cap"><span class="badge sm">3</span>Does the bulb light?</div><svg viewBox="0 0 120 86"><line x1="14" y1="20" x2="53" y2="20" class="c-wire"/><line x1="67" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="72" x2="44" y2="72" class="c-wire"/><line x1="76" y1="72" x2="106" y2="72" class="c-wire"/><line x1="14" y1="20" x2="14" y2="36" class="c-wire"/><line x1="14" y1="52" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="6" y1="41" x2="22" y2="41" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="47" x2="18.5" y2="47" class="c-plate" stroke-width="3.4"/><circle cx="60" cy="20" r="7" class="c-bulb"/><path d="M55.1 15.1 L64.9 24.9 M64.9 15.1 L55.1 24.9" class="c-wire" stroke-width="1.4"/><rect x="42" y="68" width="36" height="8" rx="2" class="c-obj"/><text x="44" y="83" class="c-small">steel spoon</text></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div><div class="ctile"><div class="cap"><span class="badge sm">4</span>Brighter or dimmer than with one cell?</div><svg viewBox="0 0 120 86"><line x1="14" y1="20" x2="53" y2="20" class="c-wire"/><line x1="67" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="72" x2="106" y2="72" class="c-wire"/><line x1="14" y1="20" x2="14" y2="30" class="c-wire"/><line x1="14" y1="58" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="6" y1="34" x2="22" y2="34" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="40" x2="18.5" y2="40" class="c-plate" stroke-width="3.4"/><line x1="6" y1="48" x2="22" y2="48" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="54" x2="18.5" y2="54" class="c-plate" stroke-width="3.4"/><circle cx="60" cy="20" r="7" class="c-bulb"/><path d="M55.1 15.1 L64.9 24.9 M64.9 15.1 L55.1 24.9" class="c-wire" stroke-width="1.4"/><line x1="14" y1="40" x2="14" y2="48" class="c-wire"/></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div><div class="ctile"><div class="cap"><span class="badge sm">5</span>Brighter or dimmer than one bulb alone?</div><svg viewBox="0 0 120 86"><line x1="14" y1="20" x2="38" y2="20" class="c-wire"/><line x1="52" y1="20" x2="68" y2="20" class="c-wire"/><line x1="82" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="72" x2="106" y2="72" class="c-wire"/><line x1="14" y1="20" x2="14" y2="36" class="c-wire"/><line x1="14" y1="52" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="6" y1="41" x2="22" y2="41" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="47" x2="18.5" y2="47" class="c-plate" stroke-width="3.4"/><circle cx="45" cy="20" r="7" class="c-bulb"/><path d="M40.1 15.1 L49.9 24.9 M49.9 15.1 L40.1 24.9" class="c-wire" stroke-width="1.4"/><text x="42.6" y="10" class="c-txt">A</text><circle cx="75" cy="20" r="7" class="c-bulb"/><path d="M70.1 15.1 L79.9 24.9 M79.9 15.1 L70.1 24.9" class="c-wire" stroke-width="1.4"/><text x="72.6" y="10" class="c-txt">B</text></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div><div class="ctile"><div class="cap"><span class="badge sm">6</span>Does bulb A light?</div><svg viewBox="0 0 120 86"><line x1="14" y1="20" x2="38" y2="20" class="c-wire"/><line x1="52" y1="20" x2="68" y2="20" class="c-wire"/><line x1="82" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="72" x2="106" y2="72" class="c-wire"/><line x1="14" y1="20" x2="14" y2="36" class="c-wire"/><line x1="14" y1="52" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="6" y1="41" x2="22" y2="41" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="47" x2="18.5" y2="47" class="c-plate" stroke-width="3.4"/><circle cx="45" cy="20" r="7" class="c-bulb"/><path d="M40.1 15.1 L49.9 24.9 M49.9 15.1 L40.1 24.9" class="c-wire" stroke-width="1.4"/><text x="42.6" y="10" class="c-txt">A</text><circle cx="75" cy="20" r="7" class="c-bulb" stroke-dasharray="3 2"/><path d="M71 19 l2.5 2.5 l2 -3 l2 3 l2 -2.5" class="c-wire" stroke-width="1.4"/><text x="64" y="36" class="c-small">broken</text><text x="72.6" y="10" class="c-txt">B</text></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div><div class="ctile"><div class="cap"><span class="badge sm">7</span>Does bulb A light?</div><svg viewBox="0 0 120 86"><line x1="14" y1="20" x2="53" y2="20" class="c-wire"/><line x1="67" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="46" x2="53" y2="46" class="c-wire"/><line x1="67" y1="46" x2="106" y2="46" class="c-wire"/><line x1="14" y1="20" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="14" y1="72" x2="57" y2="72" class="c-wire"/><line x1="63" y1="72" x2="106" y2="72" class="c-wire"/><line x1="57" y1="64" x2="57" y2="80" class="c-plate" stroke-width="1.6"/><line x1="63" y1="67.5" x2="63" y2="76.5" class="c-plate" stroke-width="3.4"/><circle cx="60" cy="20" r="7" class="c-bulb"/><path d="M55.1 15.1 L64.9 24.9 M64.9 15.1 L55.1 24.9" class="c-wire" stroke-width="1.4"/><text x="57.6" y="10" class="c-txt">A</text><circle cx="60" cy="46" r="7" class="c-bulb" stroke-dasharray="3 2"/><path d="M56 45 l2.5 2.5 l2 -3 l2 3 l2 -2.5" class="c-wire" stroke-width="1.4"/><text x="49" y="62" class="c-small">broken</text><text x="72" y="40" class="c-txt">B</text></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div><div class="ctile"><div class="cap"><span class="badge sm">8</span>What happens to A and B?</div><svg viewBox="0 0 120 86"><line x1="14" y1="20" x2="38" y2="20" class="c-wire"/><line x1="52" y1="20" x2="68" y2="20" class="c-wire"/><line x1="82" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="72" x2="106" y2="72" class="c-wire"/><line x1="14" y1="20" x2="14" y2="36" class="c-wire"/><line x1="14" y1="52" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="6" y1="41" x2="22" y2="41" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="47" x2="18.5" y2="47" class="c-plate" stroke-width="3.4"/><circle cx="45" cy="20" r="7" class="c-bulb"/><path d="M40.1 15.1 L49.9 24.9 M49.9 15.1 L40.1 24.9" class="c-wire" stroke-width="1.4"/><text x="42.6" y="10" class="c-txt">A</text><circle cx="75" cy="20" r="7" class="c-bulb"/><path d="M70.1 15.1 L79.9 24.9 M79.9 15.1 L70.1 24.9" class="c-wire" stroke-width="1.4"/><text x="72.6" y="10" class="c-txt">B</text><path d="M64 20 V3 H86 V20" class="c-short"/><text x="89" y="11" class="c-small">wire</text></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div><div class="ctile"><div class="cap"><span class="badge sm">9</span>What happens?</div><svg viewBox="0 0 120 86"><line x1="14" y1="20" x2="53" y2="20" class="c-wire"/><line x1="67" y1="20" x2="106" y2="20" class="c-wire"/><line x1="14" y1="72" x2="106" y2="72" class="c-wire"/><line x1="14" y1="20" x2="14" y2="36" class="c-wire"/><line x1="14" y1="52" x2="14" y2="72" class="c-wire"/><line x1="106" y1="20" x2="106" y2="72" class="c-wire"/><line x1="6" y1="41" x2="22" y2="41" class="c-plate" stroke-width="1.6"/><line x1="9.5" y1="47" x2="18.5" y2="47" class="c-plate" stroke-width="3.4"/><circle cx="60" cy="20" r="7" class="c-bulb"/><path d="M55.1 15.1 L64.9 24.9 M64.9 15.1 L55.1 24.9" class="c-wire" stroke-width="1.4"/><path d="M14 30 H4 V60 H14" class="c-short"/><text x="18" y="64" class="c-small">wire</text></svg><div class="q"><span class="fill"></span></div><div class="q"><span class="fill"></span></div></div></div>
   <div class="foot"><span>Wrap-up Day · Electricity</span><span>11</span></div>
 </section><canvas class="ink"></canvas></div>
 <div class="sheet"><section class="page t-elec">
   <div class="strip"><span class="chip"><svg class="ico"><use href="#i-bolt"/></svg>Electricity</span><span>Part 3 · V = I × R</span></div>
   <div class="title"><div class="kicker">Electricity</div><h2>V = I × R, step by step</h2></div>
-  <div class="band" style="grid-template-columns:44mm 1fr;align-items:center;gap:6mm"><svg data-anim="vir" viewBox="0 0 140 120" width="44mm">
+  <div class="band" style="grid-template-columns:44mm 1fr;align-items:center;gap:6mm"><svg class="tap" data-act="fig" data-anim="vir" viewBox="0 0 140 120" width="44mm">
   <path d="M70 6 L134 114 H6 Z" fill="var(--tt)" stroke="var(--t)" stroke-width="2.4" stroke-linejoin="round"/>
   <line x1="36" y1="62" x2="104" y2="62" stroke="var(--t)" stroke-width="2"/><line x1="70" y1="62" x2="70" y2="114" stroke="var(--t)" stroke-width="2"/>
   <text x="61" y="50" font-size="26">V</text><text x="40" y="100" font-size="24">I</text><text x="86" y="100" font-size="24">R</text>
@@ -552,7 +758,7 @@ html.ink .draw{border-color:var(--t)}
  <div><b>Measure it</b> (dependent variable): <span class="fill" style="min-width:52mm"></span></div>
  <div><b>Keep it the same</b> (controlled), give two:</div>
  <div><span class="fill" style="min-width:39mm"></span> &nbsp; <span class="fill" style="min-width:39mm"></span></div></div></div></div>
-</div><svg data-anim="bars" viewBox="0 0 200 110" width="62mm">
+</div><svg class="tap" data-act="fig" data-anim="bars" viewBox="0 0 200 110" width="62mm">
   <g stroke="var(--rule)" stroke-width="1"><line x1="34" y1="20" x2="190" y2="20"/><line x1="34" y1="45" x2="190" y2="45"/><line x1="34" y1="70" x2="190" y2="70"/></g>
   <line x1="34" y1="95" x2="190" y2="95" class="fg-stroke" stroke-width="1.6"/><line x1="34" y1="10" x2="34" y2="95" class="fg-stroke" stroke-width="1.6"/>
   <g fill="var(--tt)" stroke="var(--t)" stroke-width="1.8"><rect x="54" y="80" width="28" height="15"/><rect x="98" y="50" width="28" height="45"/><rect x="142" y="20" width="28" height="75"/></g>
@@ -586,7 +792,7 @@ html.ink .draw{border-color:var(--t)}
   <div class="strip"><span class="chip"><svg class="ico"><use href="#i-rock"/></svg>Rocks</span><span>Part 2 · Detective + rock cycle</span></div>
   <div class="title"><div class="kicker">Rocks</div><h2>Rock detective</h2></div>
   <div class="task"><div class="num">A</div><div class="body"><h3 style="display:flex;gap:2mm;align-items:center">Rock detective: who am I?</h3><div class="cue say"><svg class="ico"><use href="#i-say"/></svg>Read each clue out loud. Guess before you write.</div><div class="cards"><div class="card"><div class="clue">"I have layers, and a shell fossil is stuck inside me."</div><div class="row">Type <span class="fill"></span></div><div class="row">Name <span class="fill"></span></div></div><div class="card"><div class="clue">"I am full of holes and I can float on water."</div><div class="row">Type <span class="fill"></span></div><div class="row">Name <span class="fill"></span></div></div><div class="card"><div class="clue">"I am black and shiny like glass. I cooled very fast."</div><div class="row">Type <span class="fill"></span></div><div class="row">Name <span class="fill"></span></div></div><div class="card"><div class="clue">"I was limestone. Heat and pressure changed me. Statues are made of me."</div><div class="row">Type <span class="fill"></span></div><div class="row">Name <span class="fill"></span></div></div><div class="card"><div class="clue">"I am made of sand grains stuck together."</div><div class="row">Type <span class="fill"></span></div><div class="row">Name <span class="fill"></span></div></div><div class="card"><div class="clue">"I have big crystals you can see. I cooled slowly deep underground."</div><div class="row">Type <span class="fill"></span></div><div class="row">Name <span class="fill"></span></div></div></div></div></div>
-<div class="task"><div class="num">B</div><div class="body"><h3 style="display:flex;gap:2mm;align-items:center">The rock cycle</h3><div style="display:grid;gap:2mm;justify-items:center"><svg data-anim="rockcycle" viewBox="0 0 300 190" width="138mm"><defs><marker id="ra" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 10 5 0 10z" fill="var(--t)"/></marker></defs><path d="M150 34 L232 66" fill="none" stroke="var(--t)" stroke-width="2" marker-end="url(#ra)"/><path d="M232 92 L210 150" fill="none" stroke="var(--t)" stroke-width="2" marker-end="url(#ra)"/><path d="M158 163 L116 163" fill="none" stroke="var(--t)" stroke-width="2" marker-end="url(#ra)"/><path d="M50 150 L54 92" fill="none" stroke="var(--t)" stroke-width="2" marker-end="url(#ra)"/><path d="M80 66 L140 34" fill="none" stroke="var(--t)" stroke-width="2" marker-end="url(#ra)"/><rect x="110" y="10" width="80" height="22" rx="11" fill="var(--tt)" stroke="var(--t)" stroke-width="1.8"/><text x="150.0" y="25" font-size="10" text-anchor="middle">Magma</text><rect x="200" y="68" width="90" height="22" rx="11" fill="var(--tt)" stroke="var(--t)" stroke-width="1.8"/><text x="245.0" y="83" font-size="10" text-anchor="middle">Igneous rock</text><rect x="160" y="152" width="80" height="22" rx="11" fill="var(--tt)" stroke="var(--t)" stroke-width="1.8"/><text x="200.0" y="167" font-size="10" text-anchor="middle">Sediments</text><rect x="2" y="152" width="110" height="22" rx="11" fill="var(--tt)" stroke="var(--t)" stroke-width="1.8"/><text x="57.0" y="167" font-size="10" text-anchor="middle">Sedimentary rock</text><rect x="0" y="68" width="112" height="22" rx="11" fill="var(--tt)" stroke="var(--t)" stroke-width="1.8"/><text x="56.0" y="83" font-size="10" text-anchor="middle">Metamorphic rock</text><rect x="200" y="34" width="64" height="16" rx="3" fill="var(--paper)" stroke="var(--rule)"/><text x="204" y="46" font-size="9" fill="var(--t)">1</text><text x="213" y="46" font-size="7.6" class="ans" fill="var(--key)"></text><rect x="226" y="118" width="64" height="16" rx="3" fill="var(--paper)" stroke="var(--rule)"/><text x="230" y="130" font-size="9" fill="var(--t)">2</text><text x="239" y="130" font-size="7.6" class="ans" fill="var(--key)"></text><rect x="104" y="136" width="64" height="16" rx="3" fill="var(--paper)" stroke="var(--rule)"/><text x="108" y="148" font-size="9" fill="var(--t)">3</text><text x="117" y="148" font-size="7.6" class="ans" fill="var(--key)"></text><rect x="0" y="118" width="64" height="16" rx="3" fill="var(--paper)" stroke="var(--rule)"/><text x="4" y="130" font-size="9" fill="var(--t)">4</text><text x="13" y="130" font-size="7.6" class="ans" fill="var(--key)"></text><rect x="48" y="30" width="64" height="16" rx="3" fill="var(--paper)" stroke="var(--rule)"/><text x="52" y="42" font-size="9" fill="var(--t)">5</text><text x="61" y="42" font-size="7.6" class="ans" fill="var(--key)"></text></svg></div><div class="mini muted">Fill boxes 1 to 5 with:</div><div class="bank"><span>melting</span><span>cooling</span><span>weathering + erosion</span><span>pressing + cementing</span><span>heat + pressure</span></div></div></div>
+<div class="task"><div class="num">B</div><div class="body"><h3 style="display:flex;gap:2mm;align-items:center">The rock cycle</h3><div style="display:grid;gap:2mm;justify-items:center"><svg class="tap" data-act="fig" data-anim="rockcycle" viewBox="0 0 300 190" width="138mm"><defs><marker id="ra" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 10 5 0 10z" fill="var(--t)"/></marker></defs><path d="M150 34 L232 66" fill="none" stroke="var(--t)" stroke-width="2" marker-end="url(#ra)"/><path d="M232 92 L210 150" fill="none" stroke="var(--t)" stroke-width="2" marker-end="url(#ra)"/><path d="M158 163 L116 163" fill="none" stroke="var(--t)" stroke-width="2" marker-end="url(#ra)"/><path d="M50 150 L54 92" fill="none" stroke="var(--t)" stroke-width="2" marker-end="url(#ra)"/><path d="M80 66 L140 34" fill="none" stroke="var(--t)" stroke-width="2" marker-end="url(#ra)"/><rect x="110" y="10" width="80" height="22" rx="11" fill="var(--tt)" stroke="var(--t)" stroke-width="1.8"/><text x="150.0" y="25" font-size="10" text-anchor="middle">Magma</text><rect x="200" y="68" width="90" height="22" rx="11" fill="var(--tt)" stroke="var(--t)" stroke-width="1.8"/><text x="245.0" y="83" font-size="10" text-anchor="middle">Igneous rock</text><rect x="160" y="152" width="80" height="22" rx="11" fill="var(--tt)" stroke="var(--t)" stroke-width="1.8"/><text x="200.0" y="167" font-size="10" text-anchor="middle">Sediments</text><rect x="2" y="152" width="110" height="22" rx="11" fill="var(--tt)" stroke="var(--t)" stroke-width="1.8"/><text x="57.0" y="167" font-size="10" text-anchor="middle">Sedimentary rock</text><rect x="0" y="68" width="112" height="22" rx="11" fill="var(--tt)" stroke="var(--t)" stroke-width="1.8"/><text x="56.0" y="83" font-size="10" text-anchor="middle">Metamorphic rock</text><rect x="200" y="34" width="64" height="16" rx="3" fill="var(--paper)" stroke="var(--rule)"/><text x="204" y="46" font-size="9" fill="var(--t)">1</text><text x="213" y="46" font-size="7.6" class="ans" fill="var(--key)"></text><rect x="226" y="118" width="64" height="16" rx="3" fill="var(--paper)" stroke="var(--rule)"/><text x="230" y="130" font-size="9" fill="var(--t)">2</text><text x="239" y="130" font-size="7.6" class="ans" fill="var(--key)"></text><rect x="104" y="136" width="64" height="16" rx="3" fill="var(--paper)" stroke="var(--rule)"/><text x="108" y="148" font-size="9" fill="var(--t)">3</text><text x="117" y="148" font-size="7.6" class="ans" fill="var(--key)"></text><rect x="0" y="118" width="64" height="16" rx="3" fill="var(--paper)" stroke="var(--rule)"/><text x="4" y="130" font-size="9" fill="var(--t)">4</text><text x="13" y="130" font-size="7.6" class="ans" fill="var(--key)"></text><rect x="48" y="30" width="64" height="16" rx="3" fill="var(--paper)" stroke="var(--rule)"/><text x="52" y="42" font-size="9" fill="var(--t)">5</text><text x="61" y="42" font-size="7.6" class="ans" fill="var(--key)"></text></svg></div><div class="mini muted">Fill boxes 1 to 5 with:</div><div class="bank"><span>melting</span><span>cooling</span><span>weathering + erosion</span><span>pressing + cementing</span><span>heat + pressure</span></div></div></div>
   <div class="foot"><span>Wrap-up Day · Rocks</span><span>17</span></div>
 </section><canvas class="ink"></canvas></div>
 <div class="sheet"><section class="page t-rock">
@@ -627,7 +833,7 @@ html.ink .draw{border-color:var(--t)}
 <div class="sheet"><section class="page t-eq">
   <div class="strip"><span class="chip"><svg class="ico"><use href="#i-scale"/></svg>Equations</span><span>Part 1 · Keep the balance</span></div>
   <div class="title"><div class="kicker">Equations · new</div><h2>Equations: keep the balance</h2></div>
-  <div class="band" style="grid-template-columns:70mm 1fr;align-items:center;gap:6mm"><svg data-anim="bal" viewBox="0 0 220 110" width="70mm">
+  <div class="band" style="grid-template-columns:70mm 1fr;align-items:center;gap:6mm"><svg class="tap" data-act="fig" data-anim="bal" viewBox="0 0 220 110" width="70mm">
   <path d="M110 24 V96 M80 100 H140" class="fg-stroke" stroke-width="3"/>
   <line x1="30" y1="30" x2="190" y2="30" stroke="var(--t)" stroke-width="3"/>
   <path d="M30 30 L14 62 H46 Z M190 30 L174 62 H206 Z" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
