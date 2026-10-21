@@ -323,20 +323,30 @@ function showItem(it, countText, tagText){
   });
   setTimeout(function(){ try{$("in1").focus({preventScroll:true});}catch(e){} },50);
 
+  // every attempt goes into the record; ones the page could not mark are kept apart from the scored tries
+  function logOther(step, raw, why){
+    step.other=step.other||[];
+    var lastO=step.other[step.other.length-1];
+    if(lastO && lastO.wrote===raw) return;
+    step.other.push({wrote:raw, why:why, ms:Date.now()-t.start});
+  }
   function check(n, forced){
     if(n!==stepNo || busy) return;
     var el=$("in"+n), m=$("m"+n), v=norm(el.value);
     if(!v) return;
+    var step = n===1 ? rec.rewrite : rec.answer;
     if(!readable(v)){
-      if(/[0-9]$/.test(v) || forced){ m.className="msg bad"; m.textContent="The box cannot read this. Tap Clear and write it again."; }
+      if(/[0-9]$/.test(v) || forced){
+        m.className="msg bad"; m.textContent="The box cannot read this. Tap Clear and write it again.";
+        logOther(step, el.value, "unreadable");
+      }
       return;
     }
-    var step = n===1 ? rec.rewrite : rec.answer;
     var vv = v.replace(/^\+/,"");
     if(n===1 && nums(vv).length<need && !forced) return;         // still writing
-    if(n===2 && !/^[+-]?\d+$/.test(vv)){ m.className="msg bad"; m.textContent="Write one number only."; return; }
+    if(n===2 && !/^[+-]?\d+$/.test(vv)){ m.className="msg bad"; m.textContent="Write one number only."; logOther(step, vv, "not one number"); return; }
     var last=step.tries[step.tries.length-1];
-    if(last && !last.ok && last.wrote===vv) return;                  // same wrong line again, already counted
+    if(last && !last.ok && last.wrote===vv) return;                  // same wrong line still in the box, already counted
     var ms=Date.now()-t.start;
     busy=true;
     var key = n===1 ? "r"+vv : "a"+parseInt(vv,10);
@@ -369,7 +379,7 @@ function showItem(it, countText, tagText){
         setTimeout(function(){ try{e2.focus({preventScroll:true});}catch(e){} },30);
       }else{
         var tm=stopTimer(); rec.activeMs=tm.activeMs; rec.rawMs=tm.rawMs; rec.firstWriteMs=tm.firstWriteMs;
-        var ink=getInk(); if(ink.s.length||ink.c) { rec.ink=ink; sendInk(rec).catch(function(){}); }
+        rec.ink=getInk(); sendInk(rec).catch(function(){});
         stepNo=3;
         setTimeout(function(){ next(rec); }, 900);
       }
@@ -395,6 +405,7 @@ function setupPad(cv, clr, onStroke){
     if(e.pointerType==="pen") penSeen=true;
     if(e.pointerType==="touch" && penSeen) return;
     e.preventDefault(); try{cv.setPointerCapture(e.pointerId);}catch(x){}
+    if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
     drawing={id:e.pointerId, p:pt(e)};
     strokes.push([Math.round(drawing.p.x),Math.round(drawing.p.y)]);
     ctx.beginPath(); ctx.arc(drawing.p.x,drawing.p.y,1.2,0,7); ctx.fillStyle="#2b3a55"; ctx.fill();
@@ -406,7 +417,9 @@ function setupPad(cv, clr, onStroke){
     var line=strokes[strokes.length-1];
     evs.forEach(function(ev){ var q=pt(ev); ctx.beginPath(); ctx.moveTo(drawing.p.x,drawing.p.y); ctx.lineTo(q.x,q.y); ctx.stroke(); drawing.p=q; line.push(Math.round(q.x),Math.round(q.y)); });
   });
-  ["pointerup","pointercancel","pointerleave"].forEach(function(n){ cv.addEventListener(n,function(e){ if(drawing && e.pointerId===drawing.id) drawing=null; }); });
+  // with text boxes on the page iPadOS Scribble grabs Pencil strokes unless the touch is cancelled here
+  ["touchstart","touchmove"].forEach(function(n){ cv.addEventListener(n,function(e){ e.preventDefault(); },{passive:false}); });
+  ["pointerup","pointercancel"].forEach(function(n){ cv.addEventListener(n,function(e){ if(drawing && e.pointerId===drawing.id) drawing=null; }); });
   clr.onclick=function(){ if(strokes.length) clears++; strokes=[]; ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,cv.width,cv.height); ctx.restore(); };
   return function(){ var r=cv.getBoundingClientRect(); return {w:Math.round(r.width), h:Math.round(r.height), s:strokes, c:clears}; };
 }
@@ -458,9 +471,19 @@ function next(rec){
 // ---------- results (plain lines, each under 100 characters, one per sheet cell) ----------
 function sec(ms){return ms==null?"-":Math.round(ms/1000)+" s";}
 function firstOk(step){return step.tries.length>0 && step.tries[0].ok;}
-function wrongs(step){
-  var w=step.tries.filter(function(x){return !x.ok;});
-  return w.length ? "x"+w.length+" "+w.map(function(x){return pretty(x.wrote)+"["+x.tag+"]";}).join(" ") : "OK";
+// "−11 − 18 ✗ข 6s → −11 + 18 ✓ 11s", time from the start of the question; split into lines under 100 characters
+function attempts(label, step){
+  var all=step.tries.map(function(x){ return {ms:x.ms, t:pretty(x.wrote)+(x.ok?" ✓":" ✗"+x.tag)}; })
+    .concat((step.other||[]).map(function(x){ return {ms:x.ms, t:"["+String(x.wrote).slice(0,12)+"] "+x.why}; }))
+    .sort(function(a,b){return a.ms-b.ms;})
+    .map(function(x){ return x.t+" "+Math.round(x.ms/1000)+"s"; });
+  var out=[], cur="   "+label+": ";
+  all.forEach(function(a,i){
+    var piece=(i?" → ":"")+a;
+    if((cur+piece).length>98){ out.push(cur); cur="      "+a; } else cur+=piece;
+  });
+  out.push(cur);
+  return out;
 }
 function resultLines(){
   var it=state.items, n=it.length;
@@ -479,27 +502,29 @@ function resultLines(){
   var pg=state.pages||{}, tot=0; it.forEach(function(r){tot+=r.rawMs||0;});
   L.push("Page time · How to write "+sec(pg.how)+" · Example "+sec(pg.example)+" · Practice "+sec(state.practice&&state.practice.rawMs)+" · 10 questions "+sec(tot));
   L.push("Goal: ≥9/10 first try · Line 1 ≥9/10 · Q1-8 ≤ 40 s");
+  L.push("ink "+state.sid);
   it.forEach(function(r,i){
     var open = " (on page "+sec(r.rawMs)+")";
     var help = (r.strong?" · strong help":(r.hint?" · help":""))+(r.strokes?" · working "+r.strokes:"");
     L.push(("Q"+(i+1)+" "+r.problem+" · "+sec(r.activeMs)+open+" · start "+sec(r.firstWriteMs)+help).slice(0,100));
-    L.push(("   line 1 "+wrongs(r.rewrite)+" · answer "+wrongs(r.answer)).slice(0,100));
+    L.push.apply(L, attempts("line 1", r.rewrite).concat(attempts("answer", r.answer)));
   });
   if(state.practice){
     var p=state.practice;
-    L.push(("Practice "+p.problem+" · "+sec(p.activeMs)+" · line 1 "+wrongs(p.rewrite)+" · answer "+wrongs(p.answer)).slice(0,100));
+    L.push("Practice "+p.problem+" · "+sec(p.activeMs));
+    L.push.apply(L, attempts("line 1", p.rewrite).concat(attempts("answer", p.answer)));
   }
   L.push("Tags: ท-sign sign slip · ท-number number slip · อ copied a number wrong");
   L.push("ข − (−) not changed into +  (suggested, please confirm)");
-  L.push("ink "+state.sid);
-  return L;
+  return L.slice(0,59);
 }
 
 // working-space ink goes to the class sheet (tools/check-sheet.gs cput), one row per question; the teacher page reads it with cget
 var CLASS_SHEET_URL = "https://script.google.com/macros/s/AKfycbzIaVMqROaTFaDN36SwCif7pWF_KEE7GroEUj2V5c9BM2gg4Y2v3wXbUOf-P4T0aBygnw/exec"; // = CLASS_SHEET_URL in src/data/catalog.ts
 function sendInk(rec){
   if(!rec.ink || rec.inkSent) return Promise.resolve();
-  var data=JSON.stringify({q:rec.problem, w:rec.ink.w, h:rec.ink.h, s:rec.ink.s, c:rec.ink.c});
+  var data=JSON.stringify({q:rec.problem, w:rec.ink.w, h:rec.ink.h, s:rec.ink.s, c:rec.ink.c,
+    t:{line1:rec.rewrite, answer:rec.answer, activeMs:rec.activeMs, pageMs:rec.rawMs, startMs:rec.firstWriteMs}});
   return fetch(CLASS_SHEET_URL,{method:"POST",body:JSON.stringify({action:"cput",cls:QUIZ,name:state.name||"No name",id:state.sid+"-"+rec.id,data:data})})
     .then(function(r){return r.json();})
     .then(function(j){ if(!j.ok) throw new Error(); rec.inkSent=true; save(); });

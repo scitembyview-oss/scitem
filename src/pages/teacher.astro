@@ -257,7 +257,7 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
       const j = await (await fetch(CLASS_SHEET_URL, { method: 'POST', body: JSON.stringify({ action: 'cget', cls: SIGNS_QUIZ, pw }) })).json();
       if (!j.ok) throw new Error();
       const order = (id: string) => { const k = id.slice(run.length + 1); return k === 'p' ? 0 : Number(k); };
-      const rows = (j.rows as { id: string; data: string }[]).filter((x) => x.id.startsWith(run + '-')).sort((a, b) => order(a.id) - order(b.id));
+      const rows = (j.rows as { id: string; data: string }[]).filter((x) => x.id.startsWith(run + '-') && /"s":\[\[|"c":[1-9]/.test(x.data)).sort((a, b) => order(a.id) - order(b.id));
       if (!rows.length) return void (box.innerHTML = '<p class="hint">น้องไม่ได้ใช้ที่ทด</p>');
       box.innerHTML = rows.map((x) => {
         const d = JSON.parse(x.data) as { q: string; w: number; h: number; s: number[][]; c: number };
