@@ -1,0 +1,103 @@
+<!doctype html>
+<!-- แม่แบบรูปโปรโมต ใช้กับ tools/make-image.mjs เท่านั้น (สี+ฟอนต์ดึงจาก src/layouts/Base.astro ตอนสร้าง) ดู DESIGN.md "CI สำหรับรูป" -->
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<style>
+/*BASE*/
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  width: var(--w); height: var(--h); overflow: hidden;
+  font-family: 'Anuphan', sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased;
+  background-color: var(--tint);
+  background-image: linear-gradient(var(--grid) 2px, transparent 2px), linear-gradient(90deg, var(--grid) 2px, transparent 2px);
+  background-size: var(--cell) var(--cell);
+  background-position: calc(var(--pad) - 1px) calc(var(--pad) - 1px);
+}
+.card { position: relative; width: 100%; height: 100%; padding: var(--pad); display: flex; flex-direction: column; }
+.logo { height: var(--logo); width: auto; align-self: flex-start; margin-bottom: calc(var(--pad) * 0.4); }
+.body { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: calc(var(--pad) * 0.5); }
+.text { min-height: 0; }
+h1 { margin: 0; font-size: var(--t); line-height: 1.32; font-weight: 700; letter-spacing: -0.02em; text-wrap: balance; }
+.mark { background: linear-gradient(transparent 58%, var(--marker) 58%, var(--marker) 92%, transparent 92%); padding: 0 0.08em; }
+p { margin: 0.55em 0 0; font-size: calc(var(--t) * 0.42); line-height: 1.55; color: var(--muted); font-weight: 500; text-wrap: pretty; }
+.pic { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.pic img {
+  display: block; max-width: 100%; max-height: 100%; object-fit: contain;
+  background: var(--paper); border-radius: 14px; border: 1px solid var(--rule);
+  box-shadow: 0 24px 48px -24px rgb(20 33 61 / 0.45); rotate: -1.5deg;
+}
+.site {
+  position: absolute; right: var(--pad); bottom: calc(var(--pad) * 0.62);
+  font-size: var(--site); font-weight: 700; letter-spacing: 0.01em; color: var(--ink);
+}
+.site b { color: var(--blue); }
+/* fb: ตัวหนังสือซ้าย รูปขวา */
+.wide .body { flex-direction: row; align-items: center; }
+.wide .text { flex: 1.1; }
+.wide .pic { flex: 1; height: 100%; }
+.nopic .body { padding-bottom: calc(var(--pad) * 0.6); }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <img class="logo" src="/img/logo-bar.png" alt="">
+  <div class="body">
+    <div class="text"><h1 id="title"></h1><p id="sub"></p></div>
+    <div class="pic" id="pic" hidden><img id="img" alt=""></div>
+  </div>
+  <div class="site"><b>scitem</b>.net</div>
+</div>
+<script>
+// make-image.mjs เรียก render(opts) แล้วรอ promise ก่อนถ่ายภาพ
+window.render = async ({ w, h, title, sub, img }) => {
+  const s = Math.min(w, h) / 1080;               // ทุกขนาดคิดจากสี่เหลี่ยม 1080
+  const wide = w / h > 1.4;
+  const root = document.documentElement.style;
+  root.setProperty('--w', w + 'px');
+  root.setProperty('--h', h + 'px');
+  root.setProperty('--pad', Math.round((wide ? 64 : 84) * s) + 'px');
+  root.setProperty('--cell', Math.round(36 * s) + 'px');
+  root.setProperty('--logo', Math.round((wide ? 78 : 64) * s) + 'px');
+  root.setProperty('--site', Math.round((wide ? 46 : 34) * s) + 'px');
+  const card = document.getElementById('card');
+  card.classList.toggle('wide', wide);
+  card.classList.toggle('nopic', !img);
+
+  // *คำ* = ปากกาเน้น
+  const esc = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  document.getElementById('title').innerHTML = esc(title).replace(/\*([^*]+)\*/g, '<span class="mark">$1</span>').replace(/\n/g, '<br>');
+  const subEl = document.getElementById('sub');
+  subEl.innerHTML = esc(sub || '').replace(/\n/g, '<br>');
+  subEl.hidden = !sub;
+
+  if (img) {
+    const el = document.getElementById('img');
+    el.src = img;
+    document.getElementById('pic').hidden = false;
+    await el.decode();
+  }
+  await document.fonts.load('700 40px Anuphan', 'กขabc');
+  await document.fonts.load('500 40px Anuphan', 'กขabc');
+  await document.fonts.ready;
+  if (!document.fonts.check('700 40px Anuphan', 'ก') || !document.fonts.check('700 40px Anuphan', 'a')) throw new Error('font Anuphan not loaded');
+
+  // ตัวหัวข้อใหญ่สุดที่ไม่ล้น: เริ่มใหญ่แล้วลดลงทีละนิด
+  const body = card.querySelector('.body'), text = card.querySelector('.text');
+  let t = Math.round((img ? (wide ? 72 : 84) : (wide ? 92 : 112)) * s);
+  const min = Math.round(40 * s);
+  const fits = () => wide || !img
+    ? text.scrollHeight <= body.clientHeight && text.scrollWidth <= text.clientWidth
+    : text.scrollHeight <= body.clientHeight * 0.48;
+  for (;;) {
+    root.setProperty('--t', t + 'px');
+    if (fits() || t <= min) break;
+    t -= 2;
+  }
+  if (!fits()) throw new Error('ข้อความยาวเกินไป ตัดให้สั้นลง');
+};
+</script>
+</body>
+</html>
