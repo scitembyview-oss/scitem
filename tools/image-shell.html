@@ -24,16 +24,42 @@ h1 { margin: 0; font-size: var(--t); line-height: 1.32; font-weight: 700; letter
 .mark { background: linear-gradient(transparent 58%, var(--marker) 58%, var(--marker) 92%, transparent 92%); padding: 0 0.08em; }
 p { margin: 0.55em 0 0; font-size: calc(var(--t) * 0.42); line-height: 1.55; color: var(--muted); font-weight: 500; text-wrap: pretty; }
 .pic { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
-.pic img {
-  display: block; max-width: 100%; max-height: 100%; object-fit: contain;
-  background: var(--paper); border-radius: 14px; border: 1px solid var(--rule);
-  box-shadow: 0 24px 48px -24px rgb(20 33 61 / 0.45); rotate: -1.5deg;
+/* กรอบรูป: กระดาษขาวเอียงนิดๆ ตัดเฉพาะส่วนที่ --zoom บอก */
+.frame {
+  position: relative; flex: none; padding: calc(var(--pad) * 0.12); background: var(--paper);
+  border-radius: 14px; border: 1px solid var(--rule); rotate: -1.5deg;
+  box-shadow: 0 24px 48px -24px rgb(20 33 61 / 0.45);
 }
+.crop { position: relative; overflow: hidden; width: 100%; height: 100%; border-radius: 8px; }
+.crop img { position: absolute; display: block; max-width: none; }
+.badge {
+  position: absolute; z-index: 2; width: var(--badge); height: var(--badge); border-radius: 50%;
+  display: grid; place-items: center; text-align: center; rotate: 8deg;
+  background: var(--marker); color: var(--ink); font-weight: 700; line-height: 1.15;
+  font-size: calc(var(--badge) * 0.2); box-shadow: 0 10px 24px -12px rgb(20 33 61 / 0.6);
+}
+.badge.short { font-size: calc(var(--badge) * 0.3); }
+.frame .badge { top: calc(var(--badge) * -0.42); right: calc(var(--badge) * -0.32); }
+.card > .badge { top: calc(var(--pad) * 0.6); right: var(--pad); }
 .site {
   position: absolute; right: var(--pad); bottom: calc(var(--pad) * 0.62);
   font-size: var(--site); font-weight: 700; letter-spacing: 0.01em; color: var(--ink);
 }
 .site b { color: var(--blue); }
+/* แถบปุ่มด้านล่าง: สีเข้มให้ตัดกับฟีด */
+.cta {
+  position: absolute; left: 0; right: 0; bottom: 0; height: var(--bar);
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  padding: 0 var(--pad); background: var(--ink); color: #fff;
+}
+.cta .go {
+  display: inline-flex; align-items: center; gap: 0.5em; padding: 0.42em 1.1em; border-radius: 999px;
+  background: var(--line); font-weight: 700; font-size: calc(var(--bar) * 0.3); white-space: nowrap;
+}
+.cta .go::after { content: '→'; }
+.cta .url { font-weight: 700; font-size: calc(var(--bar) * 0.26); white-space: nowrap; }
+.has-cta { padding-bottom: calc(var(--bar) + var(--pad) * 0.6); }
+.has-cta .site { display: none; }
 /* fb: ตัวหนังสือซ้าย รูปขวา */
 .wide .body { flex-direction: row; align-items: center; }
 .wide .text { flex: 1.1; }
@@ -46,35 +72,50 @@ p { margin: 0.55em 0 0; font-size: calc(var(--t) * 0.42); line-height: 1.55; col
   <img class="logo" src="/img/logo-bar.png" alt="">
   <div class="body">
     <div class="text"><h1 id="title"></h1><p id="sub"></p></div>
-    <div class="pic" id="pic" hidden><img id="img" alt=""></div>
+    <div class="pic" id="pic" hidden><div class="frame" id="frame"><div class="crop"><img id="img" alt=""></div></div></div>
   </div>
+  <div class="badge" id="badge" hidden></div>
   <div class="site"><b>scitem</b>.net</div>
+  <div class="cta" id="cta" hidden><span class="go" id="go"></span><span class="url">scitem.net</span></div>
 </div>
 <script>
 // make-image.mjs เรียก render(opts) แล้วรอ promise ก่อนถ่ายภาพ
-window.render = async ({ w, h, title, sub, img }) => {
+window.render = async ({ w, h, title, sub, img, zoom, badge, cta }) => {
   const s = Math.min(w, h) / 1080;               // ทุกขนาดคิดจากสี่เหลี่ยม 1080
   const wide = w / h > 1.4;
   const root = document.documentElement.style;
+  const px = (n) => Math.round(n * s) + 'px';
   root.setProperty('--w', w + 'px');
   root.setProperty('--h', h + 'px');
-  root.setProperty('--pad', Math.round((wide ? 64 : 84) * s) + 'px');
-  root.setProperty('--cell', Math.round(36 * s) + 'px');
-  root.setProperty('--logo', Math.round((wide ? 78 : 64) * s) + 'px');
-  root.setProperty('--site', Math.round((wide ? 46 : 34) * s) + 'px');
+  root.setProperty('--pad', px(wide ? 64 : 84));
+  root.setProperty('--cell', px(36));
+  root.setProperty('--logo', px(wide ? 78 : 64));
+  root.setProperty('--site', px(wide ? 46 : 34));
+  root.setProperty('--bar', px(wide ? 112 : 132));
+  root.setProperty('--badge', px(wide ? 170 : 190));
   const card = document.getElementById('card');
   card.classList.toggle('wide', wide);
   card.classList.toggle('nopic', !img);
+  card.classList.toggle('has-cta', !!cta);
 
   // *คำ* = ปากกาเน้น
   const esc = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-  document.getElementById('title').innerHTML = esc(title).replace(/\*([^*]+)\*/g, '<span class="mark">$1</span>').replace(/\n/g, '<br>');
+  const lines = (t) => esc(t || '').replace(/\n/g, '<br>');
+  document.getElementById('title').innerHTML = lines(title).replace(/\*([^*]+)\*/g, '<span class="mark">$1</span>');
   const subEl = document.getElementById('sub');
-  subEl.innerHTML = esc(sub || '').replace(/\n/g, '<br>');
+  subEl.innerHTML = lines(sub);
   subEl.hidden = !sub;
+  const ctaEl = document.getElementById('cta');
+  document.getElementById('go').textContent = cta || '';
+  ctaEl.hidden = !cta;
+  const badgeEl = document.getElementById('badge');
+  badgeEl.innerHTML = lines(badge);
+  badgeEl.hidden = !badge;
+  badgeEl.classList.toggle('short', (badge || '').length <= 5);
+  if (badge && img) document.getElementById('frame').append(badgeEl);
 
+  const el = document.getElementById('img');
   if (img) {
-    const el = document.getElementById('img');
     el.src = img;
     document.getElementById('pic').hidden = false;
     await el.decode();
@@ -86,17 +127,33 @@ window.render = async ({ w, h, title, sub, img }) => {
 
   // ตัวหัวข้อใหญ่สุดที่ไม่ล้น: เริ่มใหญ่แล้วลดลงทีละนิด
   const body = card.querySelector('.body'), text = card.querySelector('.text');
-  let t = Math.round((img ? (wide ? 72 : 84) : (wide ? 92 : 112)) * s);
+  let t = Math.round((img ? (wide ? 96 : 84) : (wide ? 104 : 112)) * s);
   const min = Math.round(40 * s);
   const fits = () => wide || !img
     ? text.scrollHeight <= body.clientHeight && text.scrollWidth <= text.clientWidth
-    : text.scrollHeight <= body.clientHeight * 0.48;
+    : text.scrollHeight <= body.clientHeight * 0.5;
   for (;;) {
     root.setProperty('--t', t + 'px');
     if (fits() || t <= min) break;
     t -= 2;
   }
   if (!fits()) throw new Error('ข้อความยาวเกินไป ตัดให้สั้นลง');
+  if (!img) return;
+
+  // --zoom x,y,w,h (สัดส่วน 0–1 ของรูป) = ตัดเฉพาะส่วนนั้นมาขยาย ให้อ่านออกบนมือถือ
+  const [zx, zy, zw, zh] = zoom ? zoom.split(',').map(Number) : [0, 0, 1, 1];
+  if (![zx, zy, zw, zh].every((n) => n >= 0 && n <= 1) || zw <= 0 || zh <= 0) throw new Error('--zoom ต้องเป็น x,y,w,h ค่า 0–1');
+  const frame = document.getElementById('frame');
+  const pic = document.getElementById('pic');
+  const padF = parseFloat(getComputedStyle(frame).paddingLeft) * 2 + 2;
+  const room = badge ? 0.84 : 0.94;              // เว้นที่ให้มุมเอียงและป้าย
+  const maxW = pic.clientWidth * room - padF, maxH = pic.clientHeight * room - padF;
+  const ratio = (zw * el.naturalWidth) / (zh * el.naturalHeight);
+  const cw = Math.min(maxW, maxH * ratio), ch = cw / ratio;
+  frame.style.width = cw + padF + 'px';
+  frame.style.height = ch + padF + 'px';
+  const iw = cw / zw, ih = ch / zh;
+  Object.assign(el.style, { width: iw + 'px', height: ih + 'px', left: -zx * iw + 'px', top: -zy * ih + 'px' });
 };
 </script>
 </body>

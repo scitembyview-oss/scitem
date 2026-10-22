@@ -13,7 +13,7 @@ push ขึ้น `main` แล้ว GitHub Actions (`.github/workflows/deploy.
 | ตัวอย่างชีทแบบกองกระดาษ + หน้าต่างดูทีละหน้า | `src/components/Pages.astro`, `Viewer.astro` |
 | รูปตัวอย่าง: หน้าชีท `public/img/sheets/`, ภาพสไลด์ `public/img/slides/`, รูปครู `public/img/วิวถือไมค์.jpeg` (ชื่ออื่นที่รับ: teacher.jpg/png) — รูปจากมือถือต้องลบ GPS และย่อก่อน commit | `pdftoppm -f 1 -l 3 -jpeg -scale-to 1000 <pdf> public/img/sheets/<ชื่อ>` (ห้ามรวมหน้าเฉลย) |
 | หน้าตา (สมุดวิทย์: กระดาษกราฟ, ปากกาเน้น, iPad สไลด์จริง) | `DESIGN.md` |
-| ทำรูปโปรโมต/ประกอบ (ig 1080², fb 1200×630, line 1040²) ตาม DESIGN.md "CI สำหรับรูป" | `node tools/make-image.mjs --size ig\|fb\|line --title "..." --sub "..." [--img public/img/xxx.jpg] <ชื่อ>` → `public/img/promo/<ชื่อ>.png` (แม่แบบ `tools/image-shell.html`, `*คำ*` = ปากกาเน้น) |
+| ทำรูปโปรโมต/ประกอบ (ig 1080², fb 1200×630, line 1040²) ตาม DESIGN.md "CI สำหรับรูป" | `node tools/make-image.mjs --size ig\|fb\|line --title "..." --sub "..." [--img public/img/xxx.jpg] [--zoom x,y,w,h] [--badge "ลด 10%"] [--cta "ทักไลน์ รับชีทฟรี"] <ชื่อ>` → `public/img/promo/<ชื่อ>.png` (แม่แบบ `tools/image-shell.html`, `*คำ*` = ปากกาเน้น) |
 | เมนู, footer, สี, ฟอนต์ | `src/layouts/Base.astro` |
 | ชีท PDF | `public/sheets/*.pdf` |
 | สไลด์เดโมการเคลื่อนที่แบบวงกลม (canvas, ปากกา) | `public/demo/index.html` (เขียนมือ ไฟล์เดียว) |
