@@ -11,7 +11,7 @@
    A worksheet as a live class. One page, three screens:
    student (default): the student sheet page by page, write with the pencil, "Send to teacher";
    #show: the teacher's screen to share on the call — same pages, no answers, the teacher writes, can bring up the student's sent work;
-   #teacher: hidden — what the student sent, the answer key under it, red pen for marking (not shown to the student), save as PDF. */
+   #teacher (retired, opens #show): was hidden — what the student sent, the answer key under it, red pen for marking (not shown to the student), save as PDF. */
 :root{
   --bg:#f8f3ea; --card:#fff; --fg:#1f2836; --muted:#5d6676; --line:#ddd4c6;
   --navy:#2b3a55; --peach:#db9e89; --sage:#729783; --mint:#e9f2eb; --good:#2f7a4f; --bad:#b03a2e; --red:#d62828; --blue:#1f5fa8;
@@ -130,7 +130,8 @@ const CFG={"id":"sci3","title":"Living Things and Weather","pages":22,"sheet":"h
 const SHEET=CFG.sheet;                     // Google Apps Script URL (tools/check-sheet.gs); null = this browser only (try-out in two tabs)
 const CLASS=CFG.id,N=CFG.pages;
 const $=id=>document.getElementById(id);
-const SCREEN=location.hash==="#teacher"?"teacher":location.hash==="#show"?"show":"student";
+// the hidden #teacher screen is retired (the teacher marks by hand); old #teacher links open #show
+const SCREEN=location.hash==="#show"||location.hash==="#teacher"?"show":"student";
 const TEACHER=SCREEN==="teacher",SHOW=SCREEN==="show",STAFF=TEACHER||SHOW;
 document.body.classList.add(SCREEN);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -281,7 +282,7 @@ function start(){
   if(STAFF){
     $("send").hidden=true;
     if(TEACHER){
-      $("tKey").hidden=false;$("tErase").hidden=true;$("penSw").style.background="var(--red)";
+      $("tKey").hidden=false;$("tPull").hidden=false;$("tErase").hidden=true;$("penSw").style.background="var(--red)";
       $("tUndo").textContent="ย้อน";$("tClear").textContent="ลบหมึกครู";$("saveBtn").textContent="เซฟ PDF งานน้อง";
       SEEN=load(K.seen,{});if(!SHEET)RED=load(K.red,{});
       $("stu").onchange=()=>{STU=$("stu").value;SENT=ALL[STU]||{};render();};
@@ -391,7 +392,7 @@ function drawKey(){
 function drawAll(){
   drawKey();
   paint(x.pull,cPull,SHOW&&pull?sentInk():[]);
-  paint(x.mine,cMine,TEACHER?sentInk():SHOW?SHOWINK[P(idx)]||[]:mine().ink);
+  paint(x.mine,cMine,TEACHER?(pull?sentInk():[]):SHOW?SHOWINK[P(idx)]||[]:mine().ink);
   drawRed();
 }
 function drawRed(){
