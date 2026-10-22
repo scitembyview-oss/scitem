@@ -138,7 +138,7 @@ const P=i=>"p"+String(i+1).padStart(2,"0");          // page id in the Sheet: p0
 const K={me:"scitem-sc:"+CLASS+":me",work:"scitem-sc:"+CLASS+":work",out:"scitem-sc:"+CLASS+":out",sent:"scitem-sc:"+CLASS+":sent",
   red:"scitem-sc:"+CLASS+":red",show:"scitem-sc:"+CLASS+":show",seen:"scitem-sc:"+CLASS+":seen"};
 const load=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}};
-const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}};
 
 /* ---------- gate: the student types her name; both teacher screens need the teacher code (it opens the answer key) ---------- */
 const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
@@ -197,23 +197,30 @@ function fitRec(rec){
     ink=JSON.stringify(next).length<JSON.stringify(ink).length?next:[];s=JSON.stringify(Object.assign({},rec,{ink}));}
   return s;
 }
-let flushing=false;
+// pages waiting for the Sheet: kept in memory and copied to localStorage when it has room (a full iPad
+// storage made the copy fail silently, so a page could look sent and never leave)
+let flushing=false,OUTQ=null,lastErr="";
+const outq=()=>OUTQ||(OUTQ=load(K.out,{}));
 async function flush(){
   if(!SHEET||STAFF||flushing)return;
-  const out=load(K.out,{}),ids=Object.keys(out);if(!ids.length){setNet("");return;}
+  const out=outq(),ids=Object.keys(out);if(!ids.length){setNet("");return;}
   flushing=true;let failed=0;
   for(const id of ids){
-    try{await post({action:"cput",cls:CLASS,name:ME.name||"",id,data:fitRec(out[id])});
-      const now=load(K.out,{});if(now[id]&&now[id].at===out[id].at){delete now[id];save(K.out,now);}}
-    catch(e){failed++;}
+    const rec=out[id];
+    try{await post({action:"cput",cls:CLASS,name:ME.name||"",id,data:fitRec(rec)});
+      if(out[id]===rec){delete out[id];save(K.out,out);}
+      if(W[id]&&W[id].sentAt===rec.at){W[id].okAt=rec.at;save(K.work,W);}}
+    catch(e){failed++;lastErr=e.message;}
   }
-  setNet(failed?"Saved. Will send when online.":"");if(!failed)flash("Sent ✓");
   flushing=false;
+  setNet(failed?"Not sent yet ("+lastErr+"). Trying again…":"");if(!failed)flash("Sent ✓");
+  render();
 }
 function sendPage(){
   const w=mine(),rec={ink:packInk(w.ink),at:Date.now()};
-  w.sentAt=rec.at;w.sentLen=inkSig(w.ink);save(K.work,W);
-  if(SHEET){const out=load(K.out,{});out[P(idx)]=rec;save(K.out,out);flush();}
+  w.sentAt=rec.at;w.sentLen=inkSig(w.ink);
+  if(!save(K.work,W))setNet("iPad storage is full: send each page, it still goes to the teacher");
+  if(SHEET){outq()[P(idx)]=rec;save(K.out,OUTQ);flush();}
   else{const sent=load(K.sent,{});rec.name=ME.name||"";sent[P(idx)]=rec;save(K.sent,sent);flash("Sent ✓");}
   render();
 }
@@ -320,8 +327,8 @@ function render(){
     b.classList.toggle("new",TEACHER&&!!s&&(SEEN[STU+"|"+P(i)]||0)<s.at);
   });
   if(!STAFF){
-    const w=mine(),sent=w.sentAt&&w.sentLen===inkSig(w.ink);
-    $("send").textContent=sent?"Sent ✓":w.sentAt?"Send again":"Send to teacher";$("send").classList.toggle("done",!!sent);
+    const w=mine(),same=w.sentAt&&w.sentLen===inkSig(w.ink),sent=same&&(!SHEET||w.okAt===w.sentAt||(w.okAt==null&&!outq()[P(idx)]));
+    $("send").textContent=sent?"Sent ✓":same?"Sending…":w.sentAt?"Send again":"Send to teacher";$("send").classList.toggle("done",!!sent);
   }
   const s=SENT[P(idx)];
   $("note").className="";
