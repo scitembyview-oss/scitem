@@ -1,5 +1,6 @@
 // ทำรูปโปรโมต/ประกอบตาม CI ของเว็บ (DESIGN.md "CI สำหรับรูป") เป็น PNG ใน public/img/promo/
 // node tools/make-image.mjs --size ig|fb|line --title "..." --sub "..." [--img public/img/xxx.jpg] <ชื่อไฟล์>
+//   [--zoom x,y,w,h] ตัดส่วนของรูป (0–1) · [--badge "ลด 10%"] ป้ายวงกลมเหลือง · [--cta "ทักไลน์ รับชีทฟรี"] แถบปุ่มด้านล่าง
 // ในหัวข้อ *คำ* = ขีดปากกาเน้น, \n = ขึ้นบรรทัดใหม่
 import { readFileSync, mkdirSync, existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -13,7 +14,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SIZES = { ig: [1080, 1080], fb: [1200, 630], line: [1040, 1040] };
 const TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.woff2': 'font/woff2' };
 
-const usage = 'ใช้: node tools/make-image.mjs --size ig|fb|line --title "..." [--sub "..."] [--img public/img/xxx.jpg] <ชื่อไฟล์>';
+const usage = 'ใช้: node tools/make-image.mjs --size ig|fb|line --title "..." [--sub "..."] [--img public/img/xxx.jpg] [--zoom x,y,w,h] [--badge "..."] [--cta "..."] <ชื่อไฟล์>';
 const opts = {};
 let name;
 const argv = process.argv.slice(2);
@@ -54,9 +55,11 @@ try {
     route.fulfill({ body: readFileSync(f), contentType: TYPES[extname(f).toLowerCase()] || 'application/octet-stream' });
   });
   await page.goto('http://scitem.local/');
-  const title = opts.title.replace(/\\n/g, '\n');
-  const sub = (opts.sub || '').replace(/\\n/g, '\n');
-  await page.evaluate((o) => window.render(o), { w: size[0], h: size[1], title, sub, img });
+  const nl = (t) => (t || '').replace(/\\n/g, '\n');
+  await page.evaluate((o) => window.render(o), {
+    w: size[0], h: size[1], img, zoom: opts.zoom,
+    title: nl(opts.title), sub: nl(opts.sub), badge: nl(opts.badge), cta: opts.cta,
+  });
   await page.screenshot({ path: out });
   console.log(`public/img/promo/${file} (${size[0]}x${size[1]})`);
 } catch (e) {
