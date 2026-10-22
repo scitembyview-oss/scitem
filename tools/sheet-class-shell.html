@@ -66,11 +66,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--peach);outline-
 #page canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #page canvas.ink{pointer-events:auto;touch-action:none}
 body.scrolly #page canvas.ink{touch-action:pan-x pan-y}
-#pages{display:flex;gap:16px;justify-content:center;align-items:flex-start;padding:8px}
-#pages.stack{flex-direction:column;align-items:center}
+#pages{padding:8px}
 #page{margin:0;flex:none}
-#keyPage{position:relative;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.15);flex:none}
-#keyPage img{display:block;width:100%;height:auto;pointer-events:none;-webkit-user-drag:none}
 #keyTag{position:absolute;top:8px;right:8px;background:var(--red);color:#fff;font:700 13px var(--display);border-radius:999px;padding:2px 10px}
 
 /* ---------- screens ---------- */
@@ -122,7 +119,7 @@ body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:v
     <button class="arr" id="next" aria-label="Next page">▶</button>
     <span id="status" aria-live="polite"></span><span id="net"></span><span id="note"></span>
   </div>
-  <div id="scroll"><div id="pages"><div id="page"><img id="img" alt=""><canvas id="cPull"></canvas><canvas id="cMine"></canvas><canvas id="cRed"></canvas></div><div id="keyPage" hidden><img id="kimg" alt=""><span id="keyTag">เฉลย</span></div></div></div>
+  <div id="scroll"><div id="pages"><div id="page"><img id="img" alt=""><canvas id="cPull"></canvas><canvas id="cMine"></canvas><canvas id="cKey"></canvas><canvas id="cRed"></canvas><span id="keyTag" hidden>เฉลย</span></div></div></div>
 </div>
 <div id="print"></div>
 
@@ -313,9 +310,8 @@ addEventListener("keydown",e=>{if(e.target.tagName==="INPUT")return;if(e.key==="
 
 function render(){
   if(TEACHER&&SENT[P(idx)]){SEEN[STU+"|"+P(idx)]=SENT[P(idx)].at;save(K.seen,SEEN);}
-  // the answer key sits beside her page (below it on a narrow screen), never under her ink
-  const img=$("img"),src="p/"+P(idx)+".jpg",side=TEACHER&&keyOn&&KEYPAGES;
-  $("keyPage").hidden=!side;if(side)$("kimg").src="data:image/jpeg;base64,"+KEYPAGES[idx];
+  const img=$("img"),src="p/"+P(idx)+".jpg";
+  $("keyTag").hidden=!(TEACHER&&keyOn);
   if(img.getAttribute("src")!==src){img.onload=fit;img.src=src;}else fit();
   [...$("dots").children].forEach((b,i)=>{
     b.setAttribute("aria-current",i===idx);
@@ -337,20 +333,17 @@ function render(){
 let zoom=1;
 let penOnly=(()=>{try{return localStorage.getItem("scitem-pen")==="1"}catch(e){return false}})(); // after the first Apple Pencil touch, fingers scroll instead of writing
 let erase=false,hand=false;
-const cPull=$("cPull"),cMine=$("cMine"),cRed=$("cRed"),x={pull:cPull.getContext("2d"),mine:cMine.getContext("2d"),red:cRed.getContext("2d")};
+const cPull=$("cPull"),cMine=$("cMine"),cKey=$("cKey"),cRed=$("cRed"),x={pull:cPull.getContext("2d"),mine:cMine.getContext("2d"),red:cRed.getContext("2d")};
 const target=TEACHER?cRed:cMine;
 target.classList.add("ink");
 function setScrolly(){document.body.classList.toggle("scrolly",penOnly||hand);}
 function fit(){
   const sc=$("scroll"),pg=$("page"),img=$("img");
   const r=img.naturalWidth?img.naturalHeight/img.naturalWidth:1.414;
-  const two=!$("keyPage").hidden,wide=sc.clientWidth>=760;
-  $("pages").classList.toggle("stack",two&&!wide);
-  const w=Math.floor(Math.min(two&&wide?(sc.clientWidth-48)/2:sc.clientWidth-32,1100)*zoom);
+  const w=Math.floor(Math.min(sc.clientWidth-32,1100)*zoom);
   pg.style.width=w+"px";pg.style.height=Math.round(w*r)+"px";
-  $("keyPage").style.width=w+"px";
   const dpr=Math.min(devicePixelRatio||1,1.5); // three layers of a tall page: keep iPad memory low
-  for(const c of [cPull,cMine,cRed]){c.width=Math.floor(w*dpr);c.height=Math.floor(w*r*dpr);}
+  for(const c of [cPull,cMine,cKey,cRed]){c.width=Math.floor(w*dpr);c.height=Math.floor(w*r*dpr);}
   drawAll();
 }
 function drawStroke(ctx,c,s){
@@ -371,7 +364,25 @@ function myStrokes(){                      // the layer this screen writes on
   if(SHOW){const k=P(idx);return SHOWINK[k]||(SHOWINK[k]=[]);}
   return mine().ink;
 }
+/* answers only, on top of her ink: the key page minus the student page (what is the same turns see-through) */
+const ANS={};
+function answers(i){
+  if(ANS[i])return Promise.resolve(ANS[i]);
+  const get=src=>new Promise(r=>{const m=new Image();m.onload=()=>r(m);m.src=src;});
+  return Promise.all([get("p/"+P(i)+".jpg"),get("data:image/jpeg;base64,"+KEYPAGES[i])]).then(([a,b])=>{
+    const c=document.createElement("canvas");c.width=b.naturalWidth;c.height=b.naturalHeight;const g=c.getContext("2d");
+    g.drawImage(a,0,0,c.width,c.height);const A=g.getImageData(0,0,c.width,c.height).data;
+    g.drawImage(b,0,0);const D=g.getImageData(0,0,c.width,c.height),B=D.data;
+    for(let k=0;k<B.length;k+=4){if(Math.abs(B[k]-A[k])+Math.abs(B[k+1]-A[k+1])+Math.abs(B[k+2]-A[k+2])<90)B[k+3]=0;}
+    g.putImageData(D,0,0);return ANS[i]=c;});
+}
+function drawKey(){
+  const g=cKey.getContext("2d");g.clearRect(0,0,cKey.width,cKey.height);
+  if(!(TEACHER&&keyOn&&KEYPAGES))return;
+  const i=idx;answers(i).then(c=>{if(i!==idx||!keyOn)return;g.clearRect(0,0,cKey.width,cKey.height);g.drawImage(c,0,0,cKey.width,cKey.height);});
+}
 function drawAll(){
+  drawKey();
   paint(x.pull,cPull,SHOW&&pull?sentInk():[]);
   paint(x.mine,cMine,TEACHER?sentInk():SHOW?SHOWINK[P(idx)]||[]:mine().ink);
   drawRed();
