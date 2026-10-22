@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ร้านชีท SciTEM</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="canonical" href="https://scitem.net/shop/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: lab-notebook page on graph paper; one column of product "specimen cards", formula as each card's cover */
+:root{
+  --paper:#f3f6f5; --grid:rgba(15,110,140,.07); --card:#ffffff; --ink:#13212b; --muted:#566872;
+  --line:#d5e0e2; --accent:#0f6e8c; --accent-ink:#ffffff; --marker:#f6d55c; --marker-ink:#2b2306;
+  --soon:#e9eef0;
+  --f-display:"Chakra Petch","IBM Plex Sans Thai",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0f171c; --grid:rgba(120,200,220,.06); --card:#16232a; --ink:#e4eef0; --muted:#9db1b8; --line:#2a3b43;
+  --accent:#4fb3d1; --accent-ink:#06222c; --marker:#e8c548; --marker-ink:#231c02; --soon:#1c2b32; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0f171c; --grid:rgba(120,200,220,.06); --card:#16232a; --ink:#e4eef0; --muted:#9db1b8; --line:#2a3b43;
+  --accent:#4fb3d1; --accent-ink:#06222c; --marker:#e8c548; --marker-ink:#231c02; --soon:#1c2b32; color-scheme:dark}
+
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.65;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px}
+.wrap{max-width:980px;margin:0 auto;padding-block:40px 64px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.25}
+p{margin:0}
+a{color:var(--accent)}
+a:focus-visible,button:focus-visible{outline:3px solid var(--marker);outline-offset:2px}
+
+header{display:flex;flex-direction:column;gap:14px}
+.brand{font-family:var(--f-mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+header h1{font-size:clamp(30px,6vw,48px);font-weight:700}
+header h1 mark{background:linear-gradient(transparent 58%,var(--marker) 58%);color:inherit;padding:0 .1em}
+.lead{max-width:60ch;color:var(--muted);font-size:17px}
+
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0;padding:0;list-style:none}
+.steps li{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px dashed var(--line);border-radius:6px;background:var(--card)}
+.steps b{font-family:var(--f-mono);color:var(--accent);font-size:14px;padding-top:2px}
+.steps span{font-size:15px}
+
+.filters{display:flex;flex-wrap:wrap;gap:8px}
+.filters button{font:500 14px var(--f-body);padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.sec-head h2{font-size:24px}
+.sec-head small{color:var(--muted);font-size:14px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-width:0}
+.cover{padding:18px 18px 14px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:12px 12px}
+.formula{font-family:var(--f-mono);font-size:19px;color:var(--accent);white-space:nowrap;overflow-x:auto}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:12px;letter-spacing:.04em;padding:2px 8px;border-radius:4px;border:1px solid var(--line);color:var(--muted)}
+.body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:10px;flex:1}
+.body h3{font-size:18px;font-weight:600}
+.body p{color:var(--muted);font-size:15px}
+.inc{font-size:14px;color:var(--ink);display:flex;gap:6px}
+.inc::before{content:"▸";color:var(--accent)}
+.buy{margin-top:auto;padding-top:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.price{font-family:var(--f-mono);font-size:22px;font-variant-numeric:tabular-nums;background:var(--marker);color:var(--marker-ink);padding:0 8px;border-radius:3px}
+.price small{font-size:13px}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font:600 15px var(--f-body);cursor:pointer;text-decoration:none;padding:8px 16px;border-radius:6px;background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent)}
+.btn.alt{background:transparent;color:var(--accent)}
+.btn[aria-disabled="true"]{background:var(--soon);color:var(--muted);border-color:var(--line);pointer-events:none}
+
+.soon .card{background:var(--soon)}
+.soon .price{background:transparent;color:var(--muted);border:1px dashed var(--line)}
+
+.faq{display:flex;flex-direction:column;gap:8px}
+details{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 16px}
+summary{cursor:pointer;font-weight:600}
+details p{margin-top:8px;color:var(--muted);max-width:65ch}
+
+footer{color:var(--muted);font-size:14px;border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:4px}
+
+.pay{border:none;border-radius:10px;padding:0;max-width:min(420px,calc(100vw - 32px));background:var(--card);color:var(--ink)}
+.pay::backdrop{background:rgba(10,20,25,.6)}
+.pay-in{padding:20px;display:flex;flex-direction:column;gap:12px}
+.pay h3{font-size:19px}
+.pay img{display:block;width:100%;max-width:300px;margin:0 auto;border-radius:8px;background:#fff}
+.pay ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.pay .amt{font-family:var(--f-mono);background:var(--marker);color:var(--marker-ink);padding:0 6px;border-radius:3px}
+.pay .msg{font-size:14px;background:var(--soon);border:1px dashed var(--line);border-radius:6px;padding:8px 10px;word-break:break-word}
+.pay-act{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.pay button{cursor:pointer}
+@media (max-width:640px){.steps{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.card{transition:transform .15s}.card:hover{transform:translateY(-2px)}}
+body{margin:0}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <a class="brand" href="/" style="text-decoration:none">← scitem.net · ชีทวิทย์–คณิต by พี่วิว</a>
+    <h1>ชีทที่สอนจริง <mark>ทำเองที่บ้านได้</mark></h1>
+    <p class="lead">ชีทวิทยาศาสตร์และคณิตศาสตร์ ป.5 ถึง ม.3 ทั้งหลักสูตรไทย EP และอินเตอร์ ทุกชุดมีฉบับเฉลยให้พ่อแม่หรือครูใช้ตรวจ จ่ายผ่านพร้อมเพย์ได้ทุกธนาคาร</p>
+  </header>
+
+  <ol class="steps" aria-label="วิธีซื้อ">
+    <li><b>1</b><span>เลือกชีทแล้วกด “ซื้อเลย”</span></li>
+    <li><b>2</b><span>สแกน QR พร้อมเพย์ โอนตามราคาชีท</span></li>
+    <li><b>3</b><span>ส่งสลิปทาง LINE scitem รับลิงก์ดาวน์โหลด PDF</span></li>
+  </ol>
+
+  <section aria-labelledby="h-ready" style="display:flex;flex-direction:column;gap:16px">
+    <div class="sec-head"><h2 id="h-ready">พร้อมดาวน์โหลด</h2><small id="count"></small></div>
+    <div class="filters" role="group" aria-label="กรองตามระดับชั้น" id="filters"></div>
+    <div class="grid" id="ready"></div>
+  </section>
+
+  <section class="soon" aria-labelledby="h-soon" style="display:flex;flex-direction:column;gap:16px">
+    <div class="sec-head"><h2 id="h-soon">กำลังจะมา</h2><small>ทักเพจเพื่อให้แจ้งเมื่อเปิดขาย</small></div>
+    <div class="grid" id="soon"></div>
+  </section>
+
+  <section aria-labelledby="h-faq" class="faq">
+    <h2 id="h-faq" style="font-size:24px;margin-bottom:4px">คำถามที่พบบ่อย</h2>
+    <details><summary>จ่ายแล้วได้ไฟล์ยังไง</summary><p>ส่งสลิปพร้อมชื่อชีททาง LINE scitem (หรือ IG / Facebook เพจ SciTEM) พี่วิวส่งลิงก์ Google Drive ให้ดาวน์โหลด PDF เก็บไว้ได้เลย ตอบช่วง 12:00–02:00 น.</p></details>
+    <details><summary>ชื่อบัญชีที่ขึ้นตอนโอนคือใคร</summary><p>QR พร้อมเพย์ของร้านจะขึ้นชื่อบัญชี น.ส. ชนาพร เที่ยงพนม (ธนาคารกสิกรไทย) โอนได้จากทุกธนาคาร</p></details>
+    <details><summary>ปริ้นได้กี่ครั้ง ครูใช้สอนได้ไหม</summary><p>ปริ้นให้ลูกหลานหรือนักเรียนของตัวเองได้ไม่จำกัด ขอไม่ให้ส่งไฟล์ต่อหรือนำไปขายต่อ ถ้าโรงเรียนอยากใช้ทั้งสายชั้น ทักมาคุยราคาโรงเรียนได้</p></details>
+    <details><summary>ไม่แน่ใจว่าชุดไหนเหมาะกับน้อง</summary><p>ทักเพจ SciTEM บอกชั้นและโรงเรียน (ไทย / EP / อินเตอร์) พี่วิวช่วยเลือกให้ ตอบช่วง 12:00–02:00 น.</p></details>
+  </section>
+
+  <dialog class="pay" id="pay" aria-labelledby="pay-h">
+    <div class="pay-in">
+      <h3 id="pay-h"></h3>
+      <img src="/img/promptpay.jpg" width="480" height="752" alt="QR พร้อมเพย์ของร้าน SciTEM">
+      <ol>
+        <li>สแกน QR ด้วยแอปธนาคาร โอน <span class="amt" id="pay-amt"></span> บาท</li>
+        <li>แคปสลิปไว้</li>
+        <li>กด "ส่งสลิปทาง LINE" แล้ววางข้อความด้านล่างพร้อมสลิป รอรับลิงก์ดาวน์โหลด</li>
+      </ol>
+      <div class="msg" id="pay-msg"></div>
+      <div class="pay-act">
+        <button type="button" class="btn alt" id="pay-copy">คัดลอกข้อความ</button>
+        <button type="button" class="btn alt" id="pay-close">ปิด</button>
+        <a class="btn" href="https://lin.ee/NO52k1Y" target="_blank" rel="noopener">ส่งสลิปทาง LINE</a>
+      </div>
+    </div>
+  </dialog>
+
+  <footer>
+    <span>© SciTEM · ชีททุกชุดแต่งโดยพี่วิว ห้ามแจกหรือขายต่อ</span>
+    <span>ติดต่อ: <a href="https://lin.ee/NO52k1Y" target="_blank" rel="noopener">LINE scitem</a> · IG / Facebook เพจ SciTEM · <a href="mailto:view@scitem.net">view@scitem.net</a></span>
+  </footer>
+</div>
+
+<script>
+// ใส่ลิงก์ Stripe (buy) และ MEB (meb) ตรงนี้ ถ้า buy ว่าง ปุ่ม "ซื้อเลย" จะเปิด QR พร้อมเพย์ให้โอนแล้วส่งสลิป
+const PRODUCTS = [
+  {id:"circle", grade:"ป.6", title:"วงกลมและ π ป.6 เตรียมสอบเข้า ม.1", formula:"C = 2πr   A = πr²",
+   tags:["ป.6","EP / สองภาษา","EN"], blurb:"เส้นรอบรูป พื้นที่ โจทย์ย้อนกลับ และรูปผสม สอนทีละหน้า ฝึกทีละชุด",
+   inc:["27 หน้า + ฉบับเฉลยแยก","อ่าน → ฝึก → เช็กเฉลย ทำเองได้"], price:129, buy:"", meb:""},
+  {id:"y7", grade:"ม.1", title:"Y7 Matter Pack: Particles, Elements & Compounds", formula:"solid ⇄ liquid ⇄ gas",
+   tags:["Y7 / ม.1 EP","อินเตอร์","EN"], blurb:"อนุภาค ธาตุ สารประกอบและสารผสม พร้อมฝึกอ่านและวาดกราฟแบบข้อสอบอินเตอร์",
+   inc:["Worksheet 2 บท + Quick Check ก่อน/หลังเรียน","Teacher Edition เฉลยครบ"], price:169, buy:"", meb:""},
+  {id:"elec", grade:"ป.6", title:"ไฟฟ้า ป.6 EP: Ohm's Law & Circuits", formula:"V = I × R",
+   tags:["ป.6","EP","EN"], blurb:"เทียบไฟฟ้ากับน้ำในท่อให้เห็นภาพ แล้วไล่ไปวงจรอนุกรมและขนาน มีคำศัพท์ประจำบท",
+   inc:["ชีทนักเรียน + เฉลยพร้อมโน้ตสอน"], price:79, buy:"", meb:""},
+  {id:"fluid", grade:"ม.2", title:"ความดันและความหนาแน่น ม.2 EP: Revision Pack", formula:"P = F/A   ρ = m/V",
+   tags:["ม.2","EP","EN"], blurb:"ทั้งบทมี 5 สูตร ชีทนี้สอนให้เห็นว่าทุกโจทย์คือ 5 สูตรนี้ พร้อมตารางแปลงหน่วย",
+   inc:["ฉบับนักเรียน + เฉลยละเอียด","เหมาะทวนก่อนสอบกลางภาค/ปลายภาค"], price:119, buy:"", meb:""},
+  {id:"proj", grade:"ม.3", title:"โพรเจกไทล์ ม.3 ห้องเรียนพิเศษวิทย์", formula:"y = uᵧt − ½gt²",
+   tags:["ม.3","ห้อง gifted","เตรียมสอบ ม.4"], blurb:"ไม่ใช้เครื่องคิดเลข ไล่ตั้งแต่ยิงแนวราบจากหน้าผาไปจนยิงเฉียงมุม",
+   inc:["ชีทนักเรียน + ชีทติวเตอร์เฉลยละเอียด"], price:99, buy:"", meb:""}
+];
+const SOON = [
+  {title:"เสียง ป.5: เกมผ่านด่าน 5 ด่าน", formula:"f สูง → เสียงแหลม", tags:["ป.5"], blurb:"เรียนเรื่องเสียงแบบเกม ตรงตัวชี้วัด สสวท.", price:69},
+  {title:"การเปลี่ยนแปลงของสสาร ป.5", formula:"ของแข็ง → ของเหลว → แก๊ส", tags:["ป.5"], blurb:"เปลี่ยนสถานะ 6 แบบ ระเหย vs เดือด ผันกลับได้/ไม่ได้", price:79},
+  {title:"พืช ม.1 ครบหน่วย 4 คาบ", formula:"6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂", tags:["ม.1"], blurb:"เซลล์พืช สังเคราะห์ด้วยแสง การลำเลียง พืชดอก + pre/post test", price:199},
+  {title:"IGCSE Biology: Mutation & Evolution", formula:"variation → selection", tags:["Cambridge 0610","EN"], blurb:"บทเรียน 105 นาที พร้อมแบบทดสอบก่อน-หลังเรียนและการบ้าน", price:159}
+];
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const tagHtml = t => t.map(x => `<span class="tag">${esc(x)}</span>`).join("");
+
+function readyCard(p){
+  const buy = p.buy
+    ? `<a class="btn" href="${esc(p.buy)}" target="_blank" rel="noopener">ซื้อเลย</a>`
+    : `<button type="button" class="btn" data-pay="${esc(p.id)}">ซื้อเลย</button>`;
+  const meb = p.meb ? `<a class="btn alt" href="${esc(p.meb)}" target="_blank" rel="noopener">อ่านใน MEB</a>` : "";
+  return `<article class="card" data-grade="${esc(p.grade)}">
+    <div class="cover"><div class="formula" aria-hidden="true">${esc(p.formula)}</div><div class="tags">${tagHtml(p.tags)}</div></div>
+    <div class="body"><h3>${esc(p.title)}</h3><p>${esc(p.blurb)}</p>
+      ${p.inc.map(i => `<div class="inc">${esc(i)}</div>`).join("")}
+      <div class="buy"><span class="price">${p.price} <small>บาท</small></span><div class="btns">${buy}${meb}</div></div>
+    </div></article>`;
+}
+function soonCard(p){
+  return `<article class="card">
+    <div class="cover"><div class="formula" aria-hidden="true">${esc(p.formula)}</div><div class="tags">${tagHtml(p.tags)}</div></div>
+    <div class="body"><h3>${esc(p.title)}</h3><p>${esc(p.blurb)}</p>
+      <div class="buy"><span class="price">${p.price} <small>บาท</small></span><span class="tag">เร็วๆ นี้</span></div>
+    </div></article>`;
+}
+
+const readyEl = document.getElementById("ready");
+const grades = ["ทั้งหมด", ...new Set(PRODUCTS.map(p => p.grade))];
+let current = "ทั้งหมด";
+try { const g = localStorage.getItem("scitem-grade"); if (g && grades.includes(g)) current = g; } catch(e) {}
+
+function render(){
+  const list = PRODUCTS.filter(p => current === "ทั้งหมด" || p.grade === current);
+  readyEl.innerHTML = list.map(readyCard).join("");
+  document.getElementById("count").textContent = `${list.length} ชุด`;
+  document.querySelectorAll("#filters button").forEach(b => b.setAttribute("aria-pressed", b.dataset.g === current));
+}
+document.getElementById("filters").innerHTML = grades.map((g,i) => `<button type="button" id="f-${i}" data-g="${esc(g)}">${esc(g)}</button>`).join("");
+document.getElementById("filters").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  current = b.dataset.g; try { localStorage.setItem("scitem-grade", current); } catch(e) {}
+  render();
+});
+document.getElementById("soon").innerHTML = SOON.map(soonCard).join("");
+
+const payEl = document.getElementById("pay");
+readyEl.addEventListener("click", e => {
+  const b = e.target.closest("[data-pay]"); if (!b) return;
+  const p = PRODUCTS.find(x => x.id === b.dataset.pay); if (!p) return;
+  document.getElementById("pay-h").textContent = p.title;
+  document.getElementById("pay-amt").textContent = p.price;
+  document.getElementById("pay-msg").textContent = `สั่งชีท: ${p.title} ราคา ${p.price} บาท (แนบสลิปมาด้วย)`;
+  document.getElementById("pay-copy").textContent = "คัดลอกข้อความ";
+  payEl.showModal();
+});
+document.getElementById("pay-close").addEventListener("click", () => payEl.close());
+payEl.addEventListener("click", e => { if (e.target === payEl) payEl.close(); });
+document.getElementById("pay-copy").addEventListener("click", async e => {
+  try { await navigator.clipboard.writeText(document.getElementById("pay-msg").textContent); e.target.textContent = "คัดลอกแล้ว"; }
+  catch(err) { e.target.textContent = "กดค้างที่ข้อความเพื่อคัดลอก"; }
+});
+render();
+</script>
+
+</body>
+</html>
