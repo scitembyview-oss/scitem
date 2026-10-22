@@ -113,6 +113,20 @@ footer{color:var(--muted);font-size:14px;border-top:1px solid var(--line);paddin
 .promo small{font-weight:400}
 .was{font-family:var(--f-mono);font-size:14px;color:var(--muted);text-decoration:line-through}
 .card:target{outline:3px solid var(--marker);outline-offset:3px}
+.trust{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}
+.trust li{font-size:14px;padding:4px 12px;border-radius:999px;background:var(--card);border:1px solid var(--line)}
+.trust li::before{content:"✓ ";color:var(--accent);font-weight:700}
+.author{display:flex;gap:24px;align-items:center;padding:20px;background:var(--card);border:1px solid var(--line);border-radius:8px}
+.author img{width:160px;height:192px;object-fit:cover;border-radius:8px;flex:none;background:var(--soon)}
+.author div{display:flex;flex-direction:column;gap:10px;min-width:0}
+.author h2{font-size:22px}
+.author p{color:var(--muted);font-size:15px}
+.author ul{margin:0;padding-left:20px;font-size:15px;display:flex;flex-direction:column;gap:4px}
+.reviews .grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.review{margin:0;padding:16px 18px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--marker);border-radius:6px;display:flex;flex-direction:column;gap:8px}
+.review p{font-size:15px}
+.review footer{border:none;padding:0;font-size:13px}
+@media (max-width:640px){.author{flex-direction:column;align-items:flex-start}.author img{width:120px;height:144px}}
 .free{display:flex;flex-direction:column;gap:10px;padding:18px;border:2px dashed var(--accent);border-radius:8px;background:var(--card)}
 .free h2{font-size:22px}
 .free p{color:var(--muted)}
@@ -127,6 +141,7 @@ footer{color:var(--muted);font-size:14px;border-top:1px solid var(--line);paddin
 @media (max-width:640px){.steps{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:no-preference){.card{transition:transform .15s}.card:hover{transform:translateY(-2px)}}
 body{margin:0}
+[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -136,6 +151,12 @@ body{margin:0}
     <a class="brand" href="/" style="text-decoration:none">← scitem.net · ชีทวิทย์–คณิต by พี่วิว</a>
     <h1>ชีทที่สอนจริง <mark>ทำเองที่บ้านได้</mark></h1>
     <p class="lead">ชีทวิทยาศาสตร์และคณิตศาสตร์ ป.5 ถึง ม.3 ทั้งหลักสูตรไทย EP และอินเตอร์ ทุกชุดมีฉบับเฉลยให้พ่อแม่หรือครูใช้ตรวจ จ่ายผ่านพร้อมเพย์ได้ทุกธนาคาร</p>
+    <ul class="trust" aria-label="ทำไมซื้อได้สบายใจ">
+      <li>ดูตัวอย่าง 3 หน้าก่อนซื้อ</li>
+      <li>มีฉบับเฉลยทุกชุด</li>
+      <li>แต่งเองจากชีทที่ใช้สอนจริง</li>
+      <li>ไม่ได้ไฟล์ คืนเงินเต็ม</li>
+    </ul>
   </header>
 
   <div class="promo" id="promo" hidden></div>
@@ -157,6 +178,29 @@ body{margin:0}
     <div class="grid" id="soon"></div>
   </section>
 
+  <section class="author" aria-labelledby="h-author">
+    <img src="/img/shop/teacher.jpg" width="400" height="480" loading="lazy" alt="พี่วิว ผู้แต่งชีท SciTEM">
+    <div>
+      <h2 id="h-author">ใครแต่งชีทนี้</h2>
+      <p>พี่วิว (ครูวิว) ติววิทยาศาสตร์มา 5 ปี ชีททุกชุดในร้านแต่งเองและใช้สอนนักเรียนจริงก่อนเอามาขาย</p>
+      <ul>
+        <li>จบโรงเรียนมหิดลวิทยานุสรณ์ และวิศวกรรมศาสตร์ จุฬาฯ (เกียรตินิยม)</li>
+        <li>สอบติดเตรียมอุดมศึกษา และ พสวท. บดินทรเดชา</li>
+        <li>สอนสองภาษา ได้ทั้งเด็ก EP, International และห้องเรียนพิเศษ (Gifted)</li>
+        <li>มีลูกศิษย์สอบติดโรงเรียนอุดรพิทยานุกูล</li>
+      </ul>
+      <div class="btns">
+        <a class="btn alt" href="/#teacher">อ่านเพิ่มเกี่ยวกับครูวิว</a>
+        <a class="btn alt" href="/light-p5/" target="_blank" rel="noopener">ดูสไลด์ที่ใช้สอนจริง</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="reviews" id="reviews" aria-labelledby="h-reviews" style="display:flex;flex-direction:column;gap:16px" hidden>
+    <h2 id="h-reviews" style="font-size:24px">เสียงจากผู้ปกครองและนักเรียน</h2>
+    <div class="grid" id="review-list"></div>
+  </section>
+
   <section class="free" aria-labelledby="h-free">
     <h2 id="h-free">ลองก่อนซื้อ: ชีทระบบสุริยะ ป.6 ฟรีทั้งชุด</h2>
     <p>ดาวน์โหลดได้เลยไม่ต้องสมัคร ให้น้องลองทำดูว่าสไตล์ชีทของพี่วิวเข้ากับน้องไหม แล้วเพิ่มเพื่อน LINE scitem ไว้ รับแจ้งเมื่อมีชีทใหม่และโปรก่อนใคร</p>
@@ -173,6 +217,8 @@ body{margin:0}
     <details><summary>ชื่อบัญชีที่ขึ้นตอนโอนคือใคร</summary><p>QR พร้อมเพย์ของร้านจะขึ้นชื่อบัญชี น.ส. ชนาพร เที่ยงพนม (ธนาคารกสิกรไทย) โอนได้จากทุกธนาคาร</p></details>
     <details><summary>ปริ้นได้กี่ครั้ง ครูใช้สอนได้ไหม</summary><p>ปริ้นให้ลูกหลานหรือนักเรียนของตัวเองได้ไม่จำกัด ขอไม่ให้ส่งไฟล์ต่อหรือนำไปขายต่อ ถ้าโรงเรียนอยากใช้ทั้งสายชั้น ทักมาคุยราคาโรงเรียนได้</p></details>
     <details><summary>ขอดูตัวอย่างก่อนได้ไหม</summary><p>ได้ กด “ดูตัวอย่าง” ใต้ชีทแต่ละชุด เห็น 3 หน้าแรกของฉบับนักเรียนจริง หรือโหลดชีทระบบสุริยะ ป.6 ไปลองทำฟรีทั้งชุด</p></details>
+    <details><summary>โอนแล้วไม่ได้ไฟล์ หรือไฟล์เปิดไม่ได้</summary><p>ทัก LINE scitem พี่วิวส่งไฟล์ให้ใหม่ ถ้าโอนแล้วไม่ได้ลิงก์ภายใน 24 ชั่วโมง หรือส่งไฟล์ให้ไม่ได้จริงๆ คืนเงินเต็มจำนวน เพราะเป็นไฟล์ดิจิทัล ขอไม่รับคืนหลังได้ไฟล์แล้ว แนะนำให้ดูตัวอย่าง 3 หน้าก่อนซื้อ</p></details>
+    <details><summary>ซื้อผิดชุด เปลี่ยนได้ไหม</summary><p>ได้ ทักมาภายใน 7 วัน เปลี่ยนเป็นชุดอื่นราคาเท่ากันได้ ถ้าชุดใหม่แพงกว่าโอนเพิ่มแค่ส่วนต่าง</p></details>
     <details><summary>ซื้อหลายชุดได้ไหม</summary><p>ได้ รวมยอดแล้วโอนครั้งเดียว ส่งสลิปพร้อมบอกชื่อชุดทาง LINE scitem</p></details>
     <details><summary>ไม่แน่ใจว่าชุดไหนเหมาะกับน้อง</summary><p>ทักเพจ SciTEM บอกชั้นและโรงเรียน (ไทย / EP / อินเตอร์) พี่วิวช่วยเลือกให้ ตอบช่วง 12:00–02:00 น.</p></details>
   </section>
@@ -206,7 +252,7 @@ body{margin:0}
 
   <footer>
     <span>© SciTEM · ชีททุกชุดแต่งโดยพี่วิว ห้ามแจกหรือขายต่อ</span>
-    <span>ติดต่อ: <a href="https://lin.ee/NO52k1Y" target="_blank" rel="noopener">LINE scitem</a> · IG / Facebook เพจ SciTEM · <a href="mailto:view@scitem.net">view@scitem.net</a></span>
+    <span>ติดต่อ: <a href="https://lin.ee/NO52k1Y" target="_blank" rel="noopener">LINE scitem</a> · <a href="https://www.instagram.com/scitem_/" target="_blank" rel="noopener">IG scitem_</a> · <a href="https://www.facebook.com/1237803439407552" target="_blank" rel="noopener">Facebook เพจ SciTEM</a> · <a href="mailto:view@scitem.net">view@scitem.net</a></span>
   </footer>
 </div>
 
@@ -233,6 +279,9 @@ const PRODUCTS = [
 const PROMO = {off: 0.1, until: "2026-11-30", text: "โปรเปิดร้าน ลด 10% ทุกชุด"};
 const promoOn = PROMO.off > 0 && new Date() <= new Date(PROMO.until + "T23:59:59+07:00");
 const priceOf = p => promoOn ? Math.round(p.price * (1 - PROMO.off)) : p.price;
+// รีวิวจริงเท่านั้น (ขออนุญาตก่อนใส่ ไม่ต้องมีชื่อเต็ม) ถ้าว่าง กล่องรีวิวจะซ่อนเอง
+// เช่น {text:"ลูกทำเองได้ ไม่ต้องนั่งสอน", who:"คุณแม่น้อง ป.6 EP", item:"วงกลมและ π"}
+const REVIEWS = [];
 const SAMPLES = {circle:3, y7:3, elec:3, fluid:3, proj:3};
 
 const SOON = [
@@ -283,6 +332,11 @@ document.getElementById("filters").addEventListener("click", e => {
   current = b.dataset.g; try { localStorage.setItem("scitem-grade", current); } catch(e) {}
   render();
 });
+if (REVIEWS.length) {
+  document.getElementById("review-list").innerHTML = REVIEWS.map(r =>
+    `<blockquote class="review"><p>“${esc(r.text)}”</p><footer>${esc(r.who)}${r.item ? " · " + esc(r.item) : ""}</footer></blockquote>`).join("");
+  document.getElementById("reviews").hidden = false;
+}
 document.getElementById("soon").innerHTML = SOON.map(soonCard).join("");
 
 const payEl = document.getElementById("pay");
