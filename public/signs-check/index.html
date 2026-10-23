@@ -55,6 +55,8 @@ button.main{background:var(--navy);color:var(--paper)}
 button.ghost{background:transparent;color:var(--navy)}
 button:focus-visible,.clear:focus-visible{outline:3px solid var(--peach);outline-offset:2px}
 .worked{display:flex;flex-direction:column;gap:12px}
+.fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;font-size:.62em;line-height:1.05;margin:0 .08em}
+.fr>span:first-child{border-bottom:.08em solid currentColor;padding:0 .12em}
 .wline{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
 .wline .lab{font-size:15px;color:var(--muted);min-width:170px}
 .wline .val{font-family:var(--display);font-weight:600;font-size:30px;color:var(--navy)}
@@ -96,24 +98,59 @@ var SHEET_URL = "https://script.google.com/macros/s/AKfycbyq7E1RkdI8pARED-cN4XAH
 var QUIZ = "signs-1";
 var IDLE_MS = 60000;   // time with no touch or writing longer than this is not counted
 var WAIT_MS = 2000;    // pause after the last stroke before a box is checked
-var KEY = "signscheck-v3";
-
-// Set of 22 Oct: − (−) with two numbers, sign of the answer only (k = lines), three numbers.
+// Each day's set has its own link: #d21, #d22 (also the plain link), #d23 = fractions. Each set keeps its own progress.
 // Answers are kept only as salted hashes (public repo). a, b = start and amount added, read from the question, for the picture hint.
+var SETS = {
+  // 21 Oct: − (−) only, two numbers then three numbers
+  d21: {name:"21 Oct set", key:"signscheck-d21", example:"int",
+    practice: {id:"p", p:"−5 − (−9)", a:-5, b:9, h:{mag:"684dc9f006c0dcfc",rw:"8d342e46307be967",ans:"fe40bbccd5e95638",ab:"06a024d382a3721a"}},
+    items: [
+    {id:"1",  p:"−11 − (−18)", a:-11, b:18, h:{mag:"9056c0e340401a91",rw:"b8192362353d9848",ans:"0ca3e0bafc999626",ab:"7efc44ab8a29f80d"}},
+    {id:"2",  p:"−20 − (−6)",  a:-20, b:6,  h:{mag:"80f049bd2676f65f",rw:"4258dde3eb132620",ans:"04b80d5984d96565",ab:"1151f40bac955d73"}},
+    {id:"3",  p:"8 − (−5)",    a:8,   b:5,  h:{mag:"017e588584e5f470",rw:"29f0125478b2aa42",ans:"8ab7ac75a593b0bf",ab:"b83c948211e30f84"}},
+    {id:"4",  p:"−24 − (−37)", a:-24, b:37, h:{mag:"72fafb1a04f82f27",rw:"50696818e05ae797",ans:"e17113cb6e2145d3",ab:"4dd74457dcbfd407"}},
+    {id:"5",  p:"−52 − (−27)", a:-52, b:27, h:{mag:"7aba1625ccc55b60",rw:"d6e65c2cc04e7cf2",ans:"39799c48a4a01bed",ab:"198ba014a4b79a01"}},
+    {id:"6",  p:"−15 − (−15)", a:-15, b:15, h:{mag:"26b89e91db4ad20f",rw:"1196bf0ac21f66b2",ans:"713ad9f43b79ed01",ab:"c039ee0eabc29fac"}},
+    {id:"7",  p:"34 − (−17)",  a:34,  b:17, h:{mag:"6cf7d4c46058d435",rw:"b37b1ea9e9191418",ans:"a5ac2a3318c5e2c9",ab:"d66454ea68262dd0"}},
+    {id:"8",  p:"−7 − (−30)",  a:-7,  b:30, h:{mag:"f4d58e15fc0e9fa1",rw:"07da5c7a84d568f1",ans:"f08c3ddf077942d2",ab:"8e104aa1a33480ac"}},
+    {id:"9",  p:"−4 − 11 − (−5)",   h:{mag:"e15d0c642dd54eda",pair:"d7d6fe7755f981f4",rw:"0f4e52583bd4bd61",ans:"f50ac23fab2210ce",ab:"01e44ca910e42817"}},
+    {id:"10", p:"−9 − (−3) − (−8)", h:{mag:"1562c20bbf00addd",pair:"cc1824ac30df6234",rw:"17869a74213018e2",ans:"fbaf36db0ad779c7",ab:"69c95f6130b72c79"}}
+  ]},
+  // 22 Oct: − (−) with two numbers, sign of the answer only (k = lines), three numbers
+  d22: {name:"22 Oct set", key:"signscheck-v3", example:"int",
+    practice: {id:"p", p:"−5 − (−9)", a:-5, b:9, h:{mag:"684dc9f006c0dcfc",rw:"8d342e46307be967",ans:"fe40bbccd5e95638",ab:"06a024d382a3721a"}},
+    items: [
+    {id:"1",p:"−16 − (−9)",a:-16,b:9,h:{mag:"cfe3e90b23498ca3",rw:"14380383d770dbd5",ans:"afe09f1f35739182",ab:"7efc44ab8a29f80d"}},
+    {id:"2",p:"12 − (−19)",a:12,b:19,h:{mag:"c846e149e37e8405",rw:"bbfa7850ef631d05",ans:"0841f6adfc2f759f",ab:"24b6a2ff351de487"}},
+    {id:"3",p:"−23 − (−41)",a:-23,b:41,h:{mag:"5814e7a9a766e792",rw:"54fc1e8fcfc04e02",ans:"297561925be8f68e",ab:"0fad2ee47228ebbd"}},
+    {id:"4",p:"−35 − (−12)",a:-35,b:12,h:{mag:"0baacf8b1b8fa6a2",rw:"6269c2c26de306df",ans:"38acf17e7ddc3329",ab:"9b1a4a3c3ecd0572"}},
+    {id:"5",p:"−27 + 9",a:-27,b:9,k:["mag","ans"],h:{mag:"bad8d83bd2fb19a8",ans:"cb1a9985777cd1fd",ab:"abe592306755ecd5"}},
+    {id:"6",p:"−6 + 21",a:-6,b:21,k:["mag","ans"],h:{mag:"48b9a6e7e61d59e4",ans:"bb0f543fec5d4d35",ab:"919f5b2e16e761e9"}},
+    {id:"7",p:"7 − 15 − (−4)",h:{mag:"55eadf6d468eb163",pair:"ac657794b1e96e08",rw:"498ae475182f99f9",ans:"869067a992afd575",ab:"30053e9b7ecb6d83"}},
+    {id:"8",p:"−6 − (−10) − 9",h:{mag:"fd4659f2d7787e57",pair:"94256a83b1aa862b",rw:"ebfc7005b1a02960",ans:"50dc46ee2ade296a",ab:"1d9e93c28c3d1df1"}},
+    {id:"9",p:"5 − (−8) − 20",h:{mag:"ec460f27835f7942",pair:"c06ea5a65a4472ea",rw:"f16f4ff4fd19e73f",ans:"f502717f22530487",ab:"2a5afaf290da7afe"}},
+    {id:"10",p:"−12 − (−5) − (−3)",h:{mag:"1960675bc7fb7f45",pair:"6f9f9a5d744e7770",rw:"c378d4e4680aa64c",ans:"397c153c0e4bc2d6",ab:"86c62658ecd90aed"}}
+  ]},
+  // 23 Oct: 3 review questions, then fractions with the sign on the top number (f = fraction question)
+  d23: {name:"23 Oct set (fractions)", key:"signscheck-d23", example:"frac",
+    practice: {id:"p",p:"−1/3 − (−1/2)",f:1,k:["rw","same","top","ans"],h:{rw:"b9f278e3ff9b6e06",same:"567e8ebe4990ee5e",top:"9c1db5360d9089ed",ans:"74a859b0db54c5b8",ab:"4333a6ac1c21b3dc"}},
+    items: [
+    {id:"1",p:"−14 − (−6)",a:-14,b:6,h:{mag:"d6b32eda0b6fd4a8",rw:"de56553a075408fc",ans:"e2297e0cd5c7faa6",ab:"e0e1505b8c87bead"}},
+    {id:"2",p:"−9 + 25",a:-9,b:25,k:["mag","ans"],h:{mag:"6d0fe1dc463a83a0",ans:"ae99edf3fd687bbb",ab:"7f4886331bba31cb"}},
+    {id:"3",p:"−8 − (−2) − 7",h:{mag:"c36598c07b98602f",pair:"51606a7721de4f74",rw:"815f8527b3ba7cb8",ans:"a4c8cf1b4faa261d",ab:"b83c948211e30f84"}},
+    {id:"4",p:"−3/8 + 5/8",f:1,k:["top","ans"],h:{top:"c59e895005d40db4",ans:"07e3af9b76a52f0b",ab:"fb48fa2cdb50c12f"}},
+    {id:"5",p:"−5/9 − 2/9",f:1,k:["top","ans"],h:{top:"921e48ae7f24f869",ans:"7207976f8ad8ed5d",ab:"060fdf12674f7e0f"}},
+    {id:"6",p:"−1/2 + 1/3",f:1,k:["same","top","ans"],h:{same:"ca222b8578dff30f",top:"2017b91b72a3f321",ans:"7960ade7e5eb7f62",ab:"c8412b7f140909a0"}},
+    {id:"7",p:"−3/4 − (−1/6)",f:1,k:["rw","same","top","ans"],h:{rw:"56815af3ba792d89",same:"e78c3287a6271cf2",top:"25529f02f8288f32",ans:"cb7073f41bbb0e51",ab:"83a718b375bcd575"}},
+    {id:"8",p:"2/5 − (−3/10)",f:1,k:["rw","same","top","ans"],h:{rw:"33d34a2bf1b18e52",same:"f7e10fe0de7a7284",top:"02c8e2a9f82dd2af",ans:"2f0c9f9a499fb98f",ab:"dfe4a2caa3059fc9"}},
+    {id:"9",p:"−5/6 + 3/8",f:1,k:["same","top","ans"],h:{same:"c80acd95c0440367",top:"21a27cf67ab04943",ans:"e8a95e0d1a0a301d",ab:"5b7ebedbd14509e5"}},
+    {id:"10",p:"−2/3 − (−3/4)",f:1,k:["rw","same","top","ans"],h:{rw:"0d83c4727477f758",same:"6a3e89ad1c615031",top:"f89e013419d33547",ans:"3eb3c728e66cbd0c",ab:"333a94369d99cf10"}}
+  ]}
+};
+var SET_ID = (location.hash.match(/d2[123]/)||["d22"])[0];
+window.addEventListener("hashchange",function(){ location.reload(); });
+var SET = SETS[SET_ID], KEY = SET.key, PRACTICE = SET.practice, ITEMS = SET.items;
 var EXAMPLE = {p:"−8 − (−13)", a:-8, b:13};
-var PRACTICE = {id:"p", p:"−5 − (−9)", a:-5, b:9, h:{mag:"684dc9f006c0dcfc",rw:"8d342e46307be967",ans:"fe40bbccd5e95638",ab:"06a024d382a3721a"}};
-var ITEMS = [
-  {id:"1",p:"−16 − (−9)",a:-16,b:9,h:{mag:"cfe3e90b23498ca3",rw:"14380383d770dbd5",ans:"afe09f1f35739182",ab:"7efc44ab8a29f80d"}},
-  {id:"2",p:"12 − (−19)",a:12,b:19,h:{mag:"c846e149e37e8405",rw:"bbfa7850ef631d05",ans:"0841f6adfc2f759f",ab:"24b6a2ff351de487"}},
-  {id:"3",p:"−23 − (−41)",a:-23,b:41,h:{mag:"5814e7a9a766e792",rw:"54fc1e8fcfc04e02",ans:"297561925be8f68e",ab:"0fad2ee47228ebbd"}},
-  {id:"4",p:"−35 − (−12)",a:-35,b:12,h:{mag:"0baacf8b1b8fa6a2",rw:"6269c2c26de306df",ans:"38acf17e7ddc3329",ab:"9b1a4a3c3ecd0572"}},
-  {id:"5",p:"−27 + 9",a:-27,b:9,k:["mag","ans"],h:{mag:"bad8d83bd2fb19a8",ans:"cb1a9985777cd1fd",ab:"abe592306755ecd5"}},
-  {id:"6",p:"−6 + 21",a:-6,b:21,k:["mag","ans"],h:{mag:"48b9a6e7e61d59e4",ans:"bb0f543fec5d4d35",ab:"919f5b2e16e761e9"}},
-  {id:"7",p:"7 − 15 − (−4)",h:{mag:"55eadf6d468eb163",pair:"ac657794b1e96e08",rw:"498ae475182f99f9",ans:"869067a992afd575",ab:"30053e9b7ecb6d83"}},
-  {id:"8",p:"−6 − (−10) − 9",h:{mag:"fd4659f2d7787e57",pair:"94256a83b1aa862b",rw:"ebfc7005b1a02960",ans:"50dc46ee2ade296a",ab:"1d9e93c28c3d1df1"}},
-  {id:"9",p:"5 − (−8) − 20",h:{mag:"ec460f27835f7942",pair:"c06ea5a65a4472ea",rw:"f16f4ff4fd19e73f",ans:"f502717f22530487",ab:"2a5afaf290da7afe"}},
-  {id:"10",p:"−12 − (−5) − (−3)",h:{mag:"1960675bc7fb7f45",pair:"6f9f9a5d744e7770",rw:"c378d4e4680aa64c",ans:"397c153c0e4bc2d6",ab:"86c62658ecd90aed"}}
-];
 
 var $ = function(id){return document.getElementById(id);};
 var screen = $("screen");
@@ -124,7 +161,7 @@ function fresh(){return {name:"", started:null, stage:"start", idx:0, practice:n
 function save(){try{localStorage.setItem(KEY, JSON.stringify(state));}catch(e){}}
 function load(){try{var s=localStorage.getItem(KEY);return s?JSON.parse(s):null;}catch(e){return null;}}
 
-function pretty(s){return s.replace(/-/g," − ").replace(/\+/g," + ").replace(/^ − /,"−").trim();}
+function pretty(s){return s.replace(/-/g," − ").replace(/\+/g," + ").replace(/^ − /,"−").replace(/\( − /g,"(−").trim();}
 function prettyNum(n){return n<0?"−"+Math.abs(n):String(n);}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
 
@@ -136,9 +173,15 @@ function normMag(s){
     .replace(/[−‐-―─━ー一_~﹣－]/g,"-")
     .replace(/[＋✚]/g,"+")
     .replace(/[oOＯ]/g,"0").replace(/[lI|ǀ]/g,"1")
+    .replace(/[⁄∕]/g,"/")
     .replace(/[\s.,=]/g,"");
 }
-function readable(s){return /^[+-]?\d+([+-]\d+)*$/.test(s);}
+function readable(s){return /^[+-]?\d+(\/\d+)?([+-]\d+(\/\d+)?)*$/.test(s);}
+// fractions: "−3/4" → [−3, 4]; whole numbers have bottom 1
+function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ var t=a%b; a=b; b=t; } return a||1; }
+function simplest(s){ var m=String(s).match(/^([+-]?\d+)(?:\/(\d+))?$/); if(!m) return null; var n=+m[1], d=+(m[2]||1); if(!d) return null; var g=gcd(n,d); n/=g; d/=g; return d===1?String(n):n+"/"+d; }
+function fracs(s){ return (String(s).match(/[+-]?\d+(\/\d+)?/g)||[]).map(function(t){ var q=t.split("/"); return [parseInt(q[0],10), parseInt(q[1]||"1",10)]; }); }
+function fracHtml(p){ return p.replace(/(\d+)\/(\d+)/g,'<span class="fr"><span>$1</span><span>$2</span></span>'); }
 function nums(s){return (String(s).match(/\d+/g)||[]).map(Number);}
 
 function hash(id, s){
@@ -279,6 +322,7 @@ function showHow(){
 }
 
 function showExample(){
+  if(SET.example==="frac") return showFracExample();
   setCount("Example");
   screen.innerHTML =
     '<span class="tag">Example</span>'+
@@ -302,6 +346,8 @@ var KINDS = {
          ex:["−2 − 11 + 1 → −13 + 1"]},
   mag:  {label:"Absolute: the size in brackets, the answer's sign in front", ph:"Write here with your Pencil",
          ex:["−2 + 11 → (11 − 2) &nbsp;answer is +, no sign", "−11 + 2 → −(11 − 2) &nbsp;answer is −, put − in front", "−2 − 11 → −(11 + 2) &nbsp;both −, add them"]},
+  same: {label:"Make the bottom numbers the same", ph:"Write here with your Pencil", ex:["−1/4 + 1/5 → −5/20 + 4/20"]},
+  top:  {label:"One fraction: put the tops together over the bottom, keep each sign", ph:"Write here with your Pencil", ex:["−5/20 + 4/20 → (−5 + 4)/20"]},
   ans:  {label:"The answer", ph:"Write the answer here"}
 };
 function showItem(it, countText, tagText){
@@ -310,11 +356,11 @@ function showItem(it, countText, tagText){
   var rec={id:it.id, problem:it.p, lines:{}, hint:false, strong:false, pen:0, typed:0, strokes:0};
   kinds.forEach(function(k){ rec.lines[k]={tries:[]}; });
   var need=nums(it.p.replace(/−/g,"-")).length;
-  var html='<span class="tag">'+tagText+'</span><div class="problem">'+it.p+'</div>';
+  var html='<span class="tag">'+tagText+'</span><div class="problem">'+fracHtml(it.p)+'</div>';
   kinds.forEach(function(k,i){
     var n=i+1;
     if(k==="ans") html+='<div class="step"><div class="padhead"><span>Working space <small>(write anything here, it stays as your writing)</small></span><button class="clear" id="padclr" type="button">Clear</button></div><canvas class="pad" id="pad"></canvas></div>';
-    html+='<div class="step'+(i?' locked':'')+'" id="s'+n+'"><label for="in'+n+'">Line '+n+': '+KINDS[k].label+'</label>'+(KINDS[k].ex?'<span class="note">'+KINDS[k].ex.join('<br>')+'</span>':'')+writeBox("in"+n,KINDS[k].ph,i>0)+
+    html+='<div class="step'+(i?' locked':'')+'" id="s'+n+'"><label for="in'+n+'">Line '+n+': '+KINDS[k].label+'</label>'+(KINDS[k].ex?'<span class="note">'+KINDS[k].ex.join('<br>')+'</span>':'')+(k==="ans"&&it.f?'<span class="note">Make it as small as you can, e.g. 2/8 → 1/4.</span>':'')+writeBox("in"+n,KINDS[k].ph,i>0)+
       '<div class="read" id="r'+n+'"></div><div class="msg" id="m'+n+'"></div><div id="h'+n+'"></div></div>';
   });
   screen.innerHTML=html;
@@ -349,7 +395,16 @@ function showItem(it, countText, tagText){
     var k=kinds[n-1], el=$("in"+n), m=$("m"+n), step=rec.lines[k];
     var bad=function(msg,why,raw){ m.className="msg bad"; m.textContent=msg; logOther(step, raw, why); };
     var vv, key, other=null;
-    if(k==="mag"){
+    if(k==="top"){                                                     // (−5 + 4)/20
+      var vt=normMag(el.value); if(!vt) return;
+      var mt=vt.match(/^\(([+-]?\d+[+-]\d+)\)\/(\d+)$/);
+      if(!mt){
+        if(!forced && !/\)\/\d+$/.test(vt)) return;                    // still writing
+        bad("Write it like (−5 + 4)/20: the tops in brackets, then / and the bottom.","not in ( )/ form",vt);
+        return;
+      }
+      vv="("+mt[1].replace(/^\+/,"")+")/"+mt[2]; key="t"+vv;
+    }else if(k==="mag"){
       var v=normMag(el.value); if(!v) return;
       var mm=v.match(/^([+-]?)\((\d+)([+-])(\d+)\)$/), fs=v.match(/^([+-]?\d+)([+-]\d+)$/);
       if(!mm && fs){                                                   // first + second, allowed when the answer is not negative
@@ -373,9 +428,12 @@ function showItem(it, countText, tagText){
       vv=v2.replace(/^\+/,"");
       if(k==="rw" && nums(vv).length<need && !forced) return;          // still writing
       if(k==="pair" && nums(vv).length<2 && !forced) return;
-      if(k==="ans" && !/^[+-]?\d+$/.test(vv)){ bad("Write one number only.","not one number",vv); return; }
-      if(k==="ans") vv=String(parseInt(vv,10));
-      key={rw:"r",pair:"q",ans:"a"}[k]+vv;
+      if(k==="same" && nums(vv).length<4 && !forced) return;
+      if(k==="ans" && !/^[+-]?\d+(\/\d+)?$/.test(vv)){ bad(it.f?"Write one fraction only.":"Write one number only.","not one number",vv); return; }
+      if(k==="ans" && /\//.test(vv) && !it.f){ bad("Write one number only.","not one number",vv); return; }
+      if(k==="ans") vv=vv.replace(/^\+/,"").replace(/^(-?)0+(\d)/,"$1$2");
+      if(k==="ans" && !/\//.test(vv)) vv=String(parseInt(vv,10));
+      key={rw:"r",pair:"q",same:"s",ans:"a"}[k]+vv;
     }
     var last=step.tries[step.tries.length-1];
     if(last && !last.ok && last.wrote===vv) return;                  // same wrong line still in the box, already counted
@@ -386,7 +444,15 @@ function showItem(it, countText, tagText){
       if(h===it.h[k]) return finish(true,"");
       if(k==="mag" && other===null) return finish(false,"ท-number");
       if(k==="rw"){ var a=nums(vv), b=nums(it.p.replace(/−/g,"-")); return finish(false, a.join(",")!==b.join(",") ? "อ" : "ข"); }
-      if(k==="pair") return finish(false,"ท");
+      if(k==="pair" || k==="top") return finish(false,"ท");
+      if(k==="same"){ var bs=fracs(vv).map(function(x){return x[1];}); return finish(false, bs.some(function(b){return b!==bs[0];}) ? "bottoms differ" : "ท"); }
+      if(k==="ans" && it.f){
+        var sv=simplest(vv);
+        return hash(it.id,"a"+sv).then(function(hs){
+          if(sv!==vv && hs===it.h.ans) return finish(false,"not simplest");
+          return hash(it.id,"b"+sv.replace(/^-/,"")).then(function(hb){ finish(false, hb===it.h.ab ? "ท-sign" : "ท-number"); });
+        });
+      }
       if(k==="ans") return hash(it.id,"b"+Math.abs(parseInt(vv,10))).then(function(hb){ finish(false, hb===it.h.ab ? "ท-sign" : "ท-number"); });
       return Promise.all(other.map(function(o){return hash(it.id,o[1]);})).then(function(hs){
         var hit=other.filter(function(o,j){return hs[j]===it.h.mag;})[0];
@@ -400,7 +466,7 @@ function showItem(it, countText, tagText){
       if(keyboard) rec.typed++; else rec.pen++;
       if(!ok){
         el.classList.add("wrong"); m.className="msg bad";
-        m.textContent="Not yet. Tap Clear and write this line again.";
+        m.textContent= tag==="not simplest" ? "Right size. Now make it as small as you can." : tag==="bottoms differ" ? "The bottom numbers must be the same." : "Not yet. Tap Clear and write this line again.";
         var wrongs=step.tries.filter(function(x){return !x.ok;}).length;
         if(wrongs===2){ rec.hint=true; $("h"+n).innerHTML=hintHtml(it,k,false); }
         if(wrongs>=3){ rec.strong=true; $("h"+n).innerHTML=hintHtml(it,k,true)+copyLine(it,k); }
@@ -475,7 +541,14 @@ function setupPad(cv, clr, onStroke){
 // after 3 wrong tries on a working line: show the line to copy so the question never gets stuck
 function copyLine(it,k){
   if(k==="ans") return "";
-  var rw=it.p.replace(/−/g,"-").replace(/\s/g,"").replace(/-\(-(\d+)\)/g,"+$1").replace(/\+\(-(\d+)\)/g,"-$1");
+  var rw=it.p.replace(/−/g,"-").replace(/\s/g,"").replace(/-\(-(\d+(?:\/\d+)?)\)/g,"+$1").replace(/\+\(-(\d+(?:\/\d+)?)\)/g,"-$1");
+  if(it.f){
+    var fs=fracs(rw), lcd=fs.reduce(function(l,x){ return l*x[1]/gcd(l,x[1]); },1);
+    var tops=fs.map(function(x){ return x[0]*lcd/x[1]; });
+    var sgn=function(n,i){ return (n<0?"-":(i?"+":""))+Math.abs(n); };
+    var fl = k==="rw" ? rw : k==="same" ? tops.map(function(n,i){ return sgn(n,i)+"/"+lcd; }).join("") : "("+tops.map(sgn).join("")+")/"+lcd;
+    return '<div class="help"><b>Copy this line</b><p class="copy">'+pretty(fl).replace(/\( /g,"(").replace(/ \)/g,")")+'</p></div>';
+  }
   var t=rw.match(/[+-]?\d+/g).map(Number);
   if(t.length===3) t=[t[0]+t[1],t[2]];
   var pair=t[0]+(t[1]<0?"":"+")+t[1];
@@ -483,9 +556,15 @@ function copyLine(it,k){
   return '<div class="help"><b>Copy this line</b><p class="copy">'+pretty(line).replace(/\( /g,"(").replace(/ \)/g,")")+'</p></div>';
 }
 function hintHtml(it,k,strong){
+  if(k==="same") return '<div class="help"><b>Help</b><p>Find the smallest number that both bottom numbers go into. Change each fraction to that bottom: multiply its top and bottom by the same number. Keep each sign.</p>'+
+    (strong?'<p class="note">Example: −1/4 + 1/5 → bottoms 4 and 5 both go into 20 → −5/20 + 4/20</p>':'')+'</div>';
+  if(k==="top") return '<div class="help"><b>Help</b><p>Write the two tops inside brackets with their signs, then / and the same bottom.</p>'+
+    (strong?'<p class="note">Example: −5/20 + 4/20 → (−5 + 4)/20</p>':'')+'</div>';
+  if(k==="ans" && it.f) return '<div class="help"><b>Help</b><p>Work out the top: different signs → big − small, the bigger one\'s sign wins. Keep the bottom. Then make the fraction as small as you can.</p>'+
+    (strong?'<p class="note">Example: (−5 + 4)/20 = −1/20 · (2 + 4)/8 = 6/8 = 3/4</p>':'')+'</div>';
   if(k==="rw"){
     var s='<div class="help"><b>Help</b><p>Minus a negative becomes plus: − (−) → +. Keep every number the same.</p>';
-    if(strong) s+='<p>Copy the first number. Change each − (−) into +. Copy the other numbers.</p><p class="note">Example: −8 − (−13) = −8 + 13</p>';
+    if(strong) s+='<p>Copy the first number. Change each − (−) into +. Copy the other numbers.</p><p class="note">Example: '+(it.f?'−1/4 − (−2/5) = −1/4 + 2/5':'−8 − (−13) = −8 + 13')+'</p>';
     return s+'</div>';
   }
   if(k==="pair") return '<div class="help"><b>Help</b><p>Do only the first two numbers. Copy the last number as it is.</p>'+
@@ -531,6 +610,22 @@ function next(rec){
   save(); render(); window.scrollTo(0,0);
 }
 
+function showFracExample(){
+  setCount("Example");
+  screen.innerHTML =
+    '<span class="tag">Example</span>'+
+    '<div class="problem">'+fracHtml("−1/4 − (−2/3)")+'</div>'+
+    '<div class="worked">'+
+      '<div class="wline"><span class="lab">Line 1: − (−) becomes +</span><span class="val">= −1/4 + 2/3</span></div>'+
+      '<div class="wline"><span class="lab">Line 2: make the bottoms the same. 4 and 3 both go into 12</span><span class="val">= −3/12 + 8/12</span></div>'+
+      '<div class="wline"><span class="lab">Line 3: one fraction, each sign stays on its top number</span><span class="val">= (−3 + 8)/12</span></div>'+
+      '<div class="wline"><span class="lab">Line 4: the answer, as small as you can</span><span class="val">= 5/12</span></div>'+
+      '<p class="note">Questions 1 to 3 are whole numbers like yesterday. Questions 4 to 10 are fractions. Some fractions already have the same bottom, so they skip Line 2.</p>'+
+    '</div>'+
+    '<div class="btns"><button class="main" id="go" type="button">Try one</button></div>';
+  $("go").onclick=function(){ leavePage("example"); state.stage="practice"; save(); render(); };
+}
+
 // ---------- results (plain lines, each under 100 characters, one per sheet cell) ----------
 function sec(ms){return ms==null?"-":Math.round(ms/1000)+" s";}
 function firstOk(step){return step.tries.length>0 && step.tries[0].ok;}
@@ -549,11 +644,11 @@ function attempts(label, step){
   out.push(cur);
   return out;
 }
-var LINE_NAMES={rw:"no − (−)", pair:"first two", mag:"absolute", ans:"answer"};
+var LINE_NAMES={rw:"no − (−)", pair:"first two", mag:"absolute", same:"same bottom", top:"one top", ans:"answer"};
 // lines right at the first try with nothing else written share one line: "   ✓ no − (−) 9s · answer 21s"
 function lineAttempts(r){
   var out=[], easy=[];
-  ["rw","pair","mag","ans"].forEach(function(k){
+  ["rw","pair","mag","same","top","ans"].forEach(function(k){
     var st=r.lines[k]; if(!st) return;
     if(st.tries.length===1 && st.tries[0].ok && !(st.other||[]).length) easy.push(LINE_NAMES[k]+" "+Math.round(st.tries[0].ms/1000)+"s");
     else out=out.concat(attempts(LINE_NAMES[k], st));
@@ -574,13 +669,17 @@ function resultLines(){
   var pen=0, typed=0; it.forEach(function(r){pen+=r.pen; typed+=r.typed;});
   var d=new Date(state.finished||Date.now());
   var L=[];
-  L.push("Signs Check − (−) 22 Oct set · "+state.name+" · "+d.toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}));
-  L.push("All lines right first try "+score+"/"+n+" · − (−) line "+rw+"/"+nrw+" · absolute line "+mg+"/"+n);
-  L.push("Avg Q1-8: "+avg+" s (21 Oct ~38 s without Q2) · 2 numbers Q1-4 "+avgOf(0,4)+" · sign only Q5-6 "+avgOf(4,6)+" · 3 numbers Q7-10 "+avgOf(6,10));
+  L.push("Signs Check − (−) "+SET.name+" · "+state.name+" · "+d.toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}));
+  L.push("All lines right first try "+score+"/"+n+" · − (−) line "+rw+"/"+nrw+" · absolute line "+mg+"/"+has("mag").length);
+  if(SET_ID==="d23") L.push("Avg whole numbers Q1-3 "+avgOf(0,3)+" · fractions Q4-10 "+avgOf(3,10)+" · same bottom Q4-5 "+avgOf(3,5)+" · different bottoms Q6-10 "+avgOf(5,10));
+  else if(SET_ID==="d21") L.push("Avg Q1-8: "+avg+" s (first try 21 Oct: 94 s, ~38 s without Q2) · Q9-10 "+avgOf(8,10));
+  else L.push("Avg Q1-8: "+avg+" s (21 Oct ~38 s without Q2) · 2 numbers Q1-4 "+avgOf(0,4)+" · sign only Q5-6 "+avgOf(4,6)+" · 3 numbers Q7-10 "+avgOf(6,10));
   L.push("Checks written with Pencil: "+pen+" · typed: "+typed+" · used working space in "+it.filter(function(r){return r.strokes;}).length+"/"+n);
   var pg=state.pages||{}, tot=0; it.forEach(function(r){tot+=r.rawMs||0;});
   L.push("Page time · How to write "+sec(pg.how)+" · Example "+sec(pg.example)+" · Practice "+sec(state.practice&&state.practice.rawMs)+" · 10 questions "+sec(tot));
-  L.push("Goal: absolute line first try ≥8/10 · 3-number − (−) line ≥3/4 · no question over 2 min");
+  L.push(SET_ID==="d23" ? "Goal: ≥8/10 all lines first try · fraction answers right sign first try ≥6/7 · no question over 2 min"
+    : SET_ID==="d21" ? "Goal: ≥9/10 all lines first try · Q1-8 ≤ 40 s"
+    : "Goal: absolute line first try ≥8/10 · 3-number − (−) line ≥3/4 · no question over 2 min");
   L.push("ink "+state.sid);
   it.forEach(function(r,i){
     var open = " (on page "+sec(r.rawMs)+")";
@@ -593,7 +692,7 @@ function resultLines(){
     L.push("Practice "+p.problem+" · "+sec(p.activeMs));
     L.push.apply(L, lineAttempts(p));
   }
-  L.push("Tags: ท-sign sign slip · ท-number number slip · อ copied a number wrong");
+  L.push("Tags: ท-sign sign slip · ท-number number slip · อ copied a number wrong"+(SET_ID==="d23"?" · not simplest":""));
   L.push("ข − (−) not changed into +  (suggested, please confirm)");
   return L.slice(0,59);
 }
