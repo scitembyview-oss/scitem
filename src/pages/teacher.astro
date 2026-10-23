@@ -255,12 +255,12 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
   type Line = { tries: Try[]; other?: { wrote: string; why: string; ms: number }[] };
   type SignsQ = { q: string; w: number; h: number; s: number[][]; c: number;
     t?: { lines?: Record<string, Line>; line1?: Line; answer?: Line; activeMs?: number; pageMs?: number; startMs?: number } };
-  const SIGN_LINES: [string, string][] = [['rw', 'ไม่มี − (−)'], ['pair', 'สองตัวแรก'], ['mag', 'absolute'], ['ans', 'คำตอบ']];
+  const SIGN_LINES: [string, string][] = [['rw', 'ไม่มี − (−)'], ['pair', 'สองตัวแรก'], ['mag', 'absolute'], ['same', 'ตัวส่วนเท่ากัน'], ['top', 'รวมตัวเศษ'], ['ans', 'คำตอบ']];
   const minus = (x: string) => esc(x).replace(/-/g, '−').replace(/([+−])/g, ' $1 ').replace(/^ − /, '−').replace(/\( /g, '(').replace(/\s+/g, ' ').trim();
 
   // Results sent before the per-question records existed only have the report text; rebuild the same records from it.
   // Old lines: "   line 1 x1 −11 − 18[ข] · answer OK"; newer: "   line 1: −11 − 18 ✗ข 6s → −11 + 18 ✓ 11s" (wrapped lines start with 6 spaces).
-  const LINE_KEYS: Record<string, string> = { 'line 1': 'rw', 'no − (−)': 'rw', 'first two': 'pair', absolute: 'mag', answer: 'ans' };
+  const LINE_KEYS: Record<string, string> = { 'line 1': 'rw', 'no − (−)': 'rw', 'first two': 'pair', absolute: 'mag', answer: 'ans', 'same bottom': 'same', 'one top': 'top' };
   function parseSignsText(text: string[]): [number, SignsQ][] {
     const out: [number, SignsQ][] = [];
     const s = (x?: string) => (x && x !== '-' ? Number(x) * 1000 : 0);
@@ -297,7 +297,7 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
           if (e && LINE_KEYS[e[1]]) (cur.t!.lines![LINE_KEYS[e[1]]] = { tries: [] }).tries.push({ wrote: '', ok: true, tag: '', ms: +e[2] * 1000 });
         }
       }
-      else if ((m = line.match(/^ {3}(line 1|answer|no − \(−\)|first two|absolute): (.*)$/))) { key = LINE_KEYS[m[1]]; m[2].split(' → ').forEach((p) => add(key, p.trim())); }
+      else if ((m = line.match(/^ {3}(line 1|answer|no − \(−\)|first two|absolute|same bottom|one top): (.*)$/))) { key = LINE_KEYS[m[1]]; m[2].split(' → ').forEach((p) => add(key, p.trim())); }
       else if (key && /^ {6}\S/.test(line)) line.trim().split(' → ').forEach((p) => add(key, p.trim()));
       else if (/^ {3}line 1 /.test(line)) line.split(' · ').forEach(oldStyle);
       else { cur = null; key = ''; }
@@ -348,6 +348,7 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
     else {
 
     const linesOf = (d: SignsQ): Record<string, Line> => d.t!.lines ?? { rw: d.t!.line1!, ans: d.t!.answer! };
+    const used = SIGN_LINES.filter(([key]) => real.some(([, d]) => linesOf(d)[key]));
     const firstOk = (l?: Line) => !!l && l.tries.length > 0 && l.tries[0].ok;
     const secs = (ms?: number) => Math.round((ms ?? 0) / 1000);
     const allFirst = real.filter(([, d]) => Object.values(linesOf(d)).every(firstOk)).length;
@@ -372,7 +373,7 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
       return `<tr${k ? '' : ' class="practice"'}><th>${k || 'ฝึก'}</th><td class="q">${esc(d.q)}</td>
         <td class="time"><span class="num${t > 40 ? ' slow' : ''}">${mmss2(t)}</span><div class="sbar"><div style="width:${Math.min(100, (t / maxT) * 100)}%"></div></div>
           <small>เริ่มเขียน ${secs(d.t!.startMs)} วิ</small></td>
-        ${SIGN_LINES.map(([key]) => cell(L[key])).join('')}
+        ${used.map(([key]) => cell(L[key])).join('')}
         <td class="na">${help ? 'มีตัวช่วย' : ''}${d.s.length ? (help ? ' · ' : '') + 'ทด' : ''}</td></tr>`;
     };
     box.innerHTML = `<div class="tiles">
@@ -382,7 +383,7 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
         <div class="tile${wrong ? ' warn' : ''}"><b>${wrong}</b><span>ครั้งที่เขียนผิด${Object.keys(tags).length ? '<br>' + Object.entries(tags).map(([t, n]) => `${esc(t)} ${n}`).join(' · ') : ''}</span></div>
       </div>
       <div class="tablewrap"><table class="stable">
-        <thead><tr><th>ข้อ</th><th>โจทย์</th><th>เวลา</th>${SIGN_LINES.map(([, n]) => `<th>${n}</th>`).join('')}<th></th></tr></thead>
+        <thead><tr><th>ข้อ</th><th>โจทย์</th><th>เวลา</th>${used.map(([, n]) => `<th>${n}</th>`).join('')}<th></th></tr></thead>
         <tbody>${[...real, ...qs.filter(([k, d]) => k === 0 && d.t)].map(row).join('')}</tbody></table></div>
       <p class="hint">✓ = ถูกตั้งแต่ครั้งแรก · ✗ n = ผิด n ครั้งก่อนถูก (เขียนอะไรไปบ้าง + ป้าย) · เวลาเกิน 40 วิ เป็นสีส้ม · ป้าย: ท-sign เครื่องหมายพลาด, ท-number ตัวเลขพลาด, อ ลอกเลขผิด, ข ไม่เปลี่ยน − (−) เป็น +</p>
       ${inkHtml}`;
