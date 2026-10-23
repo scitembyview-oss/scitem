@@ -728,16 +728,22 @@ The air around us is made of particles too — they push on us all the time. Thi
       if (e.type === 'pointerup' && cur.tapEl && performance.now() - cur.t < (pen ? PEN_TAP_MS : TAP_MS) && travel(cur) < (pen ? PEN_TAP_PX : TAP_PX)) { drop(cur); act(cur.tapEl); }
       delete cur.touch; delete cur.w; delete cur.tapEl;
       cur = null;
+      changed();
     };
     canvas.addEventListener('pointerup', end);
     canvas.addEventListener('pointercancel', end);
     return {
-      canvas, redraw,
-      undo() { strokes.pop(); redraw(); },
-      clear() { strokes.length = 0; redraw(); },
+      canvas, redraw, strokes,
+      undo() { strokes.pop(); redraw(); changed(); },
+      clear() { strokes.length = 0; redraw(); changed(); },
+      load(arr) { strokes.length = 0; strokes.push(...(arr || [])); redraw(); },
     };
   }
   const inks = sheets.map(s => makeInk(s.querySelector('.ink')));
+  // a page that wraps this deck (the course page, /course/*) keeps the ink and follows the page number through these
+  const changed = () => window.dispatchEvent(new Event('scitem:ink'));
+  window.SCITEM = { inks: () => inks.map(k => k.strokes), load: all => all.forEach((a, i) => inks[i] && inks[i].load(a)),
+    page: () => cur + 1, go: n => go(n - 1) };
 
   // ================= layout & paging =================
   function layout() {
@@ -760,7 +766,8 @@ The air around us is made of particles too — they push on us all the time. Thi
     stage.scrollTop = 0;
     $('pageNo').textContent = (cur + 1) + ' / ' + sheets.length;
     $('prev').disabled = cur === 0; $('next').disabled = cur === sheets.length - 1;
-    history.replaceState(null, '', '#p' + (cur + 1));
+    try { history.replaceState(null, '', '#p' + (cur + 1)); } catch (e) {}
+    window.dispatchEvent(new Event('scitem:page'));
   }
 
   // ================= palm-safe finger panning on the stage =================
