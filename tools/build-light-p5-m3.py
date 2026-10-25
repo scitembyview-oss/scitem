@@ -57,6 +57,15 @@ def label(x, y, t, size=15):
 def beam(x1, y1, x2, y2, op=".75", w=14):
     return f'<path d="M{x1} {y1} L{x2} {y2}" stroke="#FFE68A" stroke-width="{w}" opacity="{op}" stroke-linecap="round"/>'
 
+# light path shown when the light source is tapped (data-act="ray"): drawn segment by segment, tap again to hide
+def ray(x1, y1, x2, y2, d=0, op=1, w=3):
+    import math
+    a = math.atan2(y2 - y1, x2 - x1)
+    p1 = (x2 - 11*math.cos(a - .45), y2 - 11*math.sin(a - .45))
+    p2 = (x2 - 11*math.cos(a + .45), y2 - 11*math.sin(a + .45))
+    return (f'<g class="ray" style="--d:{d}s;--o:{op}"><path class="rl" pathLength="1" d="M{x1} {y1} L{x2} {y2}" stroke-width="{w}"/>'
+            f'<path class="rh" d="M{p1[0]:.1f} {p1[1]:.1f} L{x2} {y2} L{p2[0]:.1f} {p2[1]:.1f}" stroke-width="{w}"/></g>')
+
 def choose3(opts):
     return "".join(f'<span class="mini">{t}</span>' for t in opts)
 
@@ -126,7 +135,8 @@ task(2, "Glow says, \"My eyes send out light so I can see.\" Is Glow right? Why?
 # 5 seeing non-sources
 bookscene = (lamp_svg(36, 30, act="flash") + '<path d="M10 120 H330" stroke="#8A5A2B" stroke-width="2.5"/>' + book_svg(160, 100) + eye(300, 52, .8, -1) +
              arrow_line(50, 38, 140, 86) + arrow_line(178, 84, 278, 58))
-parrotscene = sun_svg(34, 32, 14, act="flash") + parrot(170, 70) + ground(360, 128) + kid(320, 128) + eye(338, 60, .6, -1)
+parrotscene = (sun_svg(34, 32, 14, act="ray") + parrot(170, 70) + ground(360, 128) + kid(320, 128) + eye(338, 60, .6, -1) +
+               ray(52, 42, 152, 66) + ray(188, 62, 318, 62, .8))
 steps5 = ["The light reflects off the book.", "The reflected light goes into Glow's eyes.", "The lamp gives out light."]
 rows5 = "".join(f'<tr><td class="yt">{t}</td><td class="wa">{blank(70)}</td></tr>' for t in steps5)
 pages.append(page(5, "Seeing things that are not sources", bubble(f"Most things are {K('not sources')} of light. We see them because light from a source hits them and {K('reflects')} off them. Some of that light comes to us.") +
@@ -152,12 +162,14 @@ task(3, "How does a dark room show that Ibn al-Haytham was right?", lines(2))))
 
 # 8 mirror or board
 def bounce(name, surf):
-    b = (lamp_svg(26, 98, act="flash") + '<path d="M8 12 H192" stroke="#6B7785" stroke-width="4"/>' + label(80, 30, "wall", 13) +
+    b = (lamp_svg(26, 98, act="ray") + '<path d="M8 12 H192" stroke="#6B7785" stroke-width="4"/>' + label(80, 30, "wall", 13) +
          beam(40, 92, 128, 62, ".7", 10) + label(10, 135, name, 14))
     if surf == "mirror":
-        b += '<rect x="132" y="40" width="12" height="52" rx="2" transform="rotate(-24 138 66)" fill="#EEF6FC" stroke="#2F80C9" stroke-width="2.5"/>'
+        b += ('<rect x="132" y="40" width="12" height="52" rx="2" transform="rotate(-24 138 66)" fill="#EEF6FC" stroke="#2F80C9" stroke-width="2.5"/>' +
+              ray(40, 92, 130, 62) + ray(134, 58, 112, 18, .8) + '<circle class="rayspot" cx="110" cy="14" r="8"/>')
     else:
-        b += '<rect x="132" y="40" width="14" height="52" rx="2" transform="rotate(-24 138 66)" fill="#C9A27A" stroke="#8A5A2B" stroke-width="2.5"/>'
+        b += ('<rect x="132" y="40" width="14" height="52" rx="2" transform="rotate(-24 138 66)" fill="#C9A27A" stroke="#8A5A2B" stroke-width="2.5"/>' +
+              ray(40, 92, 128, 64) + "".join(ray(132, 60, x, y, .8, 1, 2) for x, y in ((110, 32), (100, 66), (150, 30), (118, 90))))
     return f'<div class="dcell">{svg(200, 145, b, 210)}</div>'
 pages.append(page(8, "Mirror or board?", bubble(f"Every object reflects some light. {K('Smooth')}, {K('shiny')} surfaces like mirrors send the light off neatly in one direction. Rough, dull surfaces spread the light out in many directions.") +
 '<div class="dgrid two2">' + bounce("Sharif: mirror", "mirror") + bounce("Majid: wooden board", "board") + '</div>' +
@@ -168,13 +180,16 @@ task(3, "Why can you see yourself in a mirror but not in a wooden door?", lines(
 
 # 9 transparent / translucent / opaque
 def sheet(kind, num):
-    b = lamp_svg(24, 60, act="flash") + beam(40, 60, 96, 60, ".8")
+    b = lamp_svg(24, 60, act="ray") + beam(40, 60, 96, 60, ".8")
     if kind == "glass":
-        b += '<rect x="98" y="18" width="10" height="84" fill="#DDEEFF" stroke="#2F80C9" stroke-width="2" opacity=".9"/>' + beam(110, 60, 176, 60, ".8")
+        b += ('<rect x="98" y="18" width="10" height="84" fill="#DDEEFF" stroke="#2F80C9" stroke-width="2" opacity=".9"/>' + beam(110, 60, 176, 60, ".8") +
+              ray(40, 60, 98, 60) + ray(108, 60, 178, 60, .7))
     elif kind == "paper":
-        b += '<rect x="98" y="18" width="10" height="84" fill="#F7F4EA" stroke="#B8BEC4" stroke-width="2"/>' + beam(110, 60, 176, 60, ".28")
+        b += ('<rect x="98" y="18" width="10" height="84" fill="#F7F4EA" stroke="#B8BEC4" stroke-width="2"/>' + beam(110, 60, 176, 60, ".28") +
+              ray(40, 60, 98, 60) + ray(108, 60, 178, 60, .7, .35))
     else:
-        b += '<rect x="98" y="18" width="12" height="84" fill="#C9A27A" stroke="#8A5A2B" stroke-width="2"/>'
+        b += ('<rect x="98" y="18" width="12" height="84" fill="#C9A27A" stroke="#8A5A2B" stroke-width="2"/>' +
+              ray(40, 60, 98, 60))
     b += label(8, 18, num)
     names = {"glass": "clear glass", "paper": "tracing paper", "wood": "wood"}
     return f'<div class="dcell">{svg(190, 112, b, 170)}<div class="cap">{names[kind]}</div></div>'
@@ -226,9 +241,11 @@ task(3, "What is the difference between transparent, translucent and opaque mate
 badge_row("#E8962E", "Light Professor", "", "Finished? Colour your last badge on page 1!")))
 
 # 14 mixed + boss + next mission
-pin = (candle_svg(40, 80) + '<path d="M150 18 V46 M150 58 V96 M150 18 H330 V96 H150" stroke="#8A5A2B" stroke-width="3" fill="#F4E6D6" fill-opacity=".35"/>' +
+pin = (f'<g class="tap" data-act="ray">{candle_svg(40, 80)}</g>' +
+       '<path d="M175 18 V49 M175 61 V96 M175 18 H330 V96 H175" stroke="#8A5A2B" stroke-width="3" fill="#F4E6D6" fill-opacity=".35"/>' +
        '<path d="M322 22 V92" stroke="#6B7785" stroke-width="3"/>' + candle_svg(310, 30, flip=True) +
-       label(160, 112, "pinhole camera", 12) + label(276, 112, "screen", 12))
+       label(185, 112, "pinhole camera", 12) + label(276, 112, "screen", 12) +
+       ray(40, 42, 175, 55, 0, 1, 2.5) + ray(175, 55, 306, 67, .8, 1, 2.5) + ray(40, 80, 175, 55, 0, 1, 2.5) + ray(175, 55, 306, 31, .8, 1, 2.5))
 sun14 = ('<svg viewBox="0 0 80 80" width="96" height="96"><g class="src tap" data-act="flash"><circle class="halo" cx="40" cy="40" r="30" fill="#FFE68A"/>'
          '<circle cx="40" cy="40" r="17" fill="#FFF" stroke="#E8962E" stroke-width="3"/><g stroke="#E8962E" stroke-width="3" stroke-linecap="round">'
          '<path d="M40 8v10M40 62v10M8 40h10M62 40h10M17 17l7 7M56 56l7 7M63 17l-7 7M24 56l-7 7"/></g></g></svg>')
@@ -240,6 +257,15 @@ f'''<div class="next"><div class="nimg">{sun14}</div>
 <div><b class="nm">Next mission:</b> Sunlight looks white. Is white light really just one colour? What do you think?<br>My guess: {blank(150)}</div></div>'''))
 
 CSS_M3 = """
+.ray .rl, .ray .rh { stroke: #C62828; fill: none; stroke-linecap: round; stroke-linejoin: round }
+.ray { opacity: 0; transition: opacity .2s }
+.ray .rl { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .7s ease-out var(--d) }
+.ray .rh { opacity: 0; transition: opacity .2s calc(var(--d) + .6s) }
+svg.showray .ray { opacity: var(--o) }
+svg.showray .ray .rl { stroke-dashoffset: 0 }
+svg.showray .ray .rh { opacity: 1 }
+.rayspot { fill: #FFE68A; stroke: #C62828; stroke-width: 2.5; opacity: 0; transition: opacity .3s 1.4s }
+svg.showray .rayspot { opacity: 1 }
 .sort { width: 100%; margin-top: 4px }
 .sort th { font-family: 'Fredoka'; font-weight: 600; color: #3C3A8F; border: 1.4px solid #2E8B57; width: 33.3% }
 .sort td { border: 1.4px solid #2E8B57; text-align: center }
@@ -256,9 +282,16 @@ CSS_M3 = """
 .circ3 .mini { padding: 0 10px }
 """
 
+# tap a light source: flash, then show (or hide) the light path
+EXTRA_ACT = """<script>window.EXTRA_ACT = { ray: el => {
+  const svg = el.ownerSVGElement;
+  if (svg.classList.toggle('showray')) { el.classList.remove('play'); void el.getBoundingClientRect(); el.classList.add('play'); setTimeout(() => el.classList.remove('play'), 800); }
+} };</script>
+"""
+
 SHELL = (HERE / "light-p5-shell.html").read_text(encoding="utf-8")
 html = (SHELL.replace("<!--TITLE-->", "Light Explorer · Mission 3").replace("<!--BUILD-->", "tools/build-light-p5-m3.py")
-             .replace("<!--HEAD-->\n", "").replace("/*SHEET_CSS*/", CSS + CSS_M2 + CSS_M3 + CSS_ANIM)
+             .replace("<!--HEAD-->\n", EXTRA_ACT).replace("/*SHEET_CSS*/", CSS + CSS_M2 + CSS_M3 + CSS_ANIM)
              .replace("<!--PAGES-->", "\n".join(f'<div class="sheet">{p}<canvas class="ink"></canvas></div>' for p in pages)))
 OUT.parent.mkdir(parents=True, exist_ok=True)
 OUT.write_text(html, encoding="utf-8")
