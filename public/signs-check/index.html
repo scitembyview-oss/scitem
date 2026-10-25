@@ -98,7 +98,7 @@ var SHEET_URL = "https://script.google.com/macros/s/AKfycbyq7E1RkdI8pARED-cN4XAH
 var QUIZ = "signs-1";
 var IDLE_MS = 60000;   // time with no touch or writing longer than this is not counted
 var WAIT_MS = 2000;    // pause after the last stroke before a box is checked
-// Each day's set has its own link: #d21, #d22 (also the plain link), #d23 = fractions, #d24 = 22 Oct again, #d25 = 23 Oct again. Each set keeps its own progress.
+// Each day's set has its own link: #d21, #d22 (also the plain link), #d23 = fractions, #d24 = 22 Oct again, #d25 = fractions again (remade 25 Oct). Each set keeps its own progress.
 // Answers are kept only as salted hashes (public repo). a, b = start and amount added, read from the question, for the picture hint.
 var SETS = {
   // 21 Oct: − (−) only, two numbers then three numbers
@@ -132,7 +132,7 @@ var SETS = {
     {id:"10",p:"−12 − (−5) − (−3)",h:{mag:"1960675bc7fb7f45",pair:"6f9f9a5d744e7770",rw:"c378d4e4680aa64c",ans:"397c153c0e4bc2d6",ab:"86c62658ecd90aed"}}
   ]},
   // 23 Oct: 3 review questions, then fractions with the sign on the top number (f = fraction question)
-  d23: {name:"23 Oct set (fractions)", key:"signscheck-d23", example:"frac",
+  d23: {name:"23 Oct set (fractions)", key:"signscheck-d23", example:"frac", split:[3,5],
     practice: {id:"p",p:"−1/3 − (−1/2)",f:1,k:["rw","same","top","ans"],h:{rw:"b9f278e3ff9b6e06",same:"567e8ebe4990ee5e",top:"9c1db5360d9089ed",ans:"74a859b0db54c5b8",ab:"4333a6ac1c21b3dc"}},
     items: [
     {id:"1",p:"−14 − (−6)",a:-14,b:6,h:{mag:"d6b32eda0b6fd4a8",rw:"de56553a075408fc",ans:"e2297e0cd5c7faa6",ab:"e0e1505b8c87bead"}},
@@ -161,20 +161,20 @@ var SETS = {
     {id:"9",p:"6 − (−9) − 22",h:{mag:"4780e58afb719da0",pair:"603f57792f93e19c",rw:"a24f80c65915f3c0",ans:"f502717f22530487",ab:"2a5afaf290da7afe"}},
     {id:"10",p:"−15 − (−4) − (−6)",h:{mag:"3753a702909a80a7",pair:"9a80decff87d4b5b",rw:"c8db3773f08d4827",ans:"ed3e6c17109ba584",ab:"d03547d1f4a0758b"}}
   ]},
-  // 25 Oct: repeat of 23 Oct fractions with new numbers (23 Oct: 6/10)
-  d25: {name:"25 Oct set (fractions)", key:"signscheck-d25", example:"frac",
+  // 25 Oct (remade after 24 Oct = 8/10): 2 whole-number review, then fractions; split = where same bottom and different bottoms start
+  d25: {name:"25 Oct set (fractions)", key:"signscheck-d25b", example:"frac", split:[2,4],
     practice: {id:"p",p:"−2/5 − (−1/2)",f:1,k:["rw","same","top","ans"],h:{rw:"fe47788a5d344b18",same:"488a79000ba2a43b",top:"fb4608d433e90942",ans:"5bb76f1552e7f00e",ab:"72eb6bf3ce3921aa"}},
     items: [
-    {id:"1",p:"−17 − (−8)",a:-17,b:8,h:{mag:"47ab1501dcb36f7c",rw:"9bac01efafc13851",ans:"a04ab4f77308f310",ab:"9028fddc411a5ef6"}},
-    {id:"2",p:"−11 + 29",a:-11,b:29,k:["mag","ans"],h:{mag:"411a3706f0dd0790",ans:"d5df48724b036810",ab:"567305d48469bb57"}},
-    {id:"3",p:"−9 − (−4) − 7",h:{mag:"14e8e9293034d7e2",pair:"de218fb2524779cd",rw:"c15a030465845f31",ans:"4f3e21992bad6490",ab:"8e3149eec1048338"}},
-    {id:"4",p:"−5/8 + 7/8",f:1,k:["top","ans"],h:{top:"b175c4706a301487",ans:"07e3af9b76a52f0b",ab:"fb48fa2cdb50c12f"}},
-    {id:"5",p:"−4/7 − 2/7",f:1,k:["top","ans"],h:{top:"de590b13e78b72f3",ans:"a5f60787146933bc",ab:"a03f5556e052a5d2"}},
-    {id:"6",p:"−1/3 + 1/4",f:1,k:["same","top","ans"],h:{same:"0b35494f2e1c4b41",top:"b3ba9648109a5e9d",ans:"3849eab4b320fb56",ab:"25285324c51f74a2"}},
-    {id:"7",p:"−5/6 − (−1/4)",f:1,k:["rw","same","top","ans"],h:{rw:"3f0ce881bd1d94c3",same:"672452602fea3cd0",top:"3a77b62af7535f19",ans:"cb7073f41bbb0e51",ab:"83a718b375bcd575"}},
-    {id:"8",p:"3/4 − (−1/8)",f:1,k:["rw","same","top","ans"],h:{rw:"706988f692625e6b",same:"0aa14e9a39aacece",top:"0f9d9eab3b3f8627",ans:"aaefaef8bf86defa",ab:"0fac57b91e833c7f"}},
-    {id:"9",p:"−3/4 + 2/5",f:1,k:["same","top","ans"],h:{same:"fbb38f517bdd8d5b",top:"bafccd50ae60da62",ans:"c41aeb00116f8b80",ab:"45adf5b03d578d89"}},
-    {id:"10",p:"−1/6 − (−5/8)",f:1,k:["rw","same","top","ans"],h:{rw:"21914e90ddb60b7b",same:"2804fe5ccc45c6ce",top:"54d2256a4a7bf7e4",ans:"a1fb37d8733249c4",ab:"a97d63479ac5c45e"}}
+    {id:"1",p:"−34 + 19",a:-34,b:19,k:["mag","ans"],h:{mag:"a8417c40c9703261",ans:"25f5f6b1a21ba244",ab:"a38aa3ab9914d0aa"}},
+    {id:"2",p:"−6 − (−14) − 13",h:{mag:"649188753b58d06a",pair:"9b7a26d34cb9ae59",rw:"189d5999ca9edc72",ans:"2ecb5e29cd5dd650",ab:"0ce8c93d3a8e1d74"}},
+    {id:"3",p:"−7/10 + 3/10",f:1,k:["top","ans"],h:{top:"fa030da7c2064f93",ans:"c6aa154a4dadf96d",ab:"bfed61d93a9d0008"}},
+    {id:"4",p:"5/12 − 11/12",f:1,k:["top","ans"],h:{top:"2076f2b615f50715",ans:"6f66b065289c7bc9",ab:"22231c18cbe5a587"}},
+    {id:"5",p:"−1/2 + 3/4",f:1,k:["same","top","ans"],h:{same:"24d0e96c3ceeafc8",top:"53cffbc3aa0717b3",ans:"526083a6444aa218",ab:"17a28d430ff5942e"}},
+    {id:"6",p:"−2/3 + 1/2",f:1,k:["same","top","ans"],h:{same:"2575d531d1a6a8a5",top:"42260d6d9e97fc4e",ans:"7960ade7e5eb7f62",ab:"c8412b7f140909a0"}},
+    {id:"7",p:"−3/8 − (−1/4)",f:1,k:["rw","same","top","ans"],h:{rw:"d5651c33136616e1",same:"1e71b534f85d6fe9",top:"9ab0dc0a8e610430",ans:"9d5778cd49ac9424",ab:"020652498e6afb0d"}},
+    {id:"8",p:"−1/6 − (−3/4)",f:1,k:["rw","same","top","ans"],h:{rw:"4e3cfc881108ad61",same:"65640886fd601bb2",top:"14b2f346af3d47e1",ans:"adaa244df4bd32d3",ab:"0d54932b4cab25bc"}},
+    {id:"9",p:"−4/5 + 1/3",f:1,k:["same","top","ans"],h:{same:"a5382f33d03e24aa",top:"d50a430688119037",ans:"0a44764edabbc742",ab:"447cae469dd73643"}},
+    {id:"10",p:"−5/6 − (−3/8)",f:1,k:["rw","same","top","ans"],h:{rw:"6a030449c16e8105",same:"425a22c74c116105",top:"80f6ddd0cda1cba4",ans:"0bd41715e1ce9d08",ab:"a97d63479ac5c45e"}}
   ]}
 };
 var SET_ID = (location.hash.match(/d2[1-5]/)||["d22"])[0];
@@ -701,13 +701,14 @@ function resultLines(){
   var L=[];
   L.push("Signs Check − (−) "+SET.name+" · "+state.name+" · "+d.toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"}));
   L.push("All lines right first try "+score+"/"+n+" · − (−) line "+rw+"/"+nrw+" · absolute line "+mg+"/"+has("mag").length);
-  if(SET.example==="frac") L.push("Avg whole numbers Q1-3 "+avgOf(0,3)+" · fractions Q4-10 "+avgOf(3,10)+" · same bottom Q4-5 "+avgOf(3,5)+" · different bottoms Q6-10 "+avgOf(5,10));
+  if(SET.example==="frac"){ var s0=SET.split[0], s1=SET.split[1], q=function(a,b){return "Q"+(a+1)+(b>a+1?"-"+b:"");};
+    L.push("Avg whole numbers "+q(0,s0)+" "+avgOf(0,s0)+" · fractions "+q(s0,n)+" "+avgOf(s0,n)+" · same bottom "+q(s0,s1)+" "+avgOf(s0,s1)+" · different bottoms "+q(s1,n)+" "+avgOf(s1,n)); }
   else if(SET_ID==="d21") L.push("Avg Q1-8: "+avg+" s (first try 21 Oct: 94 s, ~38 s without Q2) · Q9-10 "+avgOf(8,10));
   else L.push("Avg Q1-8: "+avg+" s (21 Oct ~38 s without Q2) · 2 numbers Q1-4 "+avgOf(0,4)+" · sign only Q5-6 "+avgOf(4,6)+" · 3 numbers Q7-10 "+avgOf(6,10));
   L.push("Checks written with Pencil: "+pen+" · typed: "+typed+" · used working space in "+it.filter(function(r){return r.strokes;}).length+"/"+n);
   var pg=state.pages||{}, tot=0; it.forEach(function(r){tot+=r.rawMs||0;});
   L.push("Page time · How to write "+sec(pg.how)+" · Example "+sec(pg.example)+" · Practice "+sec(state.practice&&state.practice.rawMs)+" · 10 questions "+sec(tot));
-  L.push(SET.example==="frac" ? "Goal: ≥8/10 all lines first try · fraction answers right sign first try ≥6/7 · no question over 2 min"
+  L.push(SET.example==="frac" ? "Goal: ≥8/10 all lines first try · fraction answers right sign first try ≥"+(n-SET.split[0]-1)+"/"+(n-SET.split[0])+" · no question over 2 min"
     : SET_ID==="d21" ? "Goal: ≥9/10 all lines first try · Q1-8 ≤ 40 s"
     : "Goal: absolute line first try ≥8/10 · 3-number − (−) line ≥3/4 · no question over 2 min");
   L.push("ink "+state.sid);
