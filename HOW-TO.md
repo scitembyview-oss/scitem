@@ -74,3 +74,8 @@ npm run dev      # แล้วเปิด http://localhost:4321
 
 แก้เสร็จแล้วรัน `python3 tools/build-light-p5.py` เพื่อสร้างหน้าเว็บใหม่
 ใช้งาน: โหมด ✏️ เขียนได้ และแตะสั้นๆ บนรูปเพื่อเล่นอนิเมชั่น · โหมด 👆 แตะอย่างเดียว ไม่เขียน · ปุ่ม ◀ ▶ หรือลูกศรซ้าย/ขวาเพื่อเปลี่ยนหน้า
+
+## สไลด์ Light Explorer · Mission 3 (scitem.net/light-p5-m3/)
+
+หน้าเว็บ `public/light-p5-m3/index.html` สร้างจาก `tools/build-light-p5-m3.py` ห้ามแก้ไฟล์นี้ตรงๆ
+สคริปต์ใช้รูปวาด CSS และแถบเครื่องมือชุดเดียวกับ Mission 2 แก้แล้วรัน `python3 tools/build-light-p5-m3.py`

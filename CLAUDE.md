@@ -18,6 +18,7 @@ push ขึ้น `main` แล้ว GitHub Actions (`.github/workflows/deploy.
 | ชีท PDF | `public/sheets/*.pdf` |
 | สไลด์เดโมการเคลื่อนที่แบบวงกลม (canvas, ปากกา) | `public/demo/index.html` (เขียนมือ ไฟล์เดียว) |
 | สไลด์ Light Explorer · Mission 2 (14 หน้า) | `public/light-p5/index.html` **สร้างจากสคริปต์ ห้ามแก้ตรง** |
+| สไลด์ Light Explorer · Mission 3 (14 หน้า) | `public/light-p5-m3/index.html` **สร้างจาก** `tools/build-light-p5-m3.py` (ใช้ helper + CSS จาก build-light-p5.py และ shell เดิม) ห้ามแก้ตรง |
 | เช็คพื้นฐานก่อนเรียน | โจทย์ `src/data/checks.ts` + `src/pages/check/*.astro` + `src/components/BasicCheck.astro`; ผลส่งเข้า Google Sheet ผ่าน `tools/check-sheet.gs` (URL = `SHEET_URL` ใน catalog.ts) สำรองด้วยรหัส `src/lib/check-code.js` |
 | สอบวัดระดับคณิต ม.1–2 (10 หัวข้อ เลือกได้, ปรับระดับตามคำตอบ) | `public/math-level/index.html` (ไฟล์เดียว ตรวจด้วย hash ส่งรหัส LF1- เป็นชิ้นเข้าชีทชื่อชุด `math-r2`); หน้าครูอ่านด้วย `src/lib/math-level.ts`; คลังข้อ+เฉลยเข้ารหัสใน `src/data/math-keys.json` (`node tools/encrypt-check-keys.mjs <keys.json> <รหัสผ่าน> src/data/math-keys.json`) |
 | เฉลยเช็ค (เข้ารหัส) | `src/data/check-keys.json` ← `node tools/encrypt-check-keys.mjs <keys.json> <รหัสผ่าน>` |

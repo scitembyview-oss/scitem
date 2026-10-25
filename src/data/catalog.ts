@@ -38,6 +38,10 @@ export interface Item {
 }
 
 export const items: Item[] = [
+  { title: 'Light Explorer · Mission 3', th: 'การมองเห็นและวัตถุโปร่งใส โปร่งแสง ทึบแสง', kind: 'slides', grade: 'P5',
+    meta: '14 หน้า', href: '/light-p5-m3/', course: 'p5-light',
+    note: 'เรามองเห็นได้อย่างไร แสงสะท้อน และวัสดุที่แสงผ่านได้ พร้อมปากกาเขียนบนสไลด์',
+    pages: ['/img/slides/light-m3-1.jpg', '/img/slides/light-m3-9.jpg'] },
   { title: 'Light Explorer · Mission 2', th: 'แสงเดินทางเป็นเส้นตรงและเงา', kind: 'slides', grade: 'P5',
     meta: '14 หน้า', href: '/light-p5/', course: 'p5-light',
     note: 'แตะรูปให้ขยับได้ ฉายแสงให้เกิดเงา พร้อมปากกาเขียนบนสไลด์',
