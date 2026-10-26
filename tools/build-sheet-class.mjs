@@ -38,24 +38,30 @@ if (!stuPdf || !keyPdf || !title || !tCode || !out || !id) {
   console.error('usage: node tools/build-sheet-class.mjs <student.pdf> <key.pdf> <title> <teacher code> <out dir> <class id> [--local]');
   process.exit(1);
 }
-const render = (pdf, dir) => {
-  execFileSync('pdftoppm', ['-jpeg', '-jpegopt', 'quality=78', '-scale-to-x', '1400', '-scale-to-y', '-1', pdf, join(dir, 'x')]);
+const render = (pdf, dir, q = 78, w = 1400) => {   // the key pages are smaller: they come down in one encrypted file
+  execFileSync('pdftoppm', ['-jpeg', '-jpegopt', `quality=${q}`, '-scale-to-x', String(w), '-scale-to-y', '-1', pdf, join(dir, 'x')]);
   return readdirSync(dir).filter((f) => f.startsWith('x-')).sort();
 };
 mkdirSync(join(out, 'p'), { recursive: true });
 for (const f of readdirSync(join(out, 'p'))) rmSync(join(out, 'p', f));
 const tmpS = mkdtempSync(join(tmpdir(), 'sc-s-')), tmpK = mkdtempSync(join(tmpdir(), 'sc-k-'));
-const sp = render(stuPdf, tmpS), kp = keyPdf === '-' ? [] : render(keyPdf, tmpK);
-if (kp.length && sp.length !== kp.length) throw new Error(`the key has ${kp.length} pages, the student sheet ${sp.length}: they must match page for page`);
+const sp = render(stuPdf, tmpS), kp = keyPdf === '-' ? [] : render(keyPdf, tmpK, 70, 1100);
+const ansQ = ansFile ? JSON.parse(readFileSync(ansFile, 'utf8')).q : [];
+const kpaged = ansQ.length && ansQ.every((q) => q.kpage);   // a tutor sheet laid out its own way: each question says its key page
+if (kp.length && !kpaged && sp.length !== kp.length) throw new Error(`the key has ${kp.length} pages, the student sheet ${sp.length}: they must match page for page`);
 sp.forEach((f, i) => renameSync(join(tmpS, f), join(out, 'p', 'p' + String(i + 1).padStart(2, '0') + '.jpg')));
 const qs = {}, answers = {};
-if (ansFile) for (const q of JSON.parse(readFileSync(ansFile, 'utf8')).q) {
+const kq = {}, kmap = [];
+for (const q of ansQ) {
   if (!(q.page >= 1 && q.page <= sp.length)) throw new Error(`${q.id}: page ${q.page} is not in the sheet`);
   const pid = 'p' + String(q.page).padStart(2, '0');
   (qs[pid] ||= []).push({ id: q.id, name: q.name, parts: q.parts.map((p) => (p.c ? { l: p.l, c: p.c } : { l: p.l })) });
+  if (q.kpage) kq[q.id] = q.kpage - 1;
   answers[q.id] = q.parts.map((p) => (p.c ? { c: 1, a: p.a } : p.t ? { t: 1 } : { v: p.v, u: p.u ?? '', ...(p.tol ? { tol: p.tol } : {}) }));
 }
-const plain = new TextEncoder().encode(JSON.stringify({ pages: kp.map((f) => readFileSync(join(tmpK, f)).toString('base64')), answers }));
+// kmap[student page] = the key page to open for it (the first question on that page, else the page before's)
+if (kpaged) for (let i = 0, last = 0; i < sp.length; i++) { const q = ansQ.find((x) => x.page === i + 1); if (q) last = q.kpage - 1; kmap.push(last); }
+const plain = new TextEncoder().encode(JSON.stringify({ pages: kp.map((f) => readFileSync(join(tmpK, f)).toString('base64')), answers, ...(kpaged ? { kmap, kq } : {}) }));
 rmSync(tmpS, { recursive: true }); rmSync(tmpK, { recursive: true });
 
 const b64 = (u) => Buffer.from(u).toString('base64');

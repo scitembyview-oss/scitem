@@ -131,6 +131,9 @@ body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:v
 #fNames button[aria-current="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
 #fNames button.fresh::after{content:"";position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:var(--sage);border:2px solid #fff}
 #fNames button.quiet{opacity:.55}
+#fNames .keychip{display:inline-flex;align-items:center;gap:5px;color:var(--good);border-color:var(--good)}
+#fNames .keychip[aria-current="true"]{background:var(--good);color:#fff}
+#fNames .keychip .ic{width:18px;height:18px}
 #fDots button{min-width:38px;min-height:36px;border-radius:9px;border:1px solid var(--line);background:var(--card);font:600 13px var(--display);padding:0 3px}
 #fDots button.ink{background:var(--mint)}
 #fDots button.here{box-shadow:inset 0 -4px 0 var(--sage)}
@@ -263,14 +266,14 @@ async function openKey(code){
   const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt:b64(B.salt),iterations:B.iter,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["decrypt"]);
   return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:b64(B.iv)},key,b64(B.ct))));
 }
-let ME=load(K.me,{}),PW="",KEYPAGES=null,KEYANS={};
+let ME=load(K.me,{}),PW="",KEYPAGES=null,KEYANS={},KEYMAP=null,KEYQ={};
 if(STAFF){$("gTitle").textContent=LIVE_SCREEN?"จอครูดูสด (ซ่อน)":TEACHER?"จอครู (ซ่อน)":"จอครู (แชร์ให้น้องดู)";$("gNameL").hidden=true;$("gCodeL").hidden=false;$("gGo").textContent="เข้า";}
 else{$("gTitle").textContent=CFG.title;if(ME.name)$("gName").value=ME.name;}
 $("gateForm").addEventListener("submit",async e=>{
   e.preventDefault();$("gErr").textContent="";
   if(STAFF){
     const code=$("gCode").value.trim();$("gGo").disabled=true;
-    try{const k=await openKey(code);if(TEACHER)KEYPAGES=k.pages;KEYANS=k.answers||{};}
+    try{const k=await openKey(code);if(TEACHER||LIVE_SCREEN)KEYPAGES=k.pages;KEYANS=k.answers||{};KEYMAP=k.kmap||null;KEYQ=k.kq||{};}
     catch(err){$("gErr").textContent="รหัสไม่ถูก";$("gGo").disabled=false;return;}
     PW=sessionStorage.getItem("scitem-sheet-pw")||code;
     if(LIVE_SCREEN){
@@ -648,11 +651,13 @@ function drawLive(){
 }
 function names(){                          // a chip per student on the hidden screen; tap = see her sheet
   const box=$("fNames"),list=Object.values(CARDS).sort((a,b)=>(a.name.textContent).localeCompare(b.name.textContent,"th"));
+  // View 2026-10-26: the tutor sheet is "student 0" (เฉลย), always first
+  if(HASKEY)list.unshift({u:KEYU,name:{textContent:"เฉลย"},seen:0,key:1});
   if(box.children.length!==list.length||list.some((c,k)=>box.children[k].dataset.u!==c.u)){
-    box.innerHTML="";for(const c of list){const b=document.createElement("button");b.dataset.u=c.u;b.onclick=()=>openFocus(c.u);box.appendChild(b);}
+    box.innerHTML="";for(const c of list){const b=document.createElement("button");b.dataset.u=c.u;if(c.key)b.className="keychip";b.onclick=()=>openFocus(c.u);box.appendChild(b);}
   }
   const t=Date.now();
-  [...box.children].forEach((b,k)=>{const c=list[k],nw=waiting(c.u).length;b.innerHTML=esc(c.name.textContent)+(nw?`<span class="wait">${nw}</span>`:"");b.setAttribute("aria-current",!!FOC&&FOC.u===c.u);
+  [...box.children].forEach((b,k)=>{const c=list[k];if(c.key){b.innerHTML=icon("check")+"เฉลย";b.setAttribute("aria-current",!!FOC&&FOC.u===KEYU);return;}const nw=waiting(c.u).length;b.innerHTML=esc(c.name.textContent)+(nw?`<span class="wait">${nw}</span>`:"");b.setAttribute("aria-current",!!FOC&&FOC.u===c.u);
     b.classList.toggle("fresh",t-c.seen<8000);b.classList.toggle("quiet",t-c.seen>120000);});
 }
 function quietTick(){                      // fresh = wrote in the last 8 s, quiet = nothing for 2 minutes
@@ -661,15 +666,37 @@ function quietTick(){                      // fresh = wrote in the last 8 s, qui
   names();
 }
 let GRID=false;                            // the hidden screen opens on one student's sheet; "ดูรวม" = every student as cards
-function openFocus(u){GRID=false;FOC={u,i:+(TREE[u]&&TREE[u].pg)||0,follow:true};$("fFollow").setAttribute("aria-pressed","true");$("focus").hidden=false;names();drawFocus();drawRev(true);}
+const KEYU="__key";let HASKEY=false;
+const NP=()=>FOC&&FOC.u===KEYU?KEYPAGES.length:N;
+function openFocus(u){
+  if(u===KEYU){                            // open the tutor page that solves what is on the page being looked at
+    const from=FOC&&FOC.u!==KEYU?FOC.i:FOC?FOC.i:0;
+    GRID=false;FOC={u,i:FOC&&FOC.u===KEYU?from:(KEYMAP?KEYMAP[from]||0:Math.min(from,KEYPAGES.length-1)),follow:false};
+    $("fFollow").hidden=true;$("focus").hidden=false;names();drawFocus();drawRev(true);return;
+  }
+  $("fFollow").hidden=false;
+  GRID=false;FOC={u,i:+(TREE[u]&&TREE[u].pg)||0,follow:true};$("fFollow").setAttribute("aria-pressed","true");$("focus").hidden=false;names();drawFocus();drawRev(true);}
 let fZoom=1;
+function drawKeyPage(){                   // "student 0": the tutor sheet, no ink
+  const n=KEYPAGES.length,i=FOC.i=Math.min(Math.max(FOC.i,0),n-1),img=$("fImg"),src="data:image/jpeg;base64,"+KEYPAGES[i];
+  $("fWhere").textContent="เฉลย · หน้า "+(i+1)+"/"+n;
+  const dots=$("fDots");
+  if(dots.children.length!==n){dots.innerHTML="";for(let k=0;k<n;k++){const b=document.createElement("button");b.textContent=k+1;b.onclick=()=>{FOC.i=k;drawFocus();drawRev(true);};dots.appendChild(b);}}
+  [...dots.children].forEach((b,k)=>{b.setAttribute("aria-current",k===i);b.classList.remove("ink","here");});
+  if(img.src!==src){img.onload=drawKeyPage;img.src=src;return;}
+  const pg=$("fPage");pg.style.width=Math.round(Math.min($("fScroll").clientWidth-16,1100)*fZoom)+"px";
+  const w=pg.clientWidth;paintInk($("fInk"),w,w*(img.naturalHeight/img.naturalWidth||RATIO),[]);
+}
 function drawFocus(){
-  if(!FOC)return;const d=TREE[FOC.u];if(!d){$("focus").hidden=true;FOC=null;return;}
+  if(!FOC)return;
+  if(FOC.u===KEYU)return drawKeyPage();
+  const d=TREE[FOC.u];if(!d){$("focus").hidden=true;FOC=null;return;}
   const here=Math.min(Math.max(+d.pg||0,0),N-1);
   if(FOC.follow)FOC.i=here;
   const i=FOC.i,img=$("fImg"),src="p/"+P(i)+".jpg";
   $("fWhere").textContent=(d.n||"")+" · หน้า "+(i+1)+"/"+N+(here===i?" · น้องอยู่หน้านี้":" · น้องอยู่หน้า "+(here+1));
   const dots=$("fDots");
+  if(dots.children.length!==N)dots.innerHTML="";
   if(dots.children.length!==N)for(let k=0;k<N;k++){const b=document.createElement("button");b.textContent=k+1;
     b.onclick=()=>{FOC.i=k;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();};dots.appendChild(b);}
   const ink=d.ink||{};
@@ -685,6 +712,12 @@ function drawRev(force){
   const box=$("rev");if(!FOC)return;
   if(!force&&box.contains(document.activeElement)&&document.activeElement.tagName==="TEXTAREA"){revLater=true;return;}  // not while she types
   revLater=false;
+  if(FOC.u===KEYU){
+    const ids=QORDER.filter(q=>KEYQ[q]===FOC.i);box.hidden=!QORDER.length;
+    box.innerHTML=ids.length?ids.map(q=>`<div class="rq"><h3>${esc(QINFO[q].name)}<span>ชีทน้องหน้า ${QINFO[q].pg+1}</span></h3><div class="pa">`+
+      QINFO[q].parts.map((p,k)=>`<span class="k">${esc(p.l)}</span><span class="v">${esc(showK((KEYANS[q]||[])[k]))}</span>`).join("")+"</div></div>").join(""):'<div class="none">หน้านี้ไม่มีช่องคำตอบ</div>';
+    return;
+  }
   const u=FOC.u,a=(TREE[u]&&TREE[u].ans)||{},b=BTREE[u]||{},ids=QORDER.filter(q=>a[q]);
   box.hidden=!QORDER.length;
   if(!ids.length){box.innerHTML='<div class="none">น้องยังไม่ได้ส่งคำตอบ</div>';return;}
@@ -732,18 +765,20 @@ function startLive(){
   $("rev").addEventListener("input",e=>{const c=e.target.closest(".rq");if(c&&FOC)HINTS[FOC.u+"|"+c.dataset.q]=e.target.value;});
   $("rev").addEventListener("focusout",()=>setTimeout(()=>{if(revLater)drawRev();},0));
   $("rev").addEventListener("click",e=>{
-    const c=e.target.closest(".rq");if(!c)return;
+    const c=e.target.closest(".rq");if(!c||!c.dataset.q)return;
     if(e.target.closest(".y"))sendBack(c,true);else if(e.target.closest(".n"))sendBack(c,false);
     else if(e.target.closest("h3")){FOC.i=QINFO[c.dataset.q].pg;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();}
   });
   $("fBack").onclick=()=>{$("focus").hidden=true;FOC=null;GRID=true;};
   $("fTitle").textContent=CFG.title;
-  $("fPrev").onclick=()=>{if(FOC&&FOC.i>0){FOC.i--;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();}};
-  $("fNext").onclick=()=>{if(FOC&&FOC.i<N-1){FOC.i++;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();}};
+  $("fPrev").onclick=()=>{if(FOC&&FOC.i>0){FOC.i--;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();if(FOC.u===KEYU)drawRev(true);}};
+  $("fNext").onclick=()=>{if(FOC&&FOC.i<NP()-1){FOC.i++;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();if(FOC.u===KEYU)drawRev(true);}};
   $("fFollow").onclick=()=>{if(!FOC)return;FOC.follow=!FOC.follow;$("fFollow").setAttribute("aria-pressed",FOC.follow);drawFocus();};
   addEventListener("keydown",e=>{if(!FOC||/INPUT|TEXTAREA/.test(e.target.tagName))return;if(e.key==="ArrowLeft")$("fPrev").click();if(e.key==="ArrowRight")$("fNext").click();});
   addEventListener("resize",()=>{dirty("");});
   setInterval(quietTick,2000);
+  HASKEY=!!(KEYPAGES&&KEYPAGES.length);
+  if(HASKEY)openFocus(KEYU);else{names();}
   liveConnect();
 }
 
