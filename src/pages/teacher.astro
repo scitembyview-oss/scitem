@@ -255,12 +255,12 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
   type Line = { tries: Try[]; other?: { wrote: string; why: string; ms: number }[] };
   type SignsQ = { q: string; w: number; h: number; s: number[][]; c: number;
     t?: { lines?: Record<string, Line>; line1?: Line; answer?: Line; activeMs?: number; pageMs?: number; startMs?: number } };
-  const SIGN_LINES: [string, string][] = [['rw', 'ไม่มี − (−)'], ['pair', 'สองตัวแรก'], ['mag', 'absolute'], ['same', 'ตัวส่วนเท่ากัน'], ['top', 'รวมตัวเศษ'], ['ans', 'คำตอบ']];
+  const SIGN_LINES: [string, string][] = [['rw', 'ไม่มี − (−)'], ['pair', 'สองตัวแรก'], ['mag', 'absolute'], ['same', 'ตัวส่วนเท่ากัน'], ['top', 'รวมตัวเศษ'], ['flip', 'กลับเศษส่วน'], ['ans', 'คำตอบ']];
   const minus = (x: string) => esc(x).replace(/-/g, '−').replace(/([+−])/g, ' $1 ').replace(/^ − /, '−').replace(/\( /g, '(').replace(/\s+/g, ' ').trim();
 
   // Results sent before the per-question records existed only have the report text; rebuild the same records from it.
   // Old lines: "   line 1 x1 −11 − 18[ข] · answer OK"; newer: "   line 1: −11 − 18 ✗ข 6s → −11 + 18 ✓ 11s" (wrapped lines start with 6 spaces).
-  const LINE_KEYS: Record<string, string> = { 'line 1': 'rw', 'no − (−)': 'rw', 'first two': 'pair', absolute: 'mag', answer: 'ans', 'same bottom': 'same', 'one top': 'top' };
+  const LINE_KEYS: Record<string, string> = { 'line 1': 'rw', 'no − (−)': 'rw', 'first two': 'pair', absolute: 'mag', answer: 'ans', 'same bottom': 'same', 'one top': 'top', flip: 'flip' };
   function parseSignsText(text: string[]): [number, SignsQ][] {
     const out: [number, SignsQ][] = [];
     const s = (x?: string) => (x && x !== '-' ? Number(x) * 1000 : 0);
@@ -297,7 +297,7 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
           if (e && LINE_KEYS[e[1]]) (cur.t!.lines![LINE_KEYS[e[1]]] = { tries: [] }).tries.push({ wrote: '', ok: true, tag: '', ms: +e[2] * 1000 });
         }
       }
-      else if ((m = line.match(/^ {3}(line 1|answer|no − \(−\)|first two|absolute|same bottom|one top): (.*)$/))) { key = LINE_KEYS[m[1]]; m[2].split(' → ').forEach((p) => add(key, p.trim())); }
+      else if ((m = line.match(/^ {3}(line 1|answer|no − \(−\)|first two|absolute|same bottom|one top|flip): (.*)$/))) { key = LINE_KEYS[m[1]]; m[2].split(' → ').forEach((p) => add(key, p.trim())); }
       else if (key && /^ {6}\S/.test(line)) line.trim().split(' → ').forEach((p) => add(key, p.trim()));
       else if (/^ {3}line 1 /.test(line)) line.split(' · ').forEach(oldStyle);
       else { cur = null; key = ''; }
