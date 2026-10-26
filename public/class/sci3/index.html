@@ -87,8 +87,17 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--peach);outline-
 .qa .st .ic{width:18px;height:18px}
 .qa.ok{border-color:var(--good);box-shadow:inset 4px 0 0 var(--good)}.qa.ok .st{color:var(--good)}
 .qa.no{border-color:var(--bad);box-shadow:inset 4px 0 0 var(--bad)}.qa.no .st{color:var(--bad)}
-.qa .sol{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:700;color:var(--blue)}
-.qa .sol img{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:zoom-in}
+.qa .hb{display:flex;gap:6px;flex-wrap:wrap}
+.qa .hb button,.rq .hv{min-height:42px;border-radius:10px;border:1.5px solid var(--blue);background:#eef4fc;color:var(--blue);font:700 15px var(--display);padding:0 14px;display:inline-flex;align-items:center;gap:6px}
+#hintBox{position:fixed;inset:0;z-index:40;background:rgba(20,24,32,.6);display:flex;align-items:center;justify-content:center;padding:max(10px,env(safe-area-inset-top)) 10px 10px}
+#hintBox .hbIn{background:#fff;border-radius:16px;width:min(100%,1180px);max-height:100%;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+#hintBox .hbTop{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}
+#hintBox .hbTop b{font:700 17px var(--display);margin-right:auto}
+#hintBox .hbTop button{min-height:40px;min-width:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);font:700 15px var(--display);padding:0 12px}
+#hintBox .hbTop button[aria-current="true"]{background:var(--blue);color:#fff;border-color:var(--blue)}
+#hbBody{overflow:auto;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+#hbBody svg{display:block;width:100%;height:auto;max-height:calc(100dvh - 90px)}
+#hbBody [data-go],#hbBody [data-tog]{cursor:pointer}
 #toast{position:fixed;left:50%;top:max(12px,env(safe-area-inset-top));transform:translateX(-50%);z-index:30;background:var(--blue);color:#fff;border-radius:14px;padding:10px 12px 10px 16px;
   display:flex;align-items:center;gap:10px;font:600 16px var(--body);box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:calc(100% - 32px)}
 #toast button{min-height:40px;border-radius:10px;border:none;background:#fff;color:var(--blue);padding:0 14px}
@@ -96,6 +105,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--peach);outline-
 #zoomSol img{max-width:min(100%,1000px);max-height:100%;background:#fff;border-radius:10px}
 .rq .pub{min-height:38px;border-radius:10px;border:1px dashed var(--blue);background:var(--card);color:var(--blue);display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .rq .pub.on{background:var(--blue);color:#fff;border-style:solid}
+.rq .hl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted);font-weight:600}
+.rq .hl .pub{padding:0 12px}
 .qa .hint{color:var(--fg);font-weight:600;background:var(--bg);border-radius:8px;padding:6px 8px;white-space:pre-wrap}
 #note.red{color:var(--red)}
 
@@ -176,15 +187,6 @@ body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:v
 .rq .btns .y.on{background:var(--good);color:#fff;border-color:var(--good)}.rq .btns .n.on{background:var(--bad);color:#fff;border-color:var(--bad)}
 .rq .sent{font-size:13px;color:var(--muted);font-weight:600}
 
-/* ---------- print (Save PDF) ---------- */
-#print{display:none}
-@media print{
-  @page{size:A4;margin:0}
-  html,body{height:auto;overflow:visible;background:#fff}
-  #app,#gate{display:none!important}
-  #print{display:block}
-  #print img{display:block;width:210mm;height:296mm;object-fit:contain;break-after:page}
-}
 </style>
 </head>
 <body>
@@ -250,8 +252,7 @@ body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:v
   <aside id="rev" aria-label="คำตอบของน้อง"></aside></div>
 </div>
 <div id="toast" hidden role="status"><span id="toastT"></span><button id="toastGo" type="button">ไปดู</button></div>
-<div id="zoomSol" hidden><img alt="วิธีทำ"></div>
-<div id="print"></div>
+<div id="hintBox" hidden><div class="hbIn"><div class="hbTop"><b id="hbT"></b><span id="hbTabs"></span><button id="hbX" type="button" aria-label="ปิด">✕</button></div><div id="hbBody"></div></div></div>
 
 <script>
 (function(){
@@ -282,14 +283,14 @@ async function openKey(code){
   const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt:b64(B.salt),iterations:B.iter,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["decrypt"]);
   return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:b64(B.iv)},key,b64(B.ct))));
 }
-let ME=load(K.me,{}),PW="",KEYPAGES=null,KEYANS={},KEYMAP=null,KEYQ={},KEYH={};
+let ME=load(K.me,{}),PW="",KEYPAGES=null,KEYANS={},KEYMAP=null,KEYQ={},KEYH={},KEYHINT={};
 if(STAFF){$("gTitle").textContent=LIVE_SCREEN?"จอครูดูสด (ซ่อน)":TEACHER?"จอครู (ซ่อน)":"จอครู (แชร์ให้น้องดู)";$("gNameL").hidden=true;$("gCodeL").hidden=false;$("gGo").textContent="เข้า";}
 else{$("gTitle").textContent=CFG.title;if(ME.name)$("gName").value=ME.name;}
 $("gateForm").addEventListener("submit",async e=>{
   e.preventDefault();$("gErr").textContent="";
   if(STAFF){
     const code=$("gCode").value.trim();$("gGo").disabled=true;
-    try{const k=await openKey(code);if(TEACHER||LIVE_SCREEN)KEYPAGES=k.pages;KEYANS=k.answers||{};KEYMAP=k.kmap||null;KEYQ=k.kq||{};KEYH=k.kh||{};}
+    try{const k=await openKey(code);if(TEACHER||LIVE_SCREEN)KEYPAGES=k.pages;KEYANS=k.answers||{};KEYMAP=k.kmap||null;KEYQ=k.kq||{};KEYH=k.kh||{};KEYHINT=k.hints||{};}
     catch(err){$("gErr").textContent="รหัสไม่ถูก";$("gGo").disabled=false;return;}
     PW=sessionStorage.getItem("scitem-sheet-pw")||code;
     if(LIVE_SCREEN){
@@ -544,7 +545,12 @@ function readCard(card){
 }
 function ansStatus(){
   for(const card of $("ans").querySelectorAll(".qa")){
-    const id=card.dataset.q,d=MYANS[id],b=BACK[id],st=card.querySelector(".st"),go=card.querySelector(".go");if(!st)continue;
+    const id=card.dataset.q,d=MYANS[id],b=BACK[id],st=card.querySelector(".st"),go=card.querySelector(".go");
+    const hs=hintOf(id);let hb=card.querySelector(".hb");             // the hints the teacher opened (#show too)
+    if(hs.length){if(!hb){hb=document.createElement("div");hb.className="hb";card.insertBefore(hb,st||null);}
+      const sig=String(hs.length);if(hb.dataset.sig!==sig){hb.dataset.sig=sig;hb.innerHTML=hs.map((_,j)=>`<button type="button" data-hint="${j}">${icon("help")}Hint ${j+1}</button>`).join("");}}
+    else if(hb)hb.remove();
+    if(!st)continue;
     const cur=JSON.stringify(readCard(card)),fresh=!!d&&d.k&&b&&b.for===d.k,changed=!d||!d.k||cur!==d.sent;
     card.classList.toggle("ok",fresh&&!changed&&b.ok===true);card.classList.toggle("no",fresh&&!changed&&b.ok===false);
     go.innerHTML=icon("send")+(!changed?"ส่งแล้ว":d&&d.k?"ส่งใหม่":"ส่งคำตอบ");go.disabled=!changed;
@@ -552,10 +558,6 @@ function ansStatus(){
     else if(changed)st.innerHTML="แก้แล้ว ยังไม่ได้ส่ง";
     else if(fresh)st.innerHTML=(b.ok?icon("check")+"<span>ถูกแล้ว</span>":icon("x")+"<span>ยังไม่ถูก ลองดูอีกครั้ง</span>");
     else st.innerHTML=icon("clock")+"<span>ส่งแล้ว รอครูตรวจ</span>";
-    const sol=BACK._hint&&BACK._hint[id];let sl=card.querySelector(".sol");
-    if(sol){if(!sl){sl=document.createElement("div");sl.className="sol";sl.innerHTML="<span>วิธีทำจากครู (แตะเพื่อขยาย)</span><img alt=\"วิธีทำ\">";card.appendChild(sl);}
-      const im=sl.querySelector("img");if(im.getAttribute("src")!==sol)im.src=sol;}
-    else if(sl)sl.remove();
     let h=card.querySelector(".hint");
     if(fresh&&b.hint){if(!h){h=document.createElement("div");h.className="hint";card.appendChild(h);}h.textContent=b.hint;}else if(h)h.remove();
   }
@@ -584,23 +586,46 @@ function startAns(){
   });
   const keep=e=>{const card=e.target.closest&&e.target.closest(".qa");if(!card||SHOW)return;ansDraft(card.dataset.q).v=readCard(card);save(K.ans,MYANS);ansStatus();};
   box.addEventListener("input",keep);box.addEventListener("change",keep);
-  if(!FB||SHOW||!QORDER.length)return;
-  // the teacher's answers come back on a stream of back/<class>/<uid>
+  box.addEventListener("click",e=>{const hb=e.target.closest(".hb button");if(hb)openHint(hb.closest(".qa").dataset.q,hintOf(hb.closest(".qa").dataset.q),+hb.dataset.hint);});
+  if(!FB||!QORDER.length)return;
+  // the teacher's answers (and opened hints) come back on a stream of back/<class>/<uid>;
+  // #show signs in too, as a "show" entry the hidden screen leaves out, so the hints the teacher opens reach it like a student
   (async()=>{try{await fbToken();}catch(e){setTimeout(startAns,8000);return;}
+    if(SHOW){const reg=()=>fbToken().then(tok=>fetch(fbUrl("/"+FBA.uid,tok),{method:"PATCH",body:JSON.stringify({show:1,n:"",at:{".sv":"timestamp"}})})).catch(()=>{});
+      reg();setInterval(reg,120000);}
     fbStream("/"+FBA.uid,"back",(path,data)=>{BACK=pathSet(BACK,path,data);ansStatus();newHints();},t=>{});})();
-  box.addEventListener("click",e=>{const im=e.target.closest(".sol img");if(im){$("zoomSol").querySelector("img").src=im.src;$("zoomSol").hidden=false;}});
-  $("zoomSol").onclick=()=>{$("zoomSol").hidden=true;};
 }
+const hintOf=q=>{const h=BACK._hint&&BACK._hint[q];return h&&typeof h==="object"?[h.h1,h.h2].filter(Boolean):[];};
+/* a hint: a drawn SVG (key.json "hints", tools/hints-*.py). Inside it, [data-go="s"] sets the picture's state (svg[data-s]),
+   [data-tog="x"] toggles class t-x on the svg, [data-smil="id"] starts that SMIL animation; the SVG's own <style> does the rest */
+let HB=null;
+function openHint(q,list,k){
+  if(!list[k])return;HB={q,list,k};
+  $("hbT").textContent=(QINFO[q]?QINFO[q].name:"")+" · Hint "+(k+1);
+  $("hbTabs").innerHTML=list.length>1?list.map((_,j)=>`<button type="button" data-k="${j}" aria-current="${j===k}">Hint ${j+1}</button>`).join(""):"";
+  $("hbBody").innerHTML=String(list[k]).replace(/<script[\s\S]*?<\/script>/gi,"").replace(/\son\w+\s*=\s*("[^"]*"|'[^']*')/gi,"");
+  $("hintBox").hidden=false;
+}
+$("hbTabs").onclick=e=>{const b=e.target.closest("button");if(b&&HB)openHint(HB.q,HB.list,+b.dataset.k);};
+$("hbX").onclick=()=>{$("hintBox").hidden=true;$("hbBody").innerHTML="";};
+$("hintBox").onclick=e=>{if(e.target===$("hintBox"))$("hbX").onclick();};
+$("hbBody").onclick=e=>{
+  const svg=$("hbBody").querySelector("svg");if(!svg)return;
+  const g=e.target.closest("[data-go]"),t=e.target.closest("[data-tog]"),m=e.target.closest("[data-smil]");
+  if(g){const s=g.dataset.go;if(svg.getAttribute("data-s")===s){svg.removeAttribute("data-s");void svg.getBoundingClientRect();}svg.setAttribute("data-s",s);}
+  if(t)svg.classList.toggle("t-"+t.dataset.tog);
+  if(m)for(const id of m.dataset.smil.split(" ")){const a=svg.querySelector("#"+CSS.escape(id));if(a&&a.beginElement)a.beginElement();}
+};
 // a solution the teacher just opened: say so, and take her to its page
 let seenHints=null,toastQ=null,toastT=null;
 function newHints(){
-  const now=Object.keys(BACK._hint||{});
-  if(seenHints===null){seenHints=new Set(now);return;}                 // the first load is not news
-  const fresh=now.filter(q=>!seenHints.has(q));seenHints=new Set(now);
+  const now={};for(const q of Object.keys(BACK._hint||{}))now[q]=hintOf(q).length;
+  if(seenHints===null){seenHints=now;return;}                          // the first load is not news
+  const fresh=Object.keys(now).filter(q=>now[q]>(seenHints[q]||0));seenHints=now;
   if(!fresh.length||!QINFO[fresh[0]])return;
-  toastQ=fresh[0];$("toastT").textContent="ครูเปิดวิธีทำ "+QINFO[toastQ].name;$("toast").hidden=false;
+  toastQ=fresh[0];const k=now[toastQ]-1;$("toastGo").textContent="ไปดู";$("toastT").textContent="ครูเปิด Hint "+(k+1)+" · "+QINFO[toastQ].name;$("toast").hidden=false;
   clearTimeout(toastT);toastT=setTimeout(()=>{$("toast").hidden=true;},12000);
-  $("toastGo").onclick=()=>{$("toast").hidden=true;go(QINFO[toastQ].pg);setTimeout(()=>{const c=$("ans").querySelector(`[data-q="${toastQ}"] .sol`);if(c)c.scrollIntoView({block:"nearest"});},100);};
+  $("toastGo").onclick=()=>{$("toast").hidden=true;go(QINFO[toastQ].pg);openHint(toastQ,hintOf(toastQ),k);};
 }
 
 /* the student: live/<class>/<uid> = {n: name, pg: page index, at, ink: {p01: [stroke, …]}}; strokes only added go up one by one,
@@ -668,7 +693,7 @@ function drawLive(){
   rafOn=false;
   for(const u of DIRTY){
     const d=TREE[u];let c=CARDS[u];
-    if(!d||typeof d!=="object"){if(c){c.el.remove();delete CARDS[u];}continue;}
+    if(!d||typeof d!=="object"||d.show){if(c){c.el.remove();delete CARDS[u];}continue;}
     if(!c){c=CARDS[u]=makeCard(u);clearTimeout(cuT);cuT=setTimeout(catchUpHints,1500);}
     const i=Math.min(Math.max(+d.pg||0,0),N-1),src="p/"+P(i)+".jpg";
     c.name.textContent=d.n||"(ไม่มีชื่อ)";const nw=waiting(u).length;c.where.innerHTML="หน้า "+(i+1)+(nw?`<span class="wait">${nw}</span>`:"");
@@ -778,29 +803,25 @@ function drawRev(force){
 }
 /* the worked-solution box of a question, cut from the key page, opened to every student (back/<class>/<uid>/_hint/<qid>;
    _pub/<qid> remembers what is open, so a student who joins later gets it too) */
-const pubOn=q=>!!(BTREE._pub&&BTREE._pub[q]);
-const pubBtn=q=>KEYH[q]?`<button class="pub${pubOn(q)?" on":""}" type="button" data-pub="${q}">${pubOn(q)?"ปิดวิธีทำ (น้องเห็นอยู่)":"เปิดวิธีทำให้น้องทุกคน"}</button>`:"";
-const SOLIMG={};
-function solImage(q){
-  if(SOLIMG[q])return Promise.resolve(SOLIMG[q]);
-  return new Promise(res=>{const m=new Image();m.onload=()=>{
-    const [a,b]=KEYH[q],sy=Math.round(a*m.naturalHeight),sh=Math.round((b-a)*m.naturalHeight),w=Math.min(900,m.naturalWidth),h=Math.round(sh*w/m.naturalWidth);
-    const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(m,0,sy,m.naturalWidth,sh,0,0,w,h);
-    res(SOLIMG[q]=c.toDataURL("image/jpeg",0.82));};m.src="data:image/jpeg;base64,"+KEYPAGES[KEYQ[q]];});
-}
-async function publish(q,on){
+const pubLv=q=>{const p=BTREE._pub&&BTREE._pub[q];return p&&p.lv||0;};
+const pubBtn=q=>{const H=KEYHINT[q];if(!H||!H.length)return "";const lv=pubLv(q);
+  return `<div class="hl">${H.map((_,j)=>`<button class="hv" type="button" data-prev="${q}" data-k="${j}">ดู Hint ${j+1}</button>`).join("")}</div>
+    <div class="hl">ให้น้องเห็น: ${["ปิด"].concat(H.map((_,j)=>"Hint "+(j===0?"1":"1–"+(j+1)))).map((t,j)=>`<button class="pub${lv===j?" on":""}" type="button" data-pub="${q}" data-lv="${j}">${t}</button>`).join("")}</div>`;};
+const hintVal=(q,lv)=>{const H=KEYHINT[q]||[];if(!lv)return null;const o={lv};for(let j=0;j<lv&&j<H.length;j++)o["h"+(j+1)]=H[j];return o;};
+async function publish(q,lv){
   try{
-    const tok=await fbToken(),img=on?await solImage(q):null,body={};
-    body["_pub/"+q]=on?{at:{".sv":"timestamp"}}:null;
-    for(const u of Object.keys(TREE))body[u+"/_hint/"+q]=img;
+    const tok=await fbToken(),body={},v=hintVal(q,lv);
+    body["_pub/"+q]=lv?{lv,at:{".sv":"timestamp"}}:null;
+    for(const u of Object.keys(TREE))body[u+"/_hint/"+q]=v;
     const r=await fetch(fbUrl("",tok,"back"),{method:"PATCH",body:JSON.stringify(body)});if(!r.ok)throw new Error("HTTP "+r.status);
-  }catch(e){lNet("เปิดวิธีทำไม่ได้ ("+e.message+")");}
+  }catch(e){lNet("เปิด Hint ไม่ได้ ("+e.message+")");}
 }
 let hintBusy=false;
-async function catchUpHints(){             // students who came in after a solution was opened
+async function catchUpHints(){             // students (and #show) who came in after a hint was opened
   if(hintBusy||!BTREE._pub)return;hintBusy=true;
   try{const body={};
-    for(const q of Object.keys(BTREE._pub))if(KEYH[q])for(const u of Object.keys(TREE)){const h=BTREE[u]&&BTREE[u]._hint;if(!h||!h[q])body[u+"/_hint/"+q]=await solImage(q);}
+    for(const q of Object.keys(BTREE._pub)){const lv=pubLv(q);if(!lv||!KEYHINT[q])continue;
+      for(const u of Object.keys(TREE)){const h=BTREE[u]&&BTREE[u]._hint&&BTREE[u]._hint[q];if(!h||h.lv!==lv)body[u+"/_hint/"+q]=hintVal(q,lv);}}
     if(Object.keys(body).length){const r=await fetch(fbUrl("",await fbToken(),"back"),{method:"PATCH",body:JSON.stringify(body)});if(!r.ok)throw new Error("HTTP "+r.status);}}
   catch(e){}finally{hintBusy=false;}
 }
@@ -836,10 +857,11 @@ function startLive(){
   $("rev").addEventListener("input",e=>{const c=e.target.closest(".rq");if(c&&FOC)HINTS[FOC.u+"|"+c.dataset.q]=e.target.value;});
   $("rev").addEventListener("focusout",()=>setTimeout(()=>{if(revLater)drawRev();},0));
   $("rev").addEventListener("click",e=>{
-    const pb=e.target.closest(".pub");if(pb){const q=pb.dataset.pub;publish(q,!pubOn(q));return;}
+    const pb=e.target.closest(".pub");if(pb){publish(pb.dataset.pub,+pb.dataset.lv);return;}
+    const pv=e.target.closest(".hv");if(pv){openHint(pv.dataset.prev,KEYHINT[pv.dataset.prev],+pv.dataset.k);return;}
     const c=e.target.closest(".rq");if(!c||!c.dataset.q)return;
     if(e.target.closest(".y"))sendBack(c,true);else if(e.target.closest(".n"))sendBack(c,false);
-    else if(e.target.closest("h3")){FOC.i=QINFO[c.dataset.q].pg;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();}
+    else if(e.target.closest("h3")){FOC.i=QINFO[c.dataset.q].pg;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);}
   });
   $("fBack").onclick=()=>{$("focus").hidden=true;FOC=null;GRID=true;};
   $("fTitle").textContent=CFG.title;
@@ -1175,31 +1197,57 @@ function pageImage(i,lists){
     im.src="p/"+P(i)+".jpg";
   });
 }
-// iPad Safari only prints from the tap itself (not after an await), so the pages are drawn ahead:
-// 3 s after the pen stops, and again on the tap if anything changed since (then a second tap prints).
-let printSig=null,printBusy=null;
+// Save PDF makes the PDF file itself (the JPEG pages, one A4 each) and hands it to the share sheet / a download:
+// window.print() does nothing in some iPad browsers (in-app ones like LINE's). Sharing only works from the tap itself
+// (not after an await), so the pages are drawn ahead: 3 s after the pen stops, and on the tap if anything changed (then tap again).
+let printSig=null,printBusy=null,PRINTJ=[];
 const printWork=i=>TEACHER?(SENT[P(i)]&&SENT[P(i)].ink)||[]:(W[P(i)]&&W[P(i)].ink)||[];
 const printNow=()=>JSON.stringify([...Array(N).keys()].map(i=>[printWork(i),RED[redKey(i)]||[]]));
 function prepPrint(){
   if(printBusy)return printBusy;
   const sig=printNow();if(sig===printSig)return Promise.resolve();
   return printBusy=(async()=>{
-    const imgs=[];
+    const out=[];
     for(let i=0;i<N;i++){const ink=printWork(i),red=RED[redKey(i)]||[];if(!ink.length&&!red.length)continue;
-      const im=new Image();im.src=await pageImage(i,[ink,red]);await im.decode().catch(()=>{});imgs.push(im);}
-    const p=$("print");p.innerHTML="";imgs.forEach(im=>p.appendChild(im));printSig=sig;
+      const url=await pageImage(i,[ink,red]),im=new Image();im.src=url;await im.decode().catch(()=>{});
+      const bin=atob(url.split(",")[1]),b=new Uint8Array(bin.length);for(let k=0;k<bin.length;k++)b[k]=bin.charCodeAt(k);
+      out.push({b,w:im.naturalWidth,h:im.naturalHeight});}
+    PRINTJ=out;printSig=sig;
   })().finally(()=>{printBusy=null;});
 }
+function makePdf(pages){                   // a plain PDF 1.4: each page one JPEG (DCTDecode), fitted to A4
+  const enc=new TextEncoder(),parts=[],off=[];let len=0;
+  const put=x=>{const b=typeof x==="string"?enc.encode(x):x;parts.push(b);len+=b.length;};
+  const n=pages.length,size=3+3*n;
+  put("%PDF-1.4\n");
+  off[1]=len;put("1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n");
+  off[2]=len;put(`2 0 obj<</Type/Pages/Count ${n}/Kids[${pages.map((_,k)=>(3+3*k)+" 0 R").join(" ")}]>>endobj\n`);
+  pages.forEach((p,k)=>{
+    const o=3+3*k,W=595.28,H=841.89,sc=Math.min(W/p.w,H/p.h),dw=(p.w*sc).toFixed(2),dh=(p.h*sc).toFixed(2),x=((W-p.w*sc)/2).toFixed(2),y=((H-p.h*sc)/2).toFixed(2);
+    const cs=`q ${dw} 0 0 ${dh} ${x} ${y} cm /I Do Q`;
+    off[o]=len;put(`${o} 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${W} ${H}]/Resources<</XObject<</I ${o+2} 0 R>>>>/Contents ${o+1} 0 R>>endobj\n`);
+    off[o+1]=len;put(`${o+1} 0 obj<</Length ${cs.length}>>stream\n${cs}\nendstream endobj\n`);
+    off[o+2]=len;put(`${o+2} 0 obj<</Type/XObject/Subtype/Image/Width ${p.w}/Height ${p.h}/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length ${p.b.length}>>stream\n`);put(p.b);put("\nendstream endobj\n");
+  });
+  const xref=len;put(`xref\n0 ${size}\n0000000000 65535 f \n`+off.slice(1).map(v=>String(v).padStart(10,"0")+" 00000 n \n").join("")+`trailer<</Size ${size}/Root 1 0 R>>\nstartxref\n${xref}\n%%EOF\n`);
+  return new Blob(parts,{type:"application/pdf"});
+}
+function sharePdf(){
+  if(!PRINTJ.length){flash(TEACHER?"ยังไม่มีงาน":"Nothing written yet");return;}
+  const name=(CFG.title+" - "+(TEACHER?STU:ME.name||"")).replace(/[\\/:*?"<>|]+/g," ").trim()+".pdf";
+  const file=new File([makePdf(PRINTJ)],name,{type:"application/pdf"});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:name}).catch(e=>{if(e&&e.name!=="AbortError")dl(file);});return;}
+  dl(file);
+}
+function dl(file){const u=URL.createObjectURL(file),a=document.createElement("a");a.href=u;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);}
 $("saveBtn").onclick=()=>{
-  document.title=CFG.title+" · "+(TEACHER?STU:ME.name||"");
-  if(printSig===printNow()&&!printBusy){
-    if(!$("print").children.length){flash(TEACHER?"ยังไม่มีงาน":"Nothing written yet");return;}
-    window.print();return;}
+  if(printSig===printNow()&&!printBusy){sharePdf();return;}
   flash("…");
   prepPrint().then(()=>{
-    if(!$("print").children.length){flash(TEACHER?"ยังไม่มีงาน":"Nothing written yet");return;}
-    flash("Ready: tap Print again");
-    try{window.print();}catch(e){}           // desktop browsers print straight away; iPad waits for the second tap
+    if(!PRINTJ.length){flash(TEACHER?"ยังไม่มีงาน":"Nothing written yet");return;}
+    $("toastT").textContent="PDF ready";$("toastGo").textContent="Save PDF";$("toast").hidden=false;   // a fresh tap for the share sheet
+    clearTimeout(toastT);toastT=setTimeout(()=>{$("toast").hidden=true;},15000);
+    $("toastGo").onclick=()=>{$("toast").hidden=true;sharePdf();};
   });
 };
 if(!STAFF)setTimeout(prepPrint,1500);
