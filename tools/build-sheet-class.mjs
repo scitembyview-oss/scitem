@@ -51,17 +51,18 @@ const kpaged = ansQ.length && ansQ.every((q) => q.kpage);   // a tutor sheet lai
 if (kp.length && !kpaged && sp.length !== kp.length) throw new Error(`the key has ${kp.length} pages, the student sheet ${sp.length}: they must match page for page`);
 sp.forEach((f, i) => renameSync(join(tmpS, f), join(out, 'p', 'p' + String(i + 1).padStart(2, '0') + '.jpg')));
 const qs = {}, answers = {};
-const kq = {}, kmap = [];
+const kq = {}, kh = {}, kmap = [];
 for (const q of ansQ) {
   if (!(q.page >= 1 && q.page <= sp.length)) throw new Error(`${q.id}: page ${q.page} is not in the sheet`);
   const pid = 'p' + String(q.page).padStart(2, '0');
   (qs[pid] ||= []).push({ id: q.id, name: q.name, parts: q.parts.map((p) => (p.c ? { l: p.l, c: p.c } : { l: p.l })) });
   if (q.kpage) kq[q.id] = q.kpage - 1;
+  if (q.hint) kh[q.id] = q.hint;                    // [top, bottom] of its worked-solution box on the key page, 0..1
   answers[q.id] = q.parts.map((p) => (p.c ? { c: 1, a: p.a } : p.t ? { t: 1 } : { v: p.v, u: p.u ?? '', ...(p.tol ? { tol: p.tol } : {}) }));
 }
 // kmap[student page] = the key page to open for it (the first question on that page, else the page before's)
 if (kpaged) for (let i = 0, last = 0; i < sp.length; i++) { const q = ansQ.find((x) => x.page === i + 1); if (q) last = q.kpage - 1; kmap.push(last); }
-const plain = new TextEncoder().encode(JSON.stringify({ pages: kp.map((f) => readFileSync(join(tmpK, f)).toString('base64')), answers, ...(kpaged ? { kmap, kq } : {}) }));
+const plain = new TextEncoder().encode(JSON.stringify({ pages: kp.map((f) => readFileSync(join(tmpK, f)).toString('base64')), answers, ...(kpaged ? { kmap, kq, kh } : {}) }));
 rmSync(tmpS, { recursive: true }); rmSync(tmpK, { recursive: true });
 
 const b64 = (u) => Buffer.from(u).toString('base64');
