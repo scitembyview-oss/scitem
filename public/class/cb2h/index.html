@@ -148,6 +148,7 @@ body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:v
 #fNames .keychip .ic{width:18px;height:18px}
 #fDots button{min-width:38px;min-height:36px;border-radius:9px;border:1px solid var(--line);background:var(--card);font:600 13px var(--display);padding:0 3px}
 #fDots button.ink{background:var(--mint)}
+#fDots button.wait{position:relative}#fDots button.wait::after{content:"";position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:var(--bad)}
 #fDots button.here{box-shadow:inset 0 -4px 0 var(--sage)}
 #fDots button[aria-current="true"]{outline:3px solid var(--navy);outline-offset:-3px}
 #fWhere{color:var(--muted);font-weight:600}
@@ -502,7 +503,7 @@ function normU(u){                          // "m/s2", "m/s²", "เมตร/�
   let t=String(u||"").toLowerCase().replace(/\s+/g,"").replace(/²/g,"^2").replace(/³/g,"^3").replace(/\*\*/g,"^").replace(/[·∙]/g,"");
   for(const [a,b] of [["เซนติเมตร","cm"],["มิลลิเมตร","mm"],["มิลลิลิตร","ml"],["ลิตร","l"],["กิโลกรัม","kg"],["กรัม","g"],["เมตร","m"],
     ["นิวตัน","n"],["วินาที","s"],["เรเดียน","rad"],["องศา","°"],["degrees","°"],["degree","°"],["deg","°"],["ร้อยละ","%"],["เปอร์เซ็นต์","%"],["เท่า",""],["ส่วน",""]])t=t.split(a).join(b);
-  return t.replace(/([a-z])(\d)/g,"$1^$2").replace(/\/s\/s$/,"/s^2");
+  return t.replace(/([a-z])(\d)/g,"$1^$2").replace(/\(([a-z°%]+(\^\d)?)\)/g,"$1").replace(/\/s\/s$/,"/s^2");   // "m/(s^2)" = "m/s^2"
 }
 const UNITS={m:["L",1],cm:["L",.01],mm:["L",.001],km:["L",1000],"m^3":["V",1],"cm^3":["V",1e-6],"dm^3":["V",1e-3],l:["V",1e-3],ml:["V",1e-6],
   kg:["M",1],g:["M",1e-3],"kg/m^3":["D",1],"g/cm^3":["D",1000],"g/ml":["D",1000]};
@@ -571,7 +572,7 @@ async function sendAns(card){
 }
 function startAns(){
   const box=$("ans");
-  box.addEventListener("focusin",e=>{if(e.target.classList&&e.target.classList.contains("num"))lastNum=e.target;});
+  box.addEventListener("focusin",e=>{if(e.target.matches&&e.target.matches("input.num,input.unit"))lastNum=e.target;});
   box.addEventListener("pointerdown",e=>{if(e.target.closest(".sym button"))e.preventDefault();});   // keep the keyboard and the caret
   box.addEventListener("click",e=>{
     const sb=e.target.closest(".sym button");
@@ -739,9 +740,9 @@ function drawFocus(){
   const dots=$("fDots");
   if(dots.children.length!==N)dots.innerHTML="";
   if(dots.children.length!==N)for(let k=0;k<N;k++){const b=document.createElement("button");b.textContent=k+1;
-    b.onclick=()=>{FOC.i=k;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();};dots.appendChild(b);}
-  const ink=d.ink||{};
-  [...dots.children].forEach((b,k)=>{b.setAttribute("aria-current",k===i);b.classList.toggle("ink",!!ink[P(k)]);b.classList.toggle("here",k===here);});
+    b.onclick=()=>{FOC.i=k;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);};dots.appendChild(b);}
+  const ink=d.ink||{},wp=new Set(waiting(FOC.u).map(q=>QINFO[q]&&QINFO[q].pg));
+  [...dots.children].forEach((b,k)=>{b.classList.toggle("wait",wp.has(k));b.setAttribute("aria-current",k===i);b.classList.toggle("ink",!!ink[P(k)]);b.classList.toggle("here",k===here);});
   if(img.getAttribute("src")!==src){img.onload=drawFocus;img.src=src;return;}
   const pg=$("fPage");pg.style.width=Math.round(Math.min($("fScroll").clientWidth-16,1100)*fZoom)+"px";
   const w=pg.clientWidth,h=w*(img.naturalHeight/img.naturalWidth||RATIO);
@@ -759,9 +760,9 @@ function drawRev(force){
       QINFO[q].parts.map((p,k)=>`<span class="k">${esc(p.l)}</span><span class="v">${esc(showK((KEYANS[q]||[])[k]))}</span>`).join("")+"</div>"+pubBtn(q)+"</div>").join(""):'<div class="none">หน้านี้ไม่มีช่องคำตอบ</div>';
     return;
   }
-  const u=FOC.u,a=(TREE[u]&&TREE[u].ans)||{},b=BTREE[u]||{},ids=QORDER.filter(q=>a[q]);
+  const u=FOC.u,a=(TREE[u]&&TREE[u].ans)||{},b=BTREE[u]||{},here=QORDER.filter(q=>QINFO[q].pg===FOC.i),ids=here.filter(q=>a[q]);  // View 2026-10-27: only the page she has open
   box.hidden=!QORDER.length;
-  if(!ids.length){box.innerHTML='<div class="none">น้องยังไม่ได้ส่งคำตอบ</div>';return;}
+  if(!ids.length){box.innerHTML=`<div class="none">${here.length?"หน้านี้น้องยังไม่ได้ส่งคำตอบ":"หน้านี้ไม่มีช่องคำตอบ"}</div>`;return;}
   const top=box.scrollTop;
   box.innerHTML=ids.map(q=>{
     const info=QINFO[q],an=a[q],bk=b[q],wait=!bk||bk.for!==an.k,key=KEYANS[q]||[];
@@ -815,6 +816,7 @@ function nextWaiting(){                    // the student (and answer) that has 
   for(const u of Object.keys(CARDS))for(const q of waiting(u)){const k=TREE[u].ans[q].k;if(!best||k<best.k)best={u,q,k};}
   if(!best)return;
   if(!FOC||FOC.u!==best.u)openFocus(best.u);
+  FOC.i=QINFO[best.q].pg;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);
   const el=$("rev").querySelector(`[data-q="${best.q}"]`);if(el)el.scrollIntoView({block:"nearest"});
 }
 function startLive(){
@@ -841,9 +843,9 @@ function startLive(){
   });
   $("fBack").onclick=()=>{$("focus").hidden=true;FOC=null;GRID=true;};
   $("fTitle").textContent=CFG.title;
-  $("fPrev").onclick=()=>{if(FOC&&FOC.i>0){FOC.i--;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();if(FOC.u===KEYU)drawRev(true);}};
-  $("fNext").onclick=()=>{if(FOC&&FOC.i<NP()-1){FOC.i++;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();if(FOC.u===KEYU)drawRev(true);}};
-  $("fFollow").onclick=()=>{if(!FOC)return;FOC.follow=!FOC.follow;$("fFollow").setAttribute("aria-pressed",FOC.follow);drawFocus();};
+  $("fPrev").onclick=()=>{if(FOC&&FOC.i>0){FOC.i--;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);}};
+  $("fNext").onclick=()=>{if(FOC&&FOC.i<NP()-1){FOC.i++;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);}};
+  $("fFollow").onclick=()=>{if(!FOC)return;FOC.follow=!FOC.follow;$("fFollow").setAttribute("aria-pressed",FOC.follow);drawFocus();drawRev(true);};
   addEventListener("keydown",e=>{if(!FOC||/INPUT|TEXTAREA/.test(e.target.tagName))return;if(e.key==="ArrowLeft")$("fPrev").click();if(e.key==="ArrowRight")$("fNext").click();});
   addEventListener("resize",()=>{dirty("");});
   setInterval(quietTick,2000);
@@ -894,7 +896,7 @@ let autoT=null;
 function autoSave(now){                    // a page goes to the Sheet 3 s after the pen stops, or when she turns the page
   clearTimeout(autoT);
   const w=W[P(idx)];if(!w||w.sentLen===inkSig(w.ink)||(!w.ink.length&&!w.sentAt))return;
-  if(now)sendPage();else autoT=setTimeout(()=>{if(!curS)sendPage();else autoSave();},3000);
+  if(now)sendPage();else autoT=setTimeout(()=>{if(!curS){sendPage();prepPrint();}else autoSave();},3000);
 }
 function go(i){if(i<0||i>=N||i===idx)return;if(!STAFF)autoSave(true);idx=i;SEL=null;lasso=null;drag=null;if(!STAFF){ME.idx=i;save(K.me,ME);liveTouch();}render();$("scroll").scrollTop=0;pullRed();}
 $("prev").onclick=()=>go(idx-1);$("next").onclick=()=>go(idx+1);
@@ -1173,18 +1175,34 @@ function pageImage(i,lists){
     im.src="p/"+P(i)+".jpg";
   });
 }
-$("saveBtn").onclick=async()=>{
-  const p=$("print");p.innerHTML="";flash("…");
-  for(let i=0;i<N;i++){
-    const ink=TEACHER?(SENT[P(i)]&&SENT[P(i)].ink)||[]:(W[P(i)]&&W[P(i)].ink)||[];
-    const red=RED[redKey(i)]||[];
-    if(!ink.length&&!red.length)continue;
-    const im=document.createElement("img");im.src=await pageImage(i,[ink,red]);p.appendChild(im);
-  }
-  if(!p.children.length){flash(TEACHER?"ยังไม่มีงาน":"Nothing written yet");return;}
+// iPad Safari only prints from the tap itself (not after an await), so the pages are drawn ahead:
+// 3 s after the pen stops, and again on the tap if anything changed since (then a second tap prints).
+let printSig=null,printBusy=null;
+const printWork=i=>TEACHER?(SENT[P(i)]&&SENT[P(i)].ink)||[]:(W[P(i)]&&W[P(i)].ink)||[];
+const printNow=()=>JSON.stringify([...Array(N).keys()].map(i=>[printWork(i),RED[redKey(i)]||[]]));
+function prepPrint(){
+  if(printBusy)return printBusy;
+  const sig=printNow();if(sig===printSig)return Promise.resolve();
+  return printBusy=(async()=>{
+    const imgs=[];
+    for(let i=0;i<N;i++){const ink=printWork(i),red=RED[redKey(i)]||[];if(!ink.length&&!red.length)continue;
+      const im=new Image();im.src=await pageImage(i,[ink,red]);await im.decode().catch(()=>{});imgs.push(im);}
+    const p=$("print");p.innerHTML="";imgs.forEach(im=>p.appendChild(im));printSig=sig;
+  })().finally(()=>{printBusy=null;});
+}
+$("saveBtn").onclick=()=>{
   document.title=CFG.title+" · "+(TEACHER?STU:ME.name||"");
-  setTimeout(()=>window.print(),300);
+  if(printSig===printNow()&&!printBusy){
+    if(!$("print").children.length){flash(TEACHER?"ยังไม่มีงาน":"Nothing written yet");return;}
+    window.print();return;}
+  flash("…");
+  prepPrint().then(()=>{
+    if(!$("print").children.length){flash(TEACHER?"ยังไม่มีงาน":"Nothing written yet");return;}
+    flash("Ready: tap Print again");
+    try{window.print();}catch(e){}           // desktop browsers print straight away; iPad waits for the second tap
+  });
 };
+if(!STAFF)setTimeout(prepPrint,1500);
 })();
 </script>
 </body>
