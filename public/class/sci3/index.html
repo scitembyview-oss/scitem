@@ -64,6 +64,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--peach);outline-
 .ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .b.i{display:inline-flex;align-items:center;justify-content:center;gap:6px}
 #tPen .sw{width:12px;height:12px;margin-left:-2px}
+#colors{display:inline-flex;gap:4px;align-items:center;padding:0 2px}
+#colors button{width:32px;height:32px;border-radius:50%;border:3px solid var(--card);box-shadow:0 0 0 1px var(--line);padding:0}
+#colors button[aria-pressed="true"]{box-shadow:0 0 0 2px var(--fg)}
 #nav .arr{display:inline-flex;align-items:center;justify-content:center}
 #work,#fWork{flex:1;min-height:0;display:flex;gap:8px}
 #work #scroll,#fWork #fScroll{flex:1;min-width:0}
@@ -191,6 +194,7 @@ body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:v
     <select id="stu" hidden aria-label="นักเรียน"></select>
     <span class="sp"></span>
     <button class="b i" id="tPen" aria-pressed="true" aria-label="Pen" title="Pen"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span class="sw" id="penSw"></span></button>
+    <span id="colors" role="group" aria-label="Pen colour"></span>
     <button class="b i" id="tErase" aria-pressed="false" aria-label="Eraser" title="Eraser"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4.3-4.3a1 1 0 0 1 0-1.4l10-10a1 1 0 0 1 1.4 0l5.6 5.6a1 1 0 0 1 0 1.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg></button>
     <button class="b i" id="tSel" aria-pressed="false" aria-label="Lasso" title="Lasso: circle ink, then drag it"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 22a5 5 0 0 1-2-4"/><path d="M3.3 14A6.8 6.8 0 0 1 2 10c0-4.4 4.5-8 10-8s10 3.6 10 8-4.5 8-10 8a12 12 0 0 1-5-1"/><circle cx="5" cy="16" r="2"/></svg></button>
     <button class="b i" id="tHand" aria-pressed="false" aria-label="Scroll with finger" title="Finger scrolls the page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-5.9-2.4L3.4 16a2 2 0 0 1 3-2.8L8 15"/></svg></button>
@@ -300,10 +304,10 @@ const mine=()=>W[P(idx)]||(W[P(idx)]={ink:[],sentAt:0,sentLen:-1});
 const redKey=(i=idx)=>TEACHER&&SHEET?STU+"|"+P(i):P(i);
 
 /* ---------- the Sheet: cput/cget = the student's pages, rput/rget = the teacher's red ink (tools/check-sheet.gs) ---------- */
-const q3=v=>Math.round(v*1000);
-const packInk=ink=>ink.map(s=>({c:s.c,e:s.e?1:0,p:s.p.map((v,j)=>j%3===2?Math.round(v*9):q3(v))}));
+// d:5 = points in 1/5000 of the page (older ink: 1/1000)
+const packInk=ink=>ink.map(s=>({c:s.c,e:s.e?1:0,d:5,p:s.p.map((v,j)=>j%3===2?Math.round(v*9):Math.round(v*5000))}));
 const arr=v=>Array.isArray(v)?v:v&&typeof v==="object"?Object.keys(v).sort((a,b)=>a-b).map(k=>v[k]):[];   // Firebase may hand an array back as {0:…,1:…}
-const unpackInk=ink=>arr(ink).filter(s=>s&&s.p).map(s=>({c:s.c,e:!!s.e,p:arr(s.p).map((v,j)=>j%3===2?v/9:v/1000)}));
+const unpackInk=ink=>arr(ink).filter(s=>s&&s.p).map(s=>{const d=s.d===5?5000:1000;return {c:s.c,e:!!s.e,p:arr(s.p).map((v,j)=>j%3===2?v/9:v/d)};});
 async function post(body){
   let r,t;
   const ab=new AbortController(),tm=setTimeout(()=>ab.abort(),25000);
@@ -793,7 +797,7 @@ function start(){
       SEEN=load(K.seen,{});if(!SHEET)RED=load(K.red,{});
       $("stu").onchange=()=>{STU=$("stu").value;SENT=ALL[STU]||{};render();};
     }else{
-      $("penSw").style.background="var(--blue)";$("saveBtn").hidden=true;   // View 2026-10-26: #show shows no student work (that is #live)
+      $("saveBtn").hidden=true;   // View 2026-10-26: #show shows no student work (that is #live)
       SHOWINK=load(K.show,{});
     }
     let busy=false;
@@ -806,7 +810,6 @@ function start(){
     idx=0;
   }else{
     $("who").textContent=ME.name||"";W=load(K.work,{});
-    $("penSw").style.background="var(--navy)";
     idx=Math.min(ME.idx||0,N-1);
     if(SHEET){setInterval(()=>{if(!document.hidden)flush();},6000);addEventListener("online",flush);flush();}
     setInterval(()=>{if(!document.hidden)pullRed();},8000);
@@ -878,16 +881,21 @@ function fit(){
   for(const c of LAYERS){c.width=Math.floor(w*dpr);c.height=Math.floor(h*dpr);}
   drawAll();
 }
+// View 2026-10-26: ink like the Light p5 slides: a bit bolder, smooth curves through the midpoints, width follows the pressure
 function drawStroke(ctx,c,s){
-  const w=c.width,h=c.height,pts=s.p;
+  const w=c.width,h=c.height,pts=s.p,n=pts.length/3;
   ctx.globalCompositeOperation=s.e?"destination-out":"source-over";
   ctx.strokeStyle=ctx.fillStyle=s.c;ctx.lineCap=ctx.lineJoin="round";
-  const base=w/420*(s.e?8:1);
-  if(pts.length<4){ctx.beginPath();ctx.arc(pts[0]*w,pts[1]*h,base/1.2,0,7);ctx.fill();return;}
-  for(let i=3;i<pts.length;i+=3){
-    ctx.lineWidth=s.e?base:base*(0.6+0.9*pts[i+2]);
-    ctx.beginPath();ctx.moveTo(pts[i-3]*w,pts[i-2]*h);ctx.lineTo(pts[i]*w,pts[i+1]*h);ctx.stroke();
+  const base=w/200*(s.e?4:1),X=k=>pts[3*k]*w,Y=k=>pts[3*k+1]*h,W=k=>s.e?base:base*(0.6+0.8*pts[3*k+2]);
+  if(n<2){ctx.beginPath();ctx.arc(X(0),Y(0),W(0)/2,0,7);ctx.fill();return;}
+  if(n===2){ctx.lineWidth=W(1);ctx.beginPath();ctx.moveTo(X(0),Y(0));ctx.lineTo(X(1),Y(1));ctx.stroke();return;}
+  let mx=X(0),my=Y(0);
+  for(let k=1;k<n-1;k++){
+    const nx=(X(k)+X(k+1))/2,ny=(Y(k)+Y(k+1))/2;
+    ctx.lineWidth=W(k);ctx.beginPath();ctx.moveTo(mx,my);ctx.quadraticCurveTo(X(k),Y(k),nx,ny);ctx.stroke();
+    mx=nx;my=ny;
   }
+  ctx.lineWidth=W(n-1);ctx.beginPath();ctx.moveTo(mx,my);ctx.lineTo(X(n-1),Y(n-1));ctx.stroke();
 }
 function paint(ctx,c,list){ctx.globalCompositeOperation="source-over";ctx.clearRect(0,0,c.width,c.height);for(const s of list)drawStroke(ctx,c,s);}
 const sentInk=()=>(SENT[P(idx)]&&SENT[P(idx)].ink)||[];
@@ -924,14 +932,24 @@ function drawRed(){
   const r=RED[redKey()]||[];paint(x.red,cRed,r);
   if(!STAFF){$("note").className=r.length?"red":"";$("note").textContent=r.length?"Red = your teacher's notes":"";}
 }
-const INK=TEACHER?"#d62828":SHOW?"#1f5fa8":"#1f2836";
+// View 2026-10-26: pick the pen colour (the Light p5 set); each screen remembers its own
+const COLORS=["#1f2836","#dc2626","#2563eb","#16a34a","#f59e0b","#9333ea"];
+let INK=TEACHER?"#d62828":load("scitem-sc-ink-"+SCREEN,SHOW?"#2563eb":"#1f2836");
+(function(){
+  const box=$("colors");if(TEACHER){box.hidden=true;return;}
+  const set=c=>{INK=c;save("scitem-sc-ink-"+SCREEN,c);$("penSw").style.background=c;
+    [...box.children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.c===c));};
+  for(const c of COLORS){const b=document.createElement("button");b.dataset.c=c;b.style.background=c;b.setAttribute("aria-label","Colour "+c);
+    b.onclick=()=>{set(c);$("tPen").click();};box.appendChild(b);}
+  set(INK);
+})();
 function changed(){
   if(TEACHER)pushRed();else if(SHOW)save(K.show,SHOWINK);else{save(K.work,W);render();liveTouch();autoSave();}
 }
 let curS=null,lasso=null,drag=null,pinch=null,SEL=null;
 const fingersDown=new Set();               // touch pointers on the sheet: a second finger means pinch, not ink
 const paintMine=()=>paint(TEACHER?x.red:x.mine,target,myStrokes());
-function ptOf(e){const r=target.getBoundingClientRect();const q=v=>Math.round(v*1000)/1000;
+function ptOf(e){const r=target.getBoundingClientRect();const q=v=>Math.round(v*5000)/5000;
   return [q((e.clientX-r.left)/r.width),q((e.clientY-r.top)/r.height),e.pointerType==="pen"?q(e.pressure||0.5):0.5];}
 target.addEventListener("pointerdown",e=>{
   if(e.pointerType==="pen"&&!penOnly){penOnly=true;try{localStorage.setItem("scitem-pen","1")}catch(err){}setScrolly();}
@@ -962,9 +980,9 @@ target.addEventListener("pointermove",e=>{
   if(!curS||e.pointerId!==curS.id)return;e.preventDefault();
   const evs=e.getCoalescedEvents?e.getCoalescedEvents():[],s=curS.s,before=s.p.length;
   for(const ce of (evs.length?evs:[e])){const p=ptOf(ce),n=s.p.length;
-    if(Math.abs(p[0]-s.p[n-3])+Math.abs(p[1]-s.p[n-2])<0.0012)continue; // keep the Sheet rows small
+    if(Math.abs(p[0]-s.p[n-3])+Math.abs(p[1]-s.p[n-2])<0.0005)continue; // keep the rows small
     s.p.push(...p);}
-  if(s.p.length>before)drawStroke(TEACHER?x.red:x.mine,target,{c:s.c,e:s.e,p:s.p.slice(Math.max(0,before-3))});
+  if(s.p.length>before)drawStroke(TEACHER?x.red:x.mine,target,{c:s.c,e:s.e,p:s.p.slice(Math.max(0,before-6))});
 });
 const MOVES=[];                            // moves to undo: {list, ss, dx, dy, n = strokes on the page right after}
 function endStroke(e){
@@ -973,13 +991,13 @@ function endStroke(e){
   if(drag&&e.pointerId===drag.id){
     const d=drag;drag=null;
     if(d.dx||d.dy){
-      const q=v=>Math.round(v*1000)/1000;
+      const q=v=>Math.round(v*5000)/5000;
       for(const s of SEL.ss)for(let j=0;j<s.p.length;j+=3){s.p[j]=q(s.p[j]);s.p[j+1]=q(s.p[j+1]);}
       MOVES.push({list:SEL.list,ss:SEL.ss,dx:d.dx,dy:d.dy,n:SEL.list.length});changed();
     }
     drawSel();return;
   }
-  if(!curS||e.pointerId!==curS.id)return;curS=null;changed();
+  if(!curS||e.pointerId!==curS.id)return;curS=null;paintMine();changed();   // repaint: the live pieces joined into one smooth line
 }
 target.addEventListener("pointerup",endStroke);target.addEventListener("pointercancel",endStroke);
 
@@ -1022,7 +1040,7 @@ function undoMove(){                       // Undo after a move puts the ink bac
   while(MOVES.length&&(MOVES[MOVES.length-1].list!==l||MOVES[MOVES.length-1].n>l.length))MOVES.pop();
   const m=MOVES[MOVES.length-1];if(!m||m.n!==l.length)return false;
   MOVES.pop();
-  const q=v=>Math.round(v*1000)/1000;
+  const q=v=>Math.round(v*5000)/5000;
   for(const s of m.ss)for(let j=0;j<s.p.length;j+=3){s.p[j]=q(s.p[j]-m.dx);s.p[j+1]=q(s.p[j+1]-m.dy);}
   return true;
 }
