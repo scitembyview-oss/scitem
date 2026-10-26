@@ -4,7 +4,9 @@
 // Work goes to the Google Sheet at CLASS_SHEET_URL in src/data/catalog.ts (tools/check-sheet.gs, tab "คาบสด");
 // add --local to keep it in the browser instead (try-out: student and #teacher in two tabs of one browser).
 // FIREBASE in catalog.ts (when filled in) also streams every stroke live to the hidden #live screen (rules: tools/firebase-rules.json).
-// Usage: node tools/build-sheet-class.mjs <student.pdf> <key.pdf> <title> <teacher code> <out dir> <class id> [--local]
+// Answer boxes: --answers <answers.json> (kept OUT of the repo, e.g. project files) = {q: [{id, page, name, parts: [{l, v, u, tol?} | {l, c: [choices], a} | {l, t: 1}]}]}.
+// The labels and choices go into the page; the values (v, u, a) only into key.json. Use "-" as key.pdf for a class without key pages.
+// Usage: node tools/build-sheet-class.mjs <student.pdf> <key.pdf|-> <title> <teacher code> <out dir> <class id> [--local] [--answers <file>]
 //   e.g. node tools/build-sheet-class.mjs lesson3-student.pdf lesson3-key.pdf "Living Things and Weather" <code> public/class/sci3 sci3
 //   or: node tools/build-sheet-class.mjs --reshell public/class/sci3   (after editing the shell only)
 // Needs pdftoppm (poppler). Keep the key PDF out of the repo, and never commit the teacher code.
@@ -30,7 +32,8 @@ function firebase() {
   return m && m[1] && m[2] ? { key: m[1], db: m[2] } : null;
 }
 const local = args.includes('--local');
-const [stuPdf, keyPdf, title, tCode, out, id] = args.filter((a) => a !== '--local');
+const ai = args.indexOf('--answers'), ansFile = ai >= 0 ? args[ai + 1] : null;
+const [stuPdf, keyPdf, title, tCode, out, id] = args.filter((a, i) => a !== '--local' && i !== ai && i !== ai + 1);
 if (!stuPdf || !keyPdf || !title || !tCode || !out || !id) {
   console.error('usage: node tools/build-sheet-class.mjs <student.pdf> <key.pdf> <title> <teacher code> <out dir> <class id> [--local]');
   process.exit(1);
@@ -42,10 +45,17 @@ const render = (pdf, dir) => {
 mkdirSync(join(out, 'p'), { recursive: true });
 for (const f of readdirSync(join(out, 'p'))) rmSync(join(out, 'p', f));
 const tmpS = mkdtempSync(join(tmpdir(), 'sc-s-')), tmpK = mkdtempSync(join(tmpdir(), 'sc-k-'));
-const sp = render(stuPdf, tmpS), kp = render(keyPdf, tmpK);
-if (sp.length !== kp.length) throw new Error(`the key has ${kp.length} pages, the student sheet ${sp.length}: they must match page for page`);
+const sp = render(stuPdf, tmpS), kp = keyPdf === '-' ? [] : render(keyPdf, tmpK);
+if (kp.length && sp.length !== kp.length) throw new Error(`the key has ${kp.length} pages, the student sheet ${sp.length}: they must match page for page`);
 sp.forEach((f, i) => renameSync(join(tmpS, f), join(out, 'p', 'p' + String(i + 1).padStart(2, '0') + '.jpg')));
-const plain = new TextEncoder().encode(JSON.stringify({ pages: kp.map((f) => readFileSync(join(tmpK, f)).toString('base64')) }));
+const qs = {}, answers = {};
+if (ansFile) for (const q of JSON.parse(readFileSync(ansFile, 'utf8')).q) {
+  if (!(q.page >= 1 && q.page <= sp.length)) throw new Error(`${q.id}: page ${q.page} is not in the sheet`);
+  const pid = 'p' + String(q.page).padStart(2, '0');
+  (qs[pid] ||= []).push({ id: q.id, name: q.name, parts: q.parts.map((p) => (p.c ? { l: p.l, c: p.c } : { l: p.l })) });
+  answers[q.id] = q.parts.map((p) => (p.c ? { c: 1, a: p.a } : p.t ? { t: 1 } : { v: p.v, u: p.u ?? '', ...(p.tol ? { tol: p.tol } : {}) }));
+}
+const plain = new TextEncoder().encode(JSON.stringify({ pages: kp.map((f) => readFileSync(join(tmpK, f)).toString('base64')), answers }));
 rmSync(tmpS, { recursive: true }); rmSync(tmpK, { recursive: true });
 
 const b64 = (u) => Buffer.from(u).toString('base64');
@@ -57,7 +67,7 @@ writeFileSync(join(out, 'key.json'), JSON.stringify({ iter, salt: b64(salt), iv:
 
 const sheet = local ? null : /CLASS_SHEET_URL\s*=\s*'([^']*)'/.exec(readFileSync(new URL('../src/data/catalog.ts', import.meta.url), 'utf8'))[1];
 if (!local && !sheet) throw new Error('CLASS_SHEET_URL is empty in src/data/catalog.ts (or build with --local)');
-const cfg = { id, title, pages: sp.length, sheet, fb: local ? null : firebase() };
+const cfg = { id, title, pages: sp.length, sheet, fb: local ? null : firebase(), ...(ansFile ? { qs } : {}) };
 const shell = readFileSync(new URL('./sheet-class-shell.html', import.meta.url), 'utf8');
 writeFileSync(join(out, 'index.html'), shell.replace(/\/\*__CFG__\*\/\{[^\n]*?\}(?=;)/, JSON.stringify(cfg)).replace('<title>Scitem Class</title>', `<title>${title}</title>`));
 console.log(`wrote ${out}: ${sp.length} pages`);

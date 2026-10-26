@@ -8,6 +8,15 @@
           ".write": "auth != null && auth.uid == $uid"
         }
       }
+    },
+    "back": {
+      "$cls": {
+        ".read": "auth != null && auth.token.email == 'teacher@scitem.net'",
+        ".write": "auth != null && auth.token.email == 'teacher@scitem.net'",
+        "$uid": {
+          ".read": "auth != null && auth.uid == $uid"
+        }
+      }
     }
   }
 }

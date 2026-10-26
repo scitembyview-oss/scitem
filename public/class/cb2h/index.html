@@ -1,0 +1,1072 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>วงกลม + แรงลอยตัว</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Sarabun:wght@400;600&display=swap">
+<style>
+/* Built by tools/build-sheet-class.mjs from tools/sheet-class-shell.html — edit those, not the built page.
+   A worksheet as a live class. One page, three screens:
+   student (default): the student sheet page by page, write with the pencil, "Send to teacher";
+   #show: the teacher's screen to share on the call — same pages, no answers, the teacher writes, can bring up the student's sent work;
+   #teacher (retired, opens #show): was hidden — what the student sent, the answer key under it, red pen for marking (not shown to the student), save as PDF;
+   #live: the teacher's hidden screen — every student's page and ink as she writes (Firebase, CFG.fb), tap one to see it big with the key. */
+:root{
+  --bg:#f8f3ea; --card:#fff; --fg:#1f2836; --muted:#5d6676; --line:#ddd4c6;
+  --navy:#2b3a55; --peach:#db9e89; --sage:#729783; --mint:#e9f2eb; --good:#2f7a4f; --bad:#b03a2e; --red:#d62828; --blue:#1f5fa8;
+  --display:"Poppins","Sarabun",system-ui,sans-serif; --body:"Sarabun","Noto Sans Thai",system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overscroll-behavior:none}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:17px;line-height:1.4;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overflow:hidden}
+button,select{font:600 15px var(--display);color:var(--fg);cursor:pointer;touch-action:manipulation}
+button:focus-visible,input:focus-visible{outline:3px solid var(--peach);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* ---------- gate ---------- */
+#gate{position:fixed;inset:0;display:grid;place-items:center;padding:16px;background:var(--bg);z-index:50}
+#gate form{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px;width:min(420px,100%);display:flex;flex-direction:column;gap:14px}
+#gate h1{font:700 1.5rem var(--display);margin:0}
+#gate label{font:600 15px var(--display);display:flex;flex-direction:column;gap:6px}
+#gate input{font:600 20px var(--display);padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);-webkit-user-select:text;user-select:text}
+#gate .err{color:var(--bad);min-height:1.4em;font-weight:600}
+.big{font:700 1.15rem var(--display);min-height:56px;padding:0 24px;border-radius:14px;border:none;background:var(--navy);color:#fff}
+.big:disabled{opacity:.45}
+
+/* ---------- app ---------- */
+#app{height:100dvh;display:flex;flex-direction:column;
+  padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));gap:8px}
+#bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#bar h1{font:700 1.05rem var(--display);margin:0 4px 0 0;white-space:nowrap}
+#who{color:var(--muted);font-weight:600}
+.sp{flex:1}
+.b{min-width:44px;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);padding:0 10px}
+.b[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.sw{width:22px;height:22px;border-radius:50%;display:inline-block;vertical-align:middle}
+#send{background:var(--sage);color:#fff;border-color:var(--sage);min-width:150px}
+#send.done{background:var(--mint);color:var(--good);border-color:var(--mint)}
+#net{color:var(--bad);font-weight:600;font-size:14px}
+#status{color:var(--good);font-weight:600;font-size:14px;min-width:4em}
+#nav{display:flex;align-items:center;gap:5px}
+#nav .arr{min-width:52px;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-size:18px}
+#dots{display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;padding:4px 2px}   /* one row, slides sideways on long sheets */
+#dots::-webkit-scrollbar{display:none}
+#dots button{flex:none}
+#dots button{min-width:38px;min-height:38px;border-radius:9px;border:1px solid var(--line);background:var(--card);font:600 13px var(--display);position:relative;padding:0 3px}
+#dots button[aria-current="true"]{outline:3px solid var(--navy);outline-offset:-3px}
+#dots button.sent{background:var(--mint)}
+#dots button.new::after{content:"";position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:#e07a1f;border:2px solid #fff}
+#stu{min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);padding:0 8px}
+#note{font-size:14px;color:var(--muted);font-weight:600}
+.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.b.i{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+#tPen .sw{width:12px;height:12px;margin-left:-2px}
+#nav .arr{display:inline-flex;align-items:center;justify-content:center}
+#work,#fWork{flex:1;min-height:0;display:flex;gap:8px}
+#work #scroll,#fWork #fScroll{flex:1;min-width:0}
+/* answer boxes: one card per question on this page */
+#ans{width:min(330px,34vw);overflow:auto;display:flex;flex-direction:column;gap:8px;-webkit-user-select:text;user-select:text}
+#ans .sym{display:flex;gap:4px;flex-wrap:wrap}
+#ans .sym button{min-width:40px;min-height:38px;border-radius:9px;border:1px solid var(--line);background:var(--card);font:600 17px var(--body)}
+.qa{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:7px}
+.qa h3{font:700 15px var(--display);margin:0}
+.qa .pt{display:flex;flex-direction:column;gap:3px;font-size:14px;color:var(--muted);font-weight:600}
+.qa .row{display:flex;gap:5px}
+.qa input,.qa select{font:600 17px var(--body);min-height:42px;border:1px solid var(--line);border-radius:9px;background:var(--bg);padding:0 8px;min-width:0;color:var(--fg)}
+.qa input.num{flex:1.6}.qa input.unit{flex:1}
+.qa select{width:100%}
+.qa .go{min-height:44px;border-radius:10px;border:none;background:var(--navy);color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.qa .go:disabled{background:var(--line);color:var(--muted)}
+.qa .st{font-size:14px;font-weight:600;color:var(--muted);display:flex;align-items:flex-start;gap:6px}
+.qa .st .ic{width:18px;height:18px}
+.qa.ok{border-color:var(--good);box-shadow:inset 4px 0 0 var(--good)}.qa.ok .st{color:var(--good)}
+.qa.no{border-color:var(--bad);box-shadow:inset 4px 0 0 var(--bad)}.qa.no .st{color:var(--bad)}
+.qa .hint{color:var(--fg);font-weight:600;background:var(--bg);border-radius:8px;padding:6px 8px;white-space:pre-wrap}
+#note.red{color:var(--red)}
+
+#scroll{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;border-radius:12px;background:#e9e3d8;touch-action:pan-x pan-y} /* two fingers zoom the sheet, not the whole page */
+#page{position:relative;margin:0 auto;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.15)}
+#page img{display:block;width:100%;height:auto;pointer-events:none;-webkit-user-drag:none}
+#page canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#page canvas.ink{pointer-events:auto;touch-action:none}
+body.scrolly #page canvas.ink{touch-action:pan-x pan-y}
+#pages{padding:8px}
+#page{margin:0;flex:none}
+#keyTag{position:absolute;top:8px;right:8px;background:var(--red);color:#fff;font:700 13px var(--display);border-radius:999px;padding:2px 10px}
+
+/* ---------- screens ---------- */
+body.show #bar h1::after{content:" · จอครู (แชร์ได้)";color:var(--blue)}
+body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:var(--red)}
+
+/* ---------- #live: every student at once ---------- */
+#live{height:100dvh;display:flex;flex-direction:column;gap:8px;
+  padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+#live .lbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#live h1{font:700 1.05rem var(--display);margin:0}
+#live h1 span{color:var(--red)}
+#lNet{color:var(--bad);font-weight:600;font-size:14px}
+#lCount{color:var(--muted);font-weight:600}
+#grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--cw,240px),1fr));gap:12px;align-content:start;padding:2px}
+#lEmpty{color:var(--muted);font-weight:600;padding:24px;text-align:center;grid-column:1/-1}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px;cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:opacity .3s}
+.card.quiet{opacity:.55}
+.card.fresh{border-color:var(--sage);box-shadow:0 0 0 2px var(--sage)}
+.card .ch{display:flex;justify-content:space-between;gap:6px;font:600 14px var(--display)}
+.card .ch span:last-child{color:var(--muted);white-space:nowrap}
+.card .pg{position:relative;background:#fff;border-radius:6px;overflow:hidden}
+.card img,.card canvas,#fPage img,#fPage canvas{display:block;width:100%;height:auto;pointer-events:none}
+.card canvas,#fPage canvas{position:absolute;inset:0;height:100%}
+#focus{position:fixed;inset:0;background:var(--bg);z-index:20;display:flex;flex-direction:column;gap:8px;
+  padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+#focus .lbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#focus h1{font:700 1.05rem var(--display);margin:0}
+#focus h1 span:last-child{color:var(--red)}
+#fNet{color:var(--bad);font-weight:600;font-size:14px}
+#fNames{display:flex;gap:5px;flex-wrap:wrap}
+#fDots{display:flex;gap:5px;overflow-x:auto;padding:3px 2px}#fDots button{flex:none}
+#fNames button{min-height:40px;border-radius:999px;border:1px solid var(--line);background:var(--card);padding:0 14px;position:relative}
+#fNames button[aria-current="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+#fNames button.fresh::after{content:"";position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:var(--sage);border:2px solid #fff}
+#fNames button.quiet{opacity:.55}
+#fDots button{min-width:38px;min-height:36px;border-radius:9px;border:1px solid var(--line);background:var(--card);font:600 13px var(--display);padding:0 3px}
+#fDots button.ink{background:var(--mint)}
+#fDots button.here{box-shadow:inset 0 -4px 0 var(--sage)}
+#fDots button[aria-current="true"]{outline:3px solid var(--navy);outline-offset:-3px}
+#fWhere{color:var(--muted);font-weight:600}
+#fScroll{flex:1;min-height:0;overflow:auto;border-radius:12px;background:#e9e3d8;padding:8px}
+#fPage{position:relative;margin:0 auto;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.15);width:min(100%,1100px)}
+#fWait b{font-weight:700}#fWait.has{background:#e07a1f;color:#fff;border-color:#e07a1f}
+.wait{display:inline-block;min-width:20px;height:20px;border-radius:999px;background:#e07a1f;color:#fff;font:700 12px/20px var(--display);text-align:center;padding:0 5px;margin-left:5px}
+/* the teacher's review of a student's answers */
+#rev{width:min(380px,36vw);overflow:auto;display:flex;flex-direction:column;gap:8px;-webkit-user-select:text;user-select:text}
+#rev .none{color:var(--muted);font-weight:600;padding:12px}
+.rq{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.rq.waiting{border-color:#e07a1f;box-shadow:inset 4px 0 0 #e07a1f}
+.rq h3{font:700 15px var(--display);margin:0;display:flex;justify-content:space-between;gap:6px;cursor:pointer}
+.rq h3 span{color:var(--muted);font-weight:600;font-size:13px}
+.rq .pa{display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:14px;align-items:baseline}
+.rq .pa .k{color:var(--muted);font-weight:600}
+.rq .pa .v{font-weight:700;text-align:right}
+.rq .pa .m{grid-column:1/-1;font-size:13px;font-weight:600;display:flex;align-items:center;gap:4px}
+.rq .m .ic{width:16px;height:16px}
+.rq .m.y{color:var(--good)}.rq .m.n{color:var(--bad)}.rq .m.t{color:var(--muted)}
+.rq textarea{font:500 15px var(--body);min-height:54px;border:1px solid var(--line);border-radius:9px;padding:6px 8px;background:var(--bg);resize:vertical}
+.rq .btns{display:flex;gap:6px}
+.rq .btns button{flex:1;min-height:42px;border-radius:10px;border:1px solid var(--line);background:var(--card);display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.rq .btns .y{color:var(--good)}.rq .btns .n{color:var(--bad)}
+.rq .btns .y.on{background:var(--good);color:#fff;border-color:var(--good)}.rq .btns .n.on{background:var(--bad);color:#fff;border-color:var(--bad)}
+.rq .sent{font-size:13px;color:var(--muted);font-weight:600}
+
+/* ---------- print (Save PDF) ---------- */
+#print{display:none}
+@media print{
+  @page{size:A4;margin:0}
+  html,body{height:auto;overflow:visible;background:#fff}
+  #app,#gate{display:none!important}
+  #print{display:block}
+  #print img{display:block;width:210mm;height:296mm;object-fit:contain;break-after:page}
+}
+</style>
+</head>
+<body>
+<div id="gate">
+  <form id="gateForm" autocomplete="off">
+    <h1 id="gTitle">Scitem Class</h1>
+    <label id="gNameL">Your name<input id="gName" maxlength="30"></label>
+    <label id="gCodeL" hidden>รหัสครู<input id="gCode" type="password"></label>
+    <div class="err" id="gErr" aria-live="polite"></div>
+    <button class="big" id="gGo">Start</button>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <div id="bar">
+    <h1 id="title"></h1><span id="who"></span>
+    <select id="stu" hidden aria-label="นักเรียน"></select>
+    <span class="sp"></span>
+    <button class="b i" id="tPen" aria-pressed="true" aria-label="Pen" title="Pen"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span class="sw" id="penSw"></span></button>
+    <button class="b i" id="tErase" aria-pressed="false" aria-label="Eraser" title="Eraser"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4.3-4.3a1 1 0 0 1 0-1.4l10-10a1 1 0 0 1 1.4 0l5.6 5.6a1 1 0 0 1 0 1.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg></button>
+    <button class="b i" id="tSel" aria-pressed="false" aria-label="Lasso" title="Lasso: circle ink, then drag it"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 22a5 5 0 0 1-2-4"/><path d="M3.3 14A6.8 6.8 0 0 1 2 10c0-4.4 4.5-8 10-8s10 3.6 10 8-4.5 8-10 8a12 12 0 0 1-5-1"/><circle cx="5" cy="16" r="2"/></svg></button>
+    <button class="b i" id="tHand" aria-pressed="false" aria-label="Scroll with finger" title="Finger scrolls the page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-5.9-2.4L3.4 16a2 2 0 0 1 3-2.8L8 15"/></svg></button>
+    <button class="b i" id="tUndo" aria-label="Undo" title="Undo"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+    <button class="b i" id="tClear" aria-label="Clear page" title="Clear page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+    <button class="b" id="tPull" hidden aria-pressed="false">งานน้อง</button>
+    <button class="b" id="tKey" hidden aria-pressed="false">เฉลย</button>
+    <button class="b" id="send">Send to teacher</button>
+    <button class="b i" id="saveBtn" aria-label="Save PDF" title="Save PDF"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+  </div>
+  <div id="nav">
+    <button class="arr" id="prev" aria-label="Previous page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+    <div id="dots"></div>
+    <button class="arr" id="next" aria-label="Next page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+    <span id="status" aria-live="polite"></span><span id="net"></span><span id="note"></span>
+  </div>
+  <div id="work"><div id="scroll"><div id="pages"><div id="page"><img id="img" alt=""><canvas id="cPull"></canvas><canvas id="cMine"></canvas><canvas id="cKey"></canvas><canvas id="cRed"></canvas><canvas id="cSel"></canvas><span id="keyTag" hidden>เฉลย</span></div></div></div>
+  <aside id="ans" hidden aria-label="Answers"></aside></div>
+</div>
+<div id="live" hidden>
+  <div class="lbar">
+    <h1><span id="lTitle"></span> · <span>จอครูดูสด (ซ่อน)</span></h1>
+    <span id="lCount"></span><span id="lNet" aria-live="polite"></span>
+    <span class="sp"></span>
+    <button class="b i" id="lClear" title="ลบที่ทดและคำตอบของทุกคน"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>ล้างห้อง</span></button>
+  </div>
+  <div id="grid"><div id="lEmpty">รอน้องเข้าห้อง… (น้องเปิดลิงก์ชีทแล้วใส่ชื่อ ที่ทดจะขึ้นตรงนี้ทันที)</div></div>
+</div>
+<div id="focus" hidden>
+  <div class="lbar">
+    <h1><span id="fTitle"></span> · <span>จอซ่อน</span></h1>
+    <span id="fWhere"></span><span id="fNet"></span>
+    <span class="sp"></span>
+    <button class="b i" id="fWait" title="ไปที่คำตอบที่รอตรวจ"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1Z"/></svg><span>รอตรวจ <b id="fWaitN">0</b></span></button>
+    <button class="b i" id="fBack" title="ดูทุกคน"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>ดูรวม</span></button>
+    <button class="b i" id="fPrev" aria-label="Previous page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+    <button class="b i" id="fNext" aria-label="Next page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+    <button class="b i" id="fFollow" aria-pressed="true" title="เปิดหน้าที่น้องอยู่ตลอด"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg><span>ตามน้อง</span></button>
+  </div>
+  <div id="fNames"></div>
+  <div id="fDots"></div>
+  <div id="fWork"><div id="fScroll"><div id="fPage"><img id="fImg" alt=""><canvas id="fInk"></canvas></div></div>
+  <aside id="rev" aria-label="คำตอบของน้อง"></aside></div>
+</div>
+<div id="print"></div>
+
+<script>
+(function(){
+"use strict";
+const CFG={"id":"cb2h","title":"วงกลม + แรงลอยตัว","pages":48,"sheet":"https://script.google.com/macros/s/AKfycbzIaVMqROaTFaDN36SwCif7pWF_KEE7GroEUj2V5c9BM2gg4Y2v3wXbUOf-P4T0aBygnw/exec","fb":null,"qs":{"p04":[{"id":"c3","name":"วงกลม ข้อ 3","parts":[{"l":"ความเร่งสู่ศูนย์กลาง"},{"l":"แรงตึงเชือก"}]},{"id":"c4","name":"วงกลม ข้อ 4","parts":[{"l":"แรงลัพธ์"},{"l":"เป็นแรงชนิดใด","c":["แรงเสียดทานสถิต","แรงเสียดทานจลน์","แรงหนีศูนย์กลาง","แรงปฏิกิริยาตั้งฉาก"]}]}],"p05":[{"id":"c5","name":"วงกลม ข้อ 5","parts":[{"l":"อัตราเร็วสูงสุด"}]},{"id":"c6","name":"วงกลม ข้อ 6","parts":[{"l":"(ก) ω สูงสุด"},{"l":"(ข) ω เมื่อห่าง 0.2 m"}]}],"p08":[{"id":"c8","name":"วงกลม ข้อ 8","parts":[{"l":"แรงตึงเชือก"}]},{"id":"c9","name":"วงกลม ข้อ 9","parts":[{"l":"แรงที่ถนนดันรถ"}]}],"p09":[{"id":"c10","name":"วงกลม ข้อ 10","parts":[{"l":"(ก) อัตราเร็วต่ำสุด"},{"l":"(ข) แรงที่ก้นถังดันน้ำ"}]},{"id":"c11","name":"วงกลม ข้อ 11","parts":[{"l":"(ก) อัตราเร็ว"},{"l":"(ข) หนักกี่เท่า"}]}],"p12":[{"id":"c12","name":"วงกลม ข้อ 12","parts":[{"l":"มุมกับแนวดิ่ง"},{"l":"แรงตึงเชือก"}]},{"id":"c13","name":"วงกลม ข้อ 13","parts":[{"l":"แรงตึงเชือก"},{"l":"คาบ"}]}],"p13":[{"id":"c14","name":"วงกลม ข้อ 14","parts":[{"l":"อัตราเร็ว"}]}],"p16":[{"id":"c15","name":"วงกลม ข้อ 15","parts":[{"l":"อัตราเร็วที่ก้นราง"},{"l":"แรงที่รางดัน"}]},{"id":"c16","name":"วงกลม ข้อ 16","parts":[{"l":"อัตราเร็วต่ำสุด"},{"l":"แรงตึงเชือก"}]}],"p17":[{"id":"c17","name":"วงกลม ข้อ 17","parts":[{"l":"อัตราเร็วต่ำสุด"},{"l":"แรงตึงเชือก"}]}],"p20":[{"id":"b1","name":"ลอยตัว ข้อ 1","parts":[{"l":"แรงลอยตัวในน้ำ"},{"l":"แรงลอยตัวในน้ำมัน"}]},{"id":"b2","name":"ลอยตัว ข้อ 2","parts":[{"l":"ก้อนเหล็ก"},{"l":"ก้อนอะลูมิเนียม"}]}],"p21":[{"id":"b3","name":"ลอยตัว ข้อ 3","parts":[{"l":"แรงลอยตัว"},{"l":"ปริมาตร"},{"l":"ความหนาแน่น"}]},{"id":"b4","name":"ลอยตัว ข้อ 4","parts":[{"l":"ความหนาแน่นของ X"}]}],"p23":[{"id":"b7","name":"ลอยตัว ข้อ 7","parts":[{"l":"ส่วนที่จม (ร้อยละ)"}]},{"id":"b8","name":"ลอยตัว ข้อ 8","parts":[{"l":"ปริมาตรทั้งก้อน"}]}],"p24":[{"id":"b9","name":"ลอยตัว ข้อ 9","parts":[{"l":"(ก) ความหนาแน่นไม้"},{"l":"(ข) มวลที่วาง"}]},{"id":"b10","name":"ลอยตัว ข้อ 10","parts":[{"l":"มวลคนมากที่สุด"}]}],"p26":[{"id":"b13","name":"ลอยตัว ข้อ 13","parts":[{"l":"(ก) แรงตึงเชือก"},{"l":"(ข) ความเร่ง"},{"l":"(ค) จมกี่ส่วน"}]},{"id":"b14","name":"ลอยตัว ข้อ 14","parts":[{"l":"(ก) ในน้ำ"},{"l":"(ข) ในน้ำมัน"}]}],"p27":[{"id":"b15","name":"ลอยตัว ข้อ 15","parts":[{"l":"เครื่องชั่งสปริง"},{"l":"ตาชั่ง"}]},{"id":"b16","name":"ลอยตัว ข้อ 16","parts":[{"l":"ปริมาตรโลหะ"},{"l":"แรงตึงเชือก"}]}],"p29":[{"id":"b17","name":"ลอยตัว ข้อ 17","parts":[{"l":"(ก) ไม้จมลึก"},{"l":"(ข) น้ำสูงขึ้น"}]},{"id":"b18","name":"ลอยตัว ข้อ 18","parts":[{"l":"(ก) ใส่หิน"},{"l":"(ข) ใส่ไม้"}]}],"p30":[{"id":"b19","name":"ลอยตัว ข้อ 19","parts":[{"l":"(ก) ระดับน้ำ","c":["สูงขึ้น","ลดลง","เท่าเดิม"]},{"l":"(ข) ระดับน้ำ","c":["สูงขึ้น","ลดลง","เท่าเดิม"]},{"l":"(ข) เปลี่ยนไป"}]},{"id":"b20","name":"ลอยตัว ข้อ 20","parts":[{"l":"ระดับน้ำ","c":["สูงขึ้น","ลดลง","เท่าเดิม"]},{"l":"เปลี่ยนไป"}]}],"p33":[{"id":"c7","name":"วงกลม ข้อ 7 (การบ้าน)","parts":[{"l":"อัตราเร็วน้อยที่สุด"},{"l":"คาบมากที่สุด"}]}],"p34":[{"id":"b5","name":"ลอยตัว ข้อ 5 (การบ้าน)","parts":[{"l":"น้ำหนัก"},{"l":"ความหนาแน่น"}]},{"id":"b6","name":"ลอยตัว ข้อ 6 (การบ้าน)","parts":[{"l":"มวลทอง"}]}],"p35":[{"id":"b11","name":"ลอยตัว ข้อ 11 (การบ้าน)","parts":[{"l":"จมในชั้นน้ำกี่ส่วน"}]},{"id":"b12","name":"ลอยตัว ข้อ 12 (การบ้าน)","parts":[{"l":"ปริมาตรโพรง"}]}],"p37":[{"id":"b21","name":"ลอยตัว ข้อ 21 (การบ้าน)","parts":[{"l":"(ก) ไม้จม","c":["มากขึ้น","น้อยลง","เท่าเดิม"]},{"l":"(ข) แรงลอยตัว"}]},{"id":"b22","name":"ลอยตัว ข้อ 22 (การบ้าน)","parts":[{"l":"(ก) เชือกเอียง","c":["เข้าหาแกน","ออกจากแกน","ตั้งตรง"]},{"l":"(ข) มุมกับแนวดิ่ง"},{"l":"(ค) แรงตึงเชือก"}]}],"p39":[{"id":"c18","name":"วงกลม ข้อ 18 (ฝึกเพิ่ม)","parts":[{"l":"(ก) อัตราเร็ว"},{"l":"(ข) ขนาด Δv"},{"l":"(ค) ความเร่งเฉลี่ย"}]},{"id":"c19","name":"วงกลม ข้อ 19 (ฝึกเพิ่ม)","parts":[{"l":"แรงตึงเชือก 1"},{"l":"แรงตึงเชือก 2"}]}],"p40":[{"id":"c20","name":"วงกลม ข้อ 20 (ฝึกเพิ่ม)","parts":[{"l":"(ก) ω ไม่เกิน"},{"l":"(ข) แรงตึงเชือก"},{"l":"(ค) ω สูงสุด"}]},{"id":"c21","name":"วงกลม ข้อ 21 (ฝึกเพิ่ม)","parts":[{"l":"(ก) หนักที่สุดที่","c":["จุดบนสุด","จุดล่างสุด","ข้างวง"]},{"l":"(ข) รัศมีน้อยสุด"},{"l":"(ค) บนสุดหนักกี่เท่า"}]}],"p41":[{"id":"c22","name":"วงกลม ข้อ 22 (ฝึกเพิ่ม)","parts":[{"l":"(ก) อัตราเร็วต่ำสุด"},{"l":"(ข) แรงตึง"},{"l":"(ค) อัตราเร็วสูงสุด"}]},{"id":"c23","name":"วงกลม ข้อ 23 (ฝึกเพิ่ม)","parts":[{"l":"(ก) คาบ"},{"l":"(ข) ล่างสุดกี่เท่า"},{"l":"(ค) แรงจากที่นั่งกี่เท่า"}]}],"p42":[{"id":"c24","name":"วงกลม ข้อ 24 (ฝึกเพิ่ม)","parts":[{"l":"อัตราเร็วสูงสุด"}]},{"id":"c25","name":"วงกลม ข้อ 25 (ฝึกเพิ่ม)","parts":[{"l":"θ"}]}],"p43":[{"id":"c26","name":"วงกลม ข้อ 26 (ฝึกเพิ่ม)","parts":[{"l":"(ก) อัตราเร็วต่ำสุด"},{"l":"(ข) ผลต่างแรงตึง"}]},{"id":"c27","name":"วงกลม ข้อ 27 (ฝึกเพิ่ม)","parts":[{"l":"(ก) h น้อยที่สุด"},{"l":"(ข) กี่เท่าของน้ำหนัก"}]}],"p44":[{"id":"c28","name":"วงกลม ข้อ 28 (ฝึกเพิ่ม)","parts":[{"l":"d น้อยที่สุด"}]},{"id":"c29","name":"วงกลม ข้อ 29 (ฝึกเพิ่ม)","parts":[{"l":"ความสูงที่หลุด"},{"l":"อัตราเร็วขณะหลุด"}]}]}};
+const SHEET=CFG.sheet;                     // Google Apps Script URL (tools/check-sheet.gs); null = this browser only (try-out in two tabs)
+const CLASS=CFG.id,N=CFG.pages;
+const $=id=>document.getElementById(id);
+// the hidden #teacher screen is retired (the teacher marks by hand); old #teacher links open #show
+const SCREEN=location.hash==="#live"?"live":location.hash==="#show"||location.hash==="#teacher"?"show":"student";
+const TEACHER=SCREEN==="teacher",SHOW=SCREEN==="show",LIVE_SCREEN=SCREEN==="live",STAFF=TEACHER||SHOW||LIVE_SCREEN;
+document.body.classList.add(SCREEN);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const P=i=>"p"+String(i+1).padStart(2,"0");          // page id in the Sheet: p01, p02…
+const K={me:"scitem-sc:"+CLASS+":me",work:"scitem-sc:"+CLASS+":work",out:"scitem-sc:"+CLASS+":out",sent:"scitem-sc:"+CLASS+":sent",
+  red:"scitem-sc:"+CLASS+":red",show:"scitem-sc:"+CLASS+":show",seen:"scitem-sc:"+CLASS+":seen",ans:"scitem-sc:"+CLASS+":ans"};
+const load=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}};
+const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}};
+
+/* ---------- gate: the student types her name; both teacher screens need the teacher code (it opens the answer key) ---------- */
+const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+// key.json = the answer key pages, AES-GCM with the teacher code (tools/build-sheet-class.mjs); only the teacher screens fetch it
+let KEYBLOB=null;
+async function openKey(code){
+  if(!KEYBLOB)KEYBLOB=await (await fetch("key.json",{cache:"no-cache"})).json();
+  const B=KEYBLOB;
+  const base=await crypto.subtle.importKey("raw",new TextEncoder().encode(code),"PBKDF2",false,["deriveKey"]);
+  const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt:b64(B.salt),iterations:B.iter,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["decrypt"]);
+  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:b64(B.iv)},key,b64(B.ct))));
+}
+let ME=load(K.me,{}),PW="",KEYPAGES=null,KEYANS={};
+if(STAFF){$("gTitle").textContent=LIVE_SCREEN?"จอครูดูสด (ซ่อน)":TEACHER?"จอครู (ซ่อน)":"จอครู (แชร์ให้น้องดู)";$("gNameL").hidden=true;$("gCodeL").hidden=false;$("gGo").textContent="เข้า";}
+else{$("gTitle").textContent=CFG.title;if(ME.name)$("gName").value=ME.name;}
+$("gateForm").addEventListener("submit",async e=>{
+  e.preventDefault();$("gErr").textContent="";
+  if(STAFF){
+    const code=$("gCode").value.trim();$("gGo").disabled=true;
+    try{const k=await openKey(code);if(TEACHER)KEYPAGES=k.pages;KEYANS=k.answers||{};}
+    catch(err){$("gErr").textContent="รหัสไม่ถูก";$("gGo").disabled=false;return;}
+    PW=sessionStorage.getItem("scitem-sheet-pw")||code;
+    if(LIVE_SCREEN){
+      if(!FB){$("gErr").textContent="ห้องนี้ยังไม่ได้ต่อ Firebase";$("gGo").disabled=false;return;}
+      // the Firebase password of teacher@scitem.net is meant to be the teacher code; if not, ask for it
+      try{await fbTeacher(code);}catch(err){
+        const p=prompt("รหัส Firebase ของ "+FB_TEACHER+" (ไม่ตรงกับรหัสครู):");
+        try{if(!p)throw err;await fbTeacher(p.trim());}
+        catch(err2){$("gErr").textContent="เข้า Firebase ไม่ได้ ("+err2.message+")";$("gGo").disabled=false;return;}
+      }
+      $("gate").hidden=true;$("live").hidden=false;startLive();return;
+    }
+  }else{
+    const n=$("gName").value.trim().slice(0,30);if(!n){$("gErr").textContent="Type your name.";return;}
+    ME.name=n;save(K.me,ME);
+  }
+  $("gate").hidden=true;$("app").hidden=false;start();
+});
+
+/* ---------- state ---------- */
+let idx=0,W={},SENT={},RED={},ALL={},STU="",SEEN={},SHOWINK={},pull=false,keyOn=false;
+// W[pid] = {ink:[...], sentAt, sentLen}: her own pages. ALL[name][pid] = what came from the Sheet. RED[key] = teacher's red ink.
+const mine=()=>W[P(idx)]||(W[P(idx)]={ink:[],sentAt:0,sentLen:-1});
+const redKey=(i=idx)=>TEACHER&&SHEET?STU+"|"+P(i):P(i);
+
+/* ---------- the Sheet: cput/cget = the student's pages, rput/rget = the teacher's red ink (tools/check-sheet.gs) ---------- */
+const q3=v=>Math.round(v*1000);
+const packInk=ink=>ink.map(s=>({c:s.c,e:s.e?1:0,p:s.p.map((v,j)=>j%3===2?Math.round(v*9):q3(v))}));
+const arr=v=>Array.isArray(v)?v:v&&typeof v==="object"?Object.keys(v).sort((a,b)=>a-b).map(k=>v[k]):[];   // Firebase may hand an array back as {0:…,1:…}
+const unpackInk=ink=>arr(ink).filter(s=>s&&s.p).map(s=>({c:s.c,e:!!s.e,p:arr(s.p).map((v,j)=>j%3===2?v/9:v/1000)}));
+async function post(body){
+  let r,t;
+  const ab=new AbortController(),tm=setTimeout(()=>ab.abort(),25000);
+  try{r=await fetch(SHEET,{method:"POST",body:JSON.stringify(body),signal:ab.signal});t=await r.text();}
+  catch(e){throw new Error("fetch: "+e.message);}finally{clearTimeout(tm);}
+  let j;try{j=JSON.parse(t);}catch(e){throw new Error("HTTP "+r.status+": "+t.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,140));}
+  if(!j.ok)throw new Error(j.error||"sheet");return j;
+}
+const setNet=t=>{$("net").textContent=t;};
+let flashT;function flash(t){$("status").textContent=t;clearTimeout(flashT);flashT=setTimeout(()=>{$("status").textContent=""},3000);}
+/* a page of pencil can pass what the Sheet keeps (360 000 characters a page): drop every other point until it fits */
+const SHEET_MAX=340000;
+function fitRec(rec){
+  let s=JSON.stringify(rec),ink=rec.ink||[];
+  const thin=p=>{if(p.length<=6)return p;const o=[];for(let i=0;i<p.length;i+=3)if(i%6===0||i===p.length-3)o.push(p[i],p[i+1],p[i+2]);return o;};
+  while(s.length>SHEET_MAX&&ink.length){const next=ink.map(k=>Object.assign({},k,{p:thin(k.p)}));
+    ink=JSON.stringify(next).length<JSON.stringify(ink).length?next:[];s=JSON.stringify(Object.assign({},rec,{ink}));}
+  return s;
+}
+// pages waiting for the Sheet: kept in memory and copied to localStorage when it has room (a full iPad
+// storage made the copy fail silently, so a page could look sent and never leave)
+let flushing=false,OUTQ=null,lastErr="";
+const outq=()=>OUTQ||(OUTQ=load(K.out,{}));
+async function flush(){
+  if(!SHEET||STAFF||flushing)return;
+  const out=outq(),ids=Object.keys(out);if(!ids.length){setNet("");return;}
+  flushing=true;let failed=0;
+  for(const id of ids){
+    const rec=out[id];
+    try{await post({action:"cput",cls:CLASS,name:ME.name||"",id,data:fitRec(rec)});
+      if(out[id]===rec){delete out[id];save(K.out,out);}
+      if(W[id]&&W[id].sentAt===rec.at){W[id].okAt=rec.at;save(K.work,W);}}
+    catch(e){failed++;lastErr=e.message;}
+  }
+  flushing=false;
+  setNet(failed?"Not saved yet ("+lastErr+"). Trying again…":"");
+  render();
+}
+function sendPage(){
+  const w=mine(),rec={ink:packInk(w.ink),at:Date.now()};
+  w.sentAt=rec.at;w.sentLen=inkSig(w.ink);
+  if(!save(K.work,W))setNet("iPad storage is full: send each page, it still goes to the teacher");
+  if(SHEET){outq()[P(idx)]=rec;save(K.out,OUTQ);flush();}
+  else{const sent=load(K.sent,{});rec.name=ME.name||"";sent[P(idx)]=rec;save(K.sent,sent);}
+  render();
+}
+const inkSig=ink=>ink.reduce((a,s)=>a+s.p.length+(s.e?7:1),0);
+// View 2026-10-21: the teacher's ink is not shown on the student's screen; red stays on #teacher and in the saved PDF
+const RED_TO_STUDENT=false;
+async function pullRed(){
+  if(STAFF||!RED_TO_STUDENT)return;const id=P(idx);
+  if(!SHEET){RED=load(K.red,{});drawRed();return;}
+  try{const j=await post({action:"rget",cls:CLASS,name:ME.name||"",id});
+    const r=unpackInk(j.red?JSON.parse(j.red):[]);
+    if(JSON.stringify(r)!==JSON.stringify(RED[id]||[])){RED[id]=r;if(P(idx)===id)drawRed();}}catch(e){}
+}
+let lastAt=0;
+async function pullAll(){
+  if(!SHEET){
+    const sent=load(K.sent,{}),all={};
+    for(const [id,r] of Object.entries(sent))(all[r.name]||(all[r.name]={}))[id]=Object.assign({},r,{ink:unpackInk(r.ink)});
+    const s=JSON.stringify(all);if(s===JSON.stringify(ALL))return false;ALL=all;
+  }else{
+    try{
+      const j=await post({action:"cget",cls:CLASS,pw:PW,since:lastAt});setNet("");
+      if(!j.rows.length)return false;
+      for(const r of j.rows){
+        lastAt=Math.max(lastAt,r.at);
+        const d=JSON.parse(r.data);d.ink=unpackInk(d.ink);d.at=r.at;
+        (ALL[r.name]||(ALL[r.name]={}))[r.id]=d;
+        if(r.red!=null&&!RED[r.name+"|"+r.id])RED[r.name+"|"+r.id]=unpackInk(JSON.parse(r.red||"[]"));
+      }
+    }catch(e){
+      if(e.message==="pw"){
+        // the Sheet's password (tools/check-sheet.gs) is not the teacher code: ask once for this tab
+        const p=prompt("รหัสครูในชีท (Apps Script) ไม่ตรงกับรหัสนี้ ใส่รหัสของชีท:");
+        if(p){PW=p.trim();sessionStorage.setItem("scitem-sheet-pw",PW);}
+        setNet("โหลดไม่ได้: รหัสครูไม่ตรงกับในชีท");
+      }else setNet("โหลดไม่ได้ ("+e.message+")");
+      return false;
+    }
+  }
+  const names=Object.keys(ALL);
+  const latest=n=>Math.max(...Object.values(ALL[n]).map(x=>x.at||0));
+  if(names.length&&(!STU||!ALL[STU]))STU=names.sort((a,b)=>latest(b)-latest(a))[0];
+  const sel=$("stu");
+  if(TEACHER&&names.length){if(sel.options.length!==names.length)sel.innerHTML=names.map(n=>`<option>${esc(n)}</option>`).join("");sel.hidden=false;sel.value=STU;}
+  SENT=ALL[STU]||{};
+  return true;
+}
+let redT=null;
+function pushRed(){
+  if(!SHEET){save(K.red,RED);return;}
+  clearTimeout(redT);const key=redKey(),id=P(idx),name=STU;
+  redT=setTimeout(()=>{post({action:"rput",cls:CLASS,pw:PW,name,id,red:JSON.stringify(packInk(RED[key]||[]))}).catch(()=>setNet("ส่งหมึกครูไม่ได้"));},1200);
+}
+
+/* ---------- live ink on Firebase (Realtime Database over REST, no SDK): each finished stroke goes up, #live streams them ---------- */
+const FB=CFG.fb||null;                     // {key: web API key, db: database URL} from FIREBASE in src/data/catalog.ts; null = no live ink
+const FB_TEACHER="teacher@scitem.net";     // the only account that can read a class (rules: tools/firebase-rules.json)
+const FBK="scitem-fb-anon";                // the student's anonymous sign-in, kept so a reload stays the same card on #live
+let FBA=null;                              // {uid, id = ID token, rt = refresh token, exp}
+async function fbPost(url,body,form){
+  const r=await fetch(url,{method:"POST",headers:{"Content-Type":form?"application/x-www-form-urlencoded":"application/json"},body:form?body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error((j.error&&j.error.message)||"HTTP "+r.status);
+  return j;
+}
+function fbSet(a,keep){
+  FBA={uid:a.localId||a.user_id,id:a.idToken||a.id_token,rt:a.refreshToken||a.refresh_token,exp:Date.now()+1000*(+(a.expiresIn||a.expires_in)||3600)};
+  if(keep)save(FBK,{uid:FBA.uid,rt:FBA.rt});
+}
+async function fbToken(){                  // ID tokens last an hour: refresh with the refresh token, or sign the student in anonymously
+  if(FBA&&FBA.exp>Date.now()+120000)return FBA.id;
+  const keep=!STAFF,old=FBA||(keep?load(FBK,null):null);
+  if(old&&old.rt){
+    try{fbSet(await fbPost("https://securetoken.googleapis.com/v1/token?key="+FB.key,"grant_type=refresh_token&refresh_token="+encodeURIComponent(old.rt),true),keep);return FBA.id;}
+    catch(e){if(STAFF||!/TOKEN|USER/.test(e.message))throw e;}   // offline: try later; a dead token: start a new card
+  }
+  if(STAFF)throw new Error("sign in again");
+  fbSet(await fbPost("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="+FB.key,{returnSecureToken:true}),true);
+  return FBA.id;
+}
+async function fbTeacher(pw){fbSet(await fbPost("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key="+FB.key,{email:FB_TEACHER,password:pw,returnSecureToken:true}),false);}
+const fbUrl=(path,tok,root)=>FB.db.replace(/\/+$/,"")+"/"+(root||"live")+"/"+CLASS+path+".json?auth="+encodeURIComponent(tok);
+// one Firebase stream (server-sent events): put/patch events land in tree via set(path, data); reconnects with a fresh token
+function fbStream(path,root,set,onNet){
+  let es=null,dead=false;
+  const go=async()=>{
+    if(es)es.close();
+    let tok;try{tok=await fbToken();}catch(e){onNet("ต่อไม่ได้ ("+e.message+") ลองใหม่…");setTimeout(go,5000);return;}
+    const me=es=new EventSource(fbUrl(path,tok,root));
+    const on=(t,fn)=>me.addEventListener(t,ev=>{if(me===es)fn(ev.data?JSON.parse(ev.data):null);});
+    on("put",d=>set(d.path,d.data));
+    on("patch",d=>{const base=d.path.replace(/\/+$/,"");for(const [k,v] of Object.entries(d.data||{}))set(base+"/"+k,v);});
+    on("auth_revoked",()=>{FBA.exp=0;go();});   // the hour is up: new token, new stream
+    on("cancel",()=>{me.close();onNet("อ่านไม่ได้: เช็ค Rules ใน Firebase");});
+    me.onopen=()=>onNet("");
+    me.onerror=()=>onNet("หลุด กำลังต่อใหม่…");
+  };
+  go();
+}
+function pathSet(tree,path,data){           // returns the tree (a new one when the whole thing is replaced)
+  const ks=path.split("/").filter(Boolean);
+  if(!ks.length)return data&&typeof data==="object"?data:{};
+  let o=tree;
+  for(const k of ks.slice(0,-1)){if(!o[k]||typeof o[k]!=="object")o[k]={};o=o[k];}
+  const last=ks[ks.length-1];if(data==null)delete o[last];else o[last]=data;
+  return tree;
+}
+
+/* ---------- answer boxes (CFG.qs): a number and a unit per part; #live sees them checked against the key, the teacher's
+   right/wrong and hint come back (back/<class>/<uid>/<qid>) ---------- */
+const QS=CFG.qs||{};                        // pid -> [{id, name, parts: [{l: label, c?: choices}]}]; the key is in key.json
+const QINFO={},QORDER=[];
+for(const [pid,list] of Object.entries(QS))for(const q of list){QINFO[q.id]=Object.assign({pg:+pid.slice(1)-1},q);QORDER.push(q.id);}
+const ICONS={"pen": "<path d=\"M12 20h9\"/><path d=\"M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z\"/>", "eraser": "<path d=\"m7 21-4.3-4.3a1 1 0 0 1 0-1.4l10-10a1 1 0 0 1 1.4 0l5.6 5.6a1 1 0 0 1 0 1.4L13 21\"/><path d=\"M22 21H7\"/><path d=\"m5 11 9 9\"/>", "lasso": "<path d=\"M7 22a5 5 0 0 1-2-4\"/><path d=\"M3.3 14A6.8 6.8 0 0 1 2 10c0-4.4 4.5-8 10-8s10 3.6 10 8-4.5 8-10 8a12 12 0 0 1-5-1\"/><circle cx=\"5\" cy=\"16\" r=\"2\"/>", "hand": "<path d=\"M18 11V6a2 2 0 0 0-4 0v5\"/><path d=\"M14 10V4a2 2 0 0 0-4 0v6\"/><path d=\"M10 10.5V6a2 2 0 0 0-4 0v8\"/><path d=\"M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-5.9-2.4L3.4 16a2 2 0 0 1 3-2.8L8 15\"/>", "undo": "<path d=\"M9 14 4 9l5-5\"/><path d=\"M4 9h10.5a5.5 5.5 0 0 1 0 11H11\"/>", "trash": "<path d=\"M3 6h18\"/><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\"/><path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"/>", "left": "<path d=\"m15 18-6-6 6-6\"/>", "right": "<path d=\"m9 18 6-6-6-6\"/>", "grid": "<rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/>", "follow": "<circle cx=\"12\" cy=\"12\" r=\"3\"/><circle cx=\"12\" cy=\"12\" r=\"8\"/><path d=\"M12 2v2M12 20v2M2 12h2M20 12h2\"/>", "inbox": "<path d=\"M22 12h-6l-2 3h-4l-2-3H2\"/><path d=\"M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1Z\"/>", "print": "<path d=\"M6 9V2h12v7\"/><path d=\"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2\"/><rect x=\"6\" y=\"14\" width=\"12\" height=\"8\"/>", "check": "<path d=\"M20 6 9 17l-5-5\"/>", "x": "<path d=\"M18 6 6 18M6 6l12 12\"/>", "clock": "<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 6v6l4 2\"/>", "send": "<path d=\"m22 2-7 20-4-9-9-4Z\"/><path d=\"M22 2 11 13\"/>", "help": "<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3\"/><path d=\"M12 17h.01\"/>"};
+const icon=k=>'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+ICONS[k]+'</svg>';
+const prettyU=u=>String(u||"").replace(/\^2/g,"²").replace(/\^3/g,"³");
+// what students type: "6", "20,000", "2x10^4", "0.5", "3/2", "2√10", "20π²", "√(3)" (from src/pages/teacher.astro); NaN if it can't
+function evalAns(raw){
+  let t=String(raw||"").replace(/[,\s]/g,"").replace(/[−–]/g,"-").replace(/[×xX]/g,"*").replace(/²/g,"^2").replace(/³/g,"^3");
+  t=((t.match(/^[0-9.+\-*/^()√π]+/)||[""])[0]).replace(/[+\-*/^(√]+$/,"");
+  let i=0;const peek=()=>t[i];
+  const num=()=>{const m=t.slice(i).match(/^\d*\.?\d+/);if(!m)return NaN;i+=m[0].length;return Number(m[0]);};
+  const primary=()=>{const c=peek();if(c==="π"){i++;return Math.PI;}if(c==="√"){i++;return Math.sqrt(power());}
+    if(c==="("){i++;const v=expr();if(peek()===")")i++;return v;}return num();};
+  const power=()=>{const b=primary();if(peek()==="^"){i++;return b**unary();}return b;};
+  const unary=()=>peek()==="-"?(i++,-unary()):power();
+  const term=()=>{let v=unary();for(;;){const c=peek();
+    if(c==="*"){i++;v*=unary();}else if(c==="/"){i++;v/=unary();}else if(c&&/[\dπ√(.]/.test(c))v*=power();else return v;}};
+  const expr=()=>{let v=term();while(peek()==="+"||peek()==="-")v=t[i++]==="+"?v+term():v-term();return v;};
+  if(!t)return NaN;const v=expr();return i===t.length?v:NaN;
+}
+function normU(u){                          // "m/s2", "m/s²", "เมตร/วินาที" … to one spelling
+  let t=String(u||"").toLowerCase().replace(/\s+/g,"").replace(/²/g,"^2").replace(/³/g,"^3").replace(/\*\*/g,"^").replace(/[·∙]/g,"");
+  for(const [a,b] of [["เซนติเมตร","cm"],["มิลลิเมตร","mm"],["มิลลิลิตร","ml"],["ลิตร","l"],["กิโลกรัม","kg"],["กรัม","g"],["เมตร","m"],
+    ["นิวตัน","n"],["วินาที","s"],["เรเดียน","rad"],["องศา","°"],["degrees","°"],["degree","°"],["deg","°"],["ร้อยละ","%"],["เปอร์เซ็นต์","%"],["เท่า",""],["ส่วน",""]])t=t.split(a).join(b);
+  return t.replace(/([a-z])(\d)/g,"$1^$2").replace(/\/s\/s$/,"/s^2");
+}
+const UNITS={m:["L",1],cm:["L",.01],mm:["L",.001],km:["L",1000],"m^3":["V",1],"cm^3":["V",1e-6],"dm^3":["V",1e-3],l:["V",1e-3],ml:["V",1e-6],
+  kg:["M",1],g:["M",1e-3],"kg/m^3":["D",1],"g/cm^3":["D",1000],"g/ml":["D",1000]};
+function checkPart(key,a){                  // -> {ok: true/false/null (teacher decides), num, unit}
+  if(!key)return {ok:null};
+  if(key.c)return {ok:!!a&&a.c===key.a};
+  if(key.t||!a)return {ok:a?null:false};
+  const x=evalAns(a.n),y=evalAns(key.v),ua=normU(a.u),ub=normU(key.u);
+  let fa=1,fb=1,unit=ua===ub;
+  if(!unit&&UNITS[ua]&&UNITS[ub]&&UNITS[ua][0]===UNITS[ub][0]){fa=UNITS[ua][1];fb=UNITS[ub][1];unit=true;}
+  const num=Number.isFinite(x)&&Math.abs(x*fa-y*fb)<=(key.tol||0.005)*Math.max(Math.abs(y*fb),1e-12);
+  return {ok:num&&unit,num,unit};
+}
+const showA=a=>!a?"–":a.c!=null?a.c||"–":((a.n||"–")+(a.u?" "+prettyU(a.u):""));
+const showK=k=>!k?"":k.c?k.a:k.t?"":(k.v+(k.u?" "+prettyU(k.u):""));
+
+/* the student's side */
+let MYANS=load(K.ans,{}),BACK={},lastNum=null;
+function ansDraft(q){return MYANS[q]||(MYANS[q]={v:[],k:0,sent:""});}
+function drawAns(){
+  const box=$("ans"),qs=QS[P(idx)]||[];
+  box.hidden=!qs.length||!(FB||SHOW);
+  if(box.hidden){box.innerHTML="";return;}
+  const SYM=["√","π","²","×10^","/","(",")"];
+  box.innerHTML='<div class="sym">'+SYM.map(t=>`<button type="button" data-ins="${t}">${t==="×10^"?"×10ⁿ":t}</button>`).join("")+"</div>"+qs.map(q=>{
+    const d=SHOW?{v:[]}:ansDraft(q.id);
+    return `<div class="qa" data-q="${esc(q.id)}"><h3>${esc(q.name)}</h3>`+q.parts.map((p,k)=>{const v=d.v[k]||{};
+      return p.c?`<div class="pt">${esc(p.l)}<select data-k="${k}"><option value="">เลือก…</option>${p.c.map(c=>`<option${v.c===c?" selected":""}>${esc(c)}</option>`).join("")}</select></div>`
+        :`<div class="pt">${esc(p.l)}<div class="row"><input class="num" data-k="${k}" inputmode="decimal" autocomplete="off" placeholder="คำตอบ" value="${esc(v.n||"")}"><input class="unit" data-k="${k}" autocomplete="off" autocapitalize="off" placeholder="หน่วย" value="${esc(v.u||"")}"></div></div>`;}).join("")
+      +(SHOW?"":`<button class="go" type="button"></button><div class="st"></div>`)+"</div>";}).join("");
+  ansStatus();
+}
+function readCard(card){
+  const q=QINFO[card.dataset.q],v=q.parts.map(()=>({}));
+  for(const el of card.querySelectorAll("[data-k]")){const o=v[+el.dataset.k];
+    if(el.tagName==="SELECT")o.c=el.value;else if(el.classList.contains("num"))o.n=el.value.trim().slice(0,40);else o.u=el.value.trim().slice(0,20);}
+  return v;
+}
+function ansStatus(){
+  for(const card of $("ans").querySelectorAll(".qa")){
+    const id=card.dataset.q,d=MYANS[id],b=BACK[id],st=card.querySelector(".st"),go=card.querySelector(".go");if(!st)continue;
+    const cur=JSON.stringify(readCard(card)),fresh=!!d&&d.k&&b&&b.for===d.k,changed=!d||!d.k||cur!==d.sent;
+    card.classList.toggle("ok",fresh&&!changed&&b.ok===true);card.classList.toggle("no",fresh&&!changed&&b.ok===false);
+    go.innerHTML=icon("send")+(!changed?"ส่งแล้ว":d&&d.k?"ส่งใหม่":"ส่งคำตอบ");go.disabled=!changed;
+    if(!d||!d.k)st.innerHTML="";
+    else if(changed)st.innerHTML="แก้แล้ว ยังไม่ได้ส่ง";
+    else if(fresh)st.innerHTML=(b.ok?icon("check")+"<span>ถูกแล้ว</span>":icon("x")+"<span>ยังไม่ถูก ลองดูอีกครั้ง</span>");
+    else st.innerHTML=icon("clock")+"<span>ส่งแล้ว รอครูตรวจ</span>";
+    let h=card.querySelector(".hint");
+    if(fresh&&b.hint){if(!h){h=document.createElement("div");h.className="hint";card.appendChild(h);}h.textContent=b.hint;}else if(h)h.remove();
+  }
+}
+async function sendAns(card){
+  const id=card.dataset.q,v=readCard(card),d=ansDraft(id);
+  if(!v.some(o=>o.n||o.c)){flash("Fill in an answer first");return;}
+  d.v=v;d.k=Date.now();d.sent=JSON.stringify(v);save(K.ans,MYANS);ansStatus();
+  try{
+    const tok=await fbToken();
+    const r=await fetch(fbUrl("/"+FBA.uid,tok),{method:"PATCH",body:JSON.stringify({n:ME.name||"",pg:idx,at:{".sv":"timestamp"},["ans/"+id]:{v,k:d.k}})});
+    if(!r.ok)throw new Error("HTTP "+r.status);
+  }catch(e){d.k=0;save(K.ans,MYANS);ansStatus();setNet("ส่งคำตอบไม่ได้ ลองกดส่งใหม่");}
+}
+function startAns(){
+  const box=$("ans");
+  box.addEventListener("focusin",e=>{if(e.target.classList&&e.target.classList.contains("num"))lastNum=e.target;});
+  box.addEventListener("pointerdown",e=>{if(e.target.closest(".sym button"))e.preventDefault();});   // keep the keyboard and the caret
+  box.addEventListener("click",e=>{
+    const sb=e.target.closest(".sym button");
+    if(sb){const el=lastNum&&box.contains(lastNum)?lastNum:box.querySelector("input.num");if(!el)return;
+      const t=sb.dataset.ins,a=el.selectionStart??el.value.length,b=el.selectionEnd??a;
+      el.value=el.value.slice(0,a)+t+el.value.slice(b);el.focus();el.setSelectionRange(a+t.length,a+t.length);
+      el.dispatchEvent(new Event("input",{bubbles:true}));return;}
+    const go=e.target.closest(".go");if(go)sendAns(go.closest(".qa"));
+  });
+  const keep=e=>{const card=e.target.closest&&e.target.closest(".qa");if(!card||SHOW)return;ansDraft(card.dataset.q).v=readCard(card);save(K.ans,MYANS);ansStatus();};
+  box.addEventListener("input",keep);box.addEventListener("change",keep);
+  if(!FB||SHOW||!QORDER.length)return;
+  // the teacher's answers come back on a stream of back/<class>/<uid>
+  (async()=>{try{await fbToken();}catch(e){setTimeout(startAns,8000);return;}
+    fbStream("/"+FBA.uid,"back",(path,data)=>{BACK=pathSet(BACK,path,data);ansStatus();},t=>{});})();
+}
+
+/* the student: live/<class>/<uid> = {n: name, pg: page index, at, ink: {p01: [stroke, …]}}; strokes only added go up one by one,
+   anything else (undo, clear, a move) sends the whole page again */
+const LIVE={};                             // pid -> what Firebase has for that page (a signature per stroke)
+const sigOf=s=>s.p.length+":"+s.p[0]+":"+s.p[1]+(s.e?"e":"");
+let liveT=null,liveBusy=false,liveAgain=false,livePg=-1;
+function liveTouch(){if(!FB||STAFF)return;clearTimeout(liveT);liveT=setTimeout(livePush,120);}
+async function livePush(){
+  if(liveBusy){liveAgain=true;return;}
+  const i=idx,pid=P(i),ink=mine().ink.filter(s=>!curS||s!==curS.s),sig=ink.map(sigOf),had=LIVE[pid];
+  const add=!!had&&had.length<=sig.length&&had.every((v,k)=>v===sig[k]);
+  if(add&&had.length===sig.length&&livePg===i)return;
+  const patch={n:ME.name||"",pg:i,at:{".sv":"timestamp"}};
+  if(add)for(let k=had.length;k<ink.length;k++)patch["ink/"+pid+"/"+k]=packInk([ink[k]])[0];
+  else patch["ink/"+pid]=ink.length?packInk(ink):null;
+  liveBusy=true;
+  try{
+    const tok=await fbToken();
+    const r=await fetch(fbUrl("/"+FBA.uid,tok),{method:"PATCH",body:JSON.stringify(patch)});
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    LIVE[pid]=sig;livePg=i;
+  }catch(e){LIVE[pid]=null;clearTimeout(liveT);liveT=setTimeout(livePush,5000);}
+  finally{liveBusy=false;if(liveAgain){liveAgain=false;liveTouch();}}
+}
+
+/* the teacher's hidden #live screen: one stream of the whole class, a card per student */
+let TREE={},cw=240,FOC=null;       // FOC = {u, i, follow}
+const CARDS={},DIRTY=new Set();let rafOn=false,RATIO=1.414;
+const lNet=t=>{$("lNet").textContent=t;$("fNet").textContent=t;};
+function treeSet(path,data){
+  const ks=path.split("/").filter(Boolean);
+  if(!ks.length){TREE=data&&typeof data==="object"?data:{};return;}
+  let o=TREE;
+  for(const k of ks.slice(0,-1)){if(!o[k]||typeof o[k]!=="object")o[k]={};o=o[k];}
+  const last=ks[ks.length-1];if(data==null)delete o[last];else o[last]=data;
+}
+function dirty(path){
+  const u=path.split("/").filter(Boolean)[0];
+  if(u)DIRTY.add(u);else for(const k of Object.keys(CARDS).concat(Object.keys(TREE)))DIRTY.add(k);
+  if(!rafOn){rafOn=true;requestAnimationFrame(drawLive);}
+}
+const inkOf=(u,i)=>{const o=TREE[u]&&TREE[u].ink&&TREE[u].ink[P(i)];if(!o)return [];
+  return unpackInk(o);};
+let BTREE={};                              // back/<class>: what the teacher sent each student
+function liveConnect(){
+  fbStream("","live",(path,data)=>{treeSet(path,data);dirty(path);},lNet);
+  fbStream("","back",(path,data)=>{BTREE=pathSet(BTREE,path,data);dirty(path);},()=>{});
+}
+// answers waiting for the teacher: sent (k) and not yet answered for that k
+const waiting=u=>{const a=(TREE[u]&&TREE[u].ans)||{},b=BTREE[u]||{};return Object.keys(a).filter(q=>a[q]&&(!b[q]||b[q].for!==a[q].k));};
+function makeCard(u){
+  const el=document.createElement("div");el.className="card";
+  el.innerHTML='<div class="ch"><span></span><span></span></div><div class="pg"><img alt=""><canvas></canvas></div>';
+  const c={u,el,name:el.querySelector(".ch span"),where:el.querySelector(".ch span:last-child"),img:el.querySelector("img"),cv:el.querySelector("canvas"),seen:0};
+  c.img.onload=()=>{RATIO=c.img.naturalHeight/c.img.naturalWidth||RATIO;DIRTY.add(u);if(!rafOn){rafOn=true;requestAnimationFrame(drawLive);}};
+  el.onclick=()=>openFocus(u);
+  return c;
+}
+function paintInk(cv,w,h,list){
+  const d=Math.min(devicePixelRatio||1,2);cv.width=Math.round(w*d);cv.height=Math.round(h*d);
+  paint(cv.getContext("2d"),cv,list);
+}
+function drawLive(){
+  rafOn=false;
+  for(const u of DIRTY){
+    const d=TREE[u];let c=CARDS[u];
+    if(!d||typeof d!=="object"){if(c){c.el.remove();delete CARDS[u];}continue;}
+    if(!c){c=CARDS[u]=makeCard(u);}
+    const i=Math.min(Math.max(+d.pg||0,0),N-1),src="p/"+P(i)+".jpg";
+    c.name.textContent=d.n||"(ไม่มีชื่อ)";const nw=waiting(u).length;c.where.innerHTML="หน้า "+(i+1)+(nw?`<span class="wait">${nw}</span>`:"");
+    if(c.img.getAttribute("src")!==src)c.img.src=src;
+    const w=c.el.clientWidth-12||cw;paintInk(c.cv,w,w*RATIO,inkOf(u,i));
+    if(c.sig!==JSON.stringify([d.at,i])){c.sig=JSON.stringify([d.at,i]);c.seen=Date.now();c.el.classList.add("fresh");}
+    if(FOC&&FOC.u===u){drawFocus();drawRev();}
+  }
+  const all=Object.keys(CARDS).reduce((n,u)=>n+waiting(u).length,0);
+  $("fWaitN").textContent=all;$("fWait").classList.toggle("has",all>0);
+  if(!FOC&&!GRID){const first=Object.keys(CARDS)[0];if(first)openFocus(first);}
+  DIRTY.clear();
+  // cards sorted by name, so each student stays in the same spot
+  const g=$("grid"),list=Object.values(CARDS).sort((a,b)=>(a.name.textContent).localeCompare(b.name.textContent,"th"));
+  list.forEach((c,k)=>{if(g.children[k+1]!==c.el)g.insertBefore(c.el,g.children[k+1]||null);});
+  $("lEmpty").hidden=list.length>0;$("lCount").textContent=list.length?list.length+" คน":"";
+  names();
+}
+function names(){                          // a chip per student on the hidden screen; tap = see her sheet
+  const box=$("fNames"),list=Object.values(CARDS).sort((a,b)=>(a.name.textContent).localeCompare(b.name.textContent,"th"));
+  if(box.children.length!==list.length||list.some((c,k)=>box.children[k].dataset.u!==c.u)){
+    box.innerHTML="";for(const c of list){const b=document.createElement("button");b.dataset.u=c.u;b.onclick=()=>openFocus(c.u);box.appendChild(b);}
+  }
+  const t=Date.now();
+  [...box.children].forEach((b,k)=>{const c=list[k],nw=waiting(c.u).length;b.innerHTML=esc(c.name.textContent)+(nw?`<span class="wait">${nw}</span>`:"");b.setAttribute("aria-current",!!FOC&&FOC.u===c.u);
+    b.classList.toggle("fresh",t-c.seen<8000);b.classList.toggle("quiet",t-c.seen>120000);});
+}
+function quietTick(){                      // fresh = wrote in the last 8 s, quiet = nothing for 2 minutes
+  const t=Date.now();
+  for(const c of Object.values(CARDS)){c.el.classList.toggle("fresh",t-c.seen<8000);c.el.classList.toggle("quiet",t-c.seen>120000);}
+  names();
+}
+let GRID=false;                            // the hidden screen opens on one student's sheet; "ดูรวม" = every student as cards
+function openFocus(u){GRID=false;FOC={u,i:+(TREE[u]&&TREE[u].pg)||0,follow:true};$("fFollow").setAttribute("aria-pressed","true");$("focus").hidden=false;names();drawFocus();drawRev(true);}
+let fZoom=1;
+function drawFocus(){
+  if(!FOC)return;const d=TREE[FOC.u];if(!d){$("focus").hidden=true;FOC=null;return;}
+  const here=Math.min(Math.max(+d.pg||0,0),N-1);
+  if(FOC.follow)FOC.i=here;
+  const i=FOC.i,img=$("fImg"),src="p/"+P(i)+".jpg";
+  $("fWhere").textContent=(d.n||"")+" · หน้า "+(i+1)+"/"+N+(here===i?" · น้องอยู่หน้านี้":" · น้องอยู่หน้า "+(here+1));
+  const dots=$("fDots");
+  if(dots.children.length!==N)for(let k=0;k<N;k++){const b=document.createElement("button");b.textContent=k+1;
+    b.onclick=()=>{FOC.i=k;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();};dots.appendChild(b);}
+  const ink=d.ink||{};
+  [...dots.children].forEach((b,k)=>{b.setAttribute("aria-current",k===i);b.classList.toggle("ink",!!ink[P(k)]);b.classList.toggle("here",k===here);});
+  if(img.getAttribute("src")!==src){img.onload=drawFocus;img.src=src;return;}
+  const pg=$("fPage");pg.style.width=Math.round(Math.min($("fScroll").clientWidth-16,1100)*fZoom)+"px";
+  const w=pg.clientWidth,h=w*(img.naturalHeight/img.naturalWidth||RATIO);
+  paintInk($("fInk"),w,h,inkOf(FOC.u,i));
+}
+/* the student's answers, checked against the key; the teacher sends right/wrong + a hint */
+const HINTS={};let revLater=false;
+function drawRev(force){
+  const box=$("rev");if(!FOC)return;
+  if(!force&&box.contains(document.activeElement)&&document.activeElement.tagName==="TEXTAREA"){revLater=true;return;}  // not while she types
+  revLater=false;
+  const u=FOC.u,a=(TREE[u]&&TREE[u].ans)||{},b=BTREE[u]||{},ids=QORDER.filter(q=>a[q]);
+  box.hidden=!QORDER.length;
+  if(!ids.length){box.innerHTML='<div class="none">น้องยังไม่ได้ส่งคำตอบ</div>';return;}
+  const top=box.scrollTop;
+  box.innerHTML=ids.map(q=>{
+    const info=QINFO[q],an=a[q],bk=b[q],wait=!bk||bk.for!==an.k,key=KEYANS[q]||[];
+    const parts=info.parts.map((p,k)=>{const v=(an.v||[])[k],r=checkPart(key[k],v);
+      const m=r.ok===true?`<span class="m y">${icon("check")}ตรงเฉลย</span>`:r.ok===false?`<span class="m n">${icon("x")}ไม่ตรง${r.num&&!r.unit?" (หน่วย)":""} · เฉลย ${esc(showK(key[k]))}</span>`:`<span class="m t">${icon("help")}ครูตรวจเอง</span>`;
+      return `<span class="k">${esc(p.l)}</span><span class="v">${esc(showA(v))}</span>${m}`;}).join("");
+    const h=HINTS[u+"|"+q]??(bk&&!wait?bk.hint||"":"");
+    return `<div class="rq${wait?" waiting":""}" data-q="${q}"><h3>${esc(info.name)}<span>หน้า ${info.pg+1}</span></h3><div class="pa">${parts}</div>
+      <textarea placeholder="คำใบ้ (ถ้ามี)">${esc(h)}</textarea>
+      <div class="btns"><button class="y${!wait&&bk.ok?" on":""}" type="button">${icon("check")}ถูก</button><button class="n${!wait&&!bk.ok?" on":""}" type="button">${icon("x")}ยังไม่ถูก</button></div>
+      <div class="sent">${wait?"รอครูตรวจ":"ส่งกลับแล้ว: "+(bk.ok?"ถูก":"ยังไม่ถูก")}</div></div>`;}).join("");
+  box.scrollTop=top;
+}
+async function sendBack(card,ok){
+  const u=FOC.u,q=card.dataset.q,an=TREE[u]&&TREE[u].ans&&TREE[u].ans[q];if(!an)return;
+  const hint=card.querySelector("textarea").value.trim().slice(0,500);
+  try{const r=await fetch(fbUrl("/"+u+"/"+q,await fbToken(),"back"),{method:"PUT",body:JSON.stringify({ok,hint,for:an.k,at:{".sv":"timestamp"}})});
+    if(!r.ok)throw new Error("HTTP "+r.status);delete HINTS[u+"|"+q];}
+  catch(e){lNet("ส่งกลับไม่ได้ ("+e.message+")");}
+}
+function nextWaiting(){                    // the student (and answer) that has waited longest
+  let best=null;
+  for(const u of Object.keys(CARDS))for(const q of waiting(u)){const k=TREE[u].ans[q].k;if(!best||k<best.k)best={u,q,k};}
+  if(!best)return;
+  if(!FOC||FOC.u!==best.u)openFocus(best.u);
+  const el=$("rev").querySelector(`[data-q="${best.q}"]`);if(el)el.scrollIntoView({block:"nearest"});
+}
+function startLive(){
+  $("lTitle").textContent=CFG.title;
+  cw=+load("scitem-live-cw",240)||240;$("grid").style.setProperty("--cw",cw+"px");
+  // pinch on the trackpad (= ctrl + wheel): bigger / smaller cards, or zoom the student's page
+  $("grid").addEventListener("wheel",e=>{if(!e.ctrlKey)return;e.preventDefault();
+    cw=Math.min(700,Math.max(140,cw*Math.exp(-e.deltaY/150)));save("scitem-live-cw",cw);$("grid").style.setProperty("--cw",cw+"px");dirty("");},{passive:false});
+  $("fScroll").addEventListener("wheel",e=>{if(!e.ctrlKey)return;e.preventDefault();fZoom=Math.min(3,Math.max(0.4,fZoom*Math.exp(-e.deltaY/150)));drawFocus();},{passive:false});
+  $("lClear").onclick=async()=>{
+    if(!confirm("ลบที่ทดและคำตอบของทุกคนในห้องนี้ออกจากจอสด? (งานที่เซฟเข้าชีทยังอยู่)"))return;
+    try{const tok=await fbToken();
+      for(const root of ["live","back"]){const r=await fetch(fbUrl("",tok,root),{method:"DELETE"});if(!r.ok)throw new Error("HTTP "+r.status);}}
+    catch(e){lNet("ล้างไม่ได้ ("+e.message+")");}
+  };
+  $("fWait").onclick=nextWaiting;
+  $("rev").addEventListener("input",e=>{const c=e.target.closest(".rq");if(c&&FOC)HINTS[FOC.u+"|"+c.dataset.q]=e.target.value;});
+  $("rev").addEventListener("focusout",()=>setTimeout(()=>{if(revLater)drawRev();},0));
+  $("rev").addEventListener("click",e=>{
+    const c=e.target.closest(".rq");if(!c)return;
+    if(e.target.closest(".y"))sendBack(c,true);else if(e.target.closest(".n"))sendBack(c,false);
+    else if(e.target.closest("h3")){FOC.i=QINFO[c.dataset.q].pg;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();}
+  });
+  $("fBack").onclick=()=>{$("focus").hidden=true;FOC=null;GRID=true;};
+  $("fTitle").textContent=CFG.title;
+  $("fPrev").onclick=()=>{if(FOC&&FOC.i>0){FOC.i--;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();}};
+  $("fNext").onclick=()=>{if(FOC&&FOC.i<N-1){FOC.i++;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();}};
+  $("fFollow").onclick=()=>{if(!FOC)return;FOC.follow=!FOC.follow;$("fFollow").setAttribute("aria-pressed",FOC.follow);drawFocus();};
+  addEventListener("keydown",e=>{if(!FOC||/INPUT|TEXTAREA/.test(e.target.tagName))return;if(e.key==="ArrowLeft")$("fPrev").click();if(e.key==="ArrowRight")$("fNext").click();});
+  addEventListener("resize",()=>{dirty("");});
+  setInterval(quietTick,2000);
+  liveConnect();
+}
+
+/* ---------- screens ---------- */
+function start(){
+  $("title").textContent=CFG.title;
+  if(STAFF){
+    $("send").hidden=true;
+    if(TEACHER){
+      $("tKey").hidden=false;$("tPull").hidden=false;$("tErase").hidden=true;$("penSw").style.background="var(--red)";
+      $("tUndo").textContent="ย้อน";$("tClear").textContent="ลบหมึกครู";$("saveBtn").textContent="เซฟ PDF งานน้อง";
+      SEEN=load(K.seen,{});if(!SHEET)RED=load(K.red,{});
+      $("stu").onchange=()=>{STU=$("stu").value;SENT=ALL[STU]||{};render();};
+    }else{
+      $("penSw").style.background="var(--blue)";$("saveBtn").hidden=true;   // View 2026-10-26: #show shows no student work (that is #live)
+      SHOWINK=load(K.show,{});
+    }
+    let busy=false;
+    const refresh=async()=>{if(busy||(SHOW&&!pull))return;busy=true;try{if(await pullAll())render();}finally{busy=false;}};
+    setInterval(()=>{if(!document.hidden)refresh();},5000);
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh();});
+    $("tPull").onclick=()=>{pull=!pull;$("tPull").setAttribute("aria-pressed",pull);if(pull)refresh();render();};
+    $("tKey").onclick=()=>{keyOn=!keyOn;$("tKey").setAttribute("aria-pressed",keyOn);render();};
+    if(TEACHER)refresh();
+    idx=0;
+  }else{
+    $("who").textContent=ME.name||"";W=load(K.work,{});
+    $("penSw").style.background="var(--navy)";
+    idx=Math.min(ME.idx||0,N-1);
+    if(SHEET){setInterval(()=>{if(!document.hidden)flush();},6000);addEventListener("online",flush);flush();}
+    setInterval(()=>{if(!document.hidden)pullRed();},8000);
+    document.addEventListener("visibilitychange",()=>{if(document.hidden)autoSave(true);else{flush();pullRed();}});
+    if(!SHEET)addEventListener("storage",e=>{if(e.key===K.red)pullRed();});
+    // View 2026-10-26: no Send button; the ink goes live to #live, and each page saves to the Sheet by itself as a backup
+    $("send").hidden=true;
+    liveTouch();
+  }
+  startAns();
+  for(let i=0;i<N;i++){const b=document.createElement("button");b.textContent=i+1;b.onclick=()=>go(i);$("dots").appendChild(b);}
+  addEventListener("resize",fit);
+  render();pullRed();
+}
+let autoT=null;
+function autoSave(now){                    // a page goes to the Sheet 3 s after the pen stops, or when she turns the page
+  clearTimeout(autoT);
+  const w=W[P(idx)];if(!w||w.sentLen===inkSig(w.ink)||(!w.ink.length&&!w.sentAt))return;
+  if(now)sendPage();else autoT=setTimeout(()=>{if(!curS)sendPage();else autoSave();},3000);
+}
+function go(i){if(i<0||i>=N||i===idx)return;if(!STAFF)autoSave(true);idx=i;SEL=null;lasso=null;drag=null;if(!STAFF){ME.idx=i;save(K.me,ME);liveTouch();}render();$("scroll").scrollTop=0;pullRed();}
+$("prev").onclick=()=>go(idx-1);$("next").onclick=()=>go(idx+1);
+addEventListener("keydown",e=>{if(e.target.tagName==="INPUT")return;if(e.key==="ArrowLeft")go(idx-1);if(e.key==="ArrowRight")go(idx+1);});
+
+let ansPg=-1;
+function render(){
+  if(ansPg!==idx){ansPg=idx;drawAns();}
+  if(TEACHER&&SENT[P(idx)]){SEEN[STU+"|"+P(idx)]=SENT[P(idx)].at;save(K.seen,SEEN);}
+  const img=$("img"),src="p/"+P(idx)+".jpg";
+  $("keyTag").hidden=!(TEACHER&&keyOn);
+  if(img.getAttribute("src")!==src){img.onload=fit;img.src=src;}else fit();
+  [...$("dots").children].forEach((b,i)=>{
+    b.setAttribute("aria-current",i===idx);if(i===idx&&b.scrollIntoView)b.scrollIntoView({block:"nearest",inline:"nearest"});
+    const s=TEACHER||SHOW?SENT[P(i)]:null,w=W[P(i)];
+    b.classList.toggle("sent",STAFF?!!s:!!(w&&w.sentAt));
+    b.classList.toggle("new",TEACHER&&!!s&&(SEEN[STU+"|"+P(i)]||0)<s.at);
+  });
+  if(!STAFF){
+    const w=mine(),same=w.sentAt&&w.sentLen===inkSig(w.ink),sent=same&&(!SHEET||w.okAt===w.sentAt||(w.okAt==null&&!outq()[P(idx)]));
+    $("send").textContent=sent?"Sent ✓":same?"Sending…":w.sentAt?"Send again":"Send to teacher";$("send").classList.toggle("done",!!sent);
+  }
+  const s=SENT[P(idx)];
+  $("note").className="";
+  if(TEACHER)$("note").textContent=s?`${STU} ส่งหน้านี้ ${new Date(s.at).toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"})}`:"หน้านี้น้องยังไม่ส่ง";
+  else if(SHOW)$("note").textContent=pull?(s?`งานของ ${STU}`:"หน้านี้น้องยังไม่ส่ง"):"";
+}
+
+/* ---------- ink (vector strokes, 0..1 of the page) ---------- */
+let zoom=1;
+let penOnly=(()=>{try{return localStorage.getItem("scitem-pen")==="1"}catch(e){return false}})(); // after the first Apple Pencil touch, fingers scroll instead of writing
+let erase=false,hand=false,sel=false;
+const cPull=$("cPull"),cMine=$("cMine"),cKey=$("cKey"),cRed=$("cRed"),cSel=$("cSel"),x={pull:cPull.getContext("2d"),mine:cMine.getContext("2d"),red:cRed.getContext("2d"),sel:cSel.getContext("2d")};
+// only the layers this screen draws on get a full-size canvas (a zoomed-in tall page is heavy on iPad memory)
+const LAYERS=[cMine,cSel].concat(TEACHER?[cKey,cRed]:[],SHOW?[cPull]:[],!STAFF&&RED_TO_STUDENT?[cRed]:[]);
+const target=TEACHER?cRed:cMine;
+target.classList.add("ink");
+function setScrolly(){document.body.classList.toggle("scrolly",penOnly||hand);}
+const ZMIN=0.5,ZMAX=3;
+function size(){                           // the page box at this zoom (CSS only: cheap enough for every pinch frame)
+  const sc=$("scroll"),pg=$("page"),img=$("img");
+  const r=img.naturalWidth?img.naturalHeight/img.naturalWidth:1.414;
+  const w=Math.floor(Math.min(sc.clientWidth-32,1100)*zoom),h=Math.round(w*r);
+  pg.style.width=w+"px";pg.style.height=h+"px";
+  return [w,h];
+}
+function fit(){
+  const [w,h]=size();
+  const dpr=Math.min(devicePixelRatio||1,1.5,2600/w); // keep iPad memory low, also when zoomed in
+  for(const c of LAYERS){c.width=Math.floor(w*dpr);c.height=Math.floor(h*dpr);}
+  drawAll();
+}
+function drawStroke(ctx,c,s){
+  const w=c.width,h=c.height,pts=s.p;
+  ctx.globalCompositeOperation=s.e?"destination-out":"source-over";
+  ctx.strokeStyle=ctx.fillStyle=s.c;ctx.lineCap=ctx.lineJoin="round";
+  const base=w/420*(s.e?8:1);
+  if(pts.length<4){ctx.beginPath();ctx.arc(pts[0]*w,pts[1]*h,base/1.2,0,7);ctx.fill();return;}
+  for(let i=3;i<pts.length;i+=3){
+    ctx.lineWidth=s.e?base:base*(0.6+0.9*pts[i+2]);
+    ctx.beginPath();ctx.moveTo(pts[i-3]*w,pts[i-2]*h);ctx.lineTo(pts[i]*w,pts[i+1]*h);ctx.stroke();
+  }
+}
+function paint(ctx,c,list){ctx.globalCompositeOperation="source-over";ctx.clearRect(0,0,c.width,c.height);for(const s of list)drawStroke(ctx,c,s);}
+const sentInk=()=>(SENT[P(idx)]&&SENT[P(idx)].ink)||[];
+function myStrokes(){                      // the layer this screen writes on
+  if(TEACHER){const k=redKey();return RED[k]||(RED[k]=[]);}
+  if(SHOW){const k=P(idx);return SHOWINK[k]||(SHOWINK[k]=[]);}
+  return mine().ink;
+}
+/* answers only, on top of her ink: the key page minus the student page (what is the same turns see-through) */
+const ANS={};
+function answers(i){
+  if(ANS[i])return Promise.resolve(ANS[i]);
+  const get=src=>new Promise(r=>{const m=new Image();m.onload=()=>r(m);m.src=src;});
+  return Promise.all([get("p/"+P(i)+".jpg"),get("data:image/jpeg;base64,"+KEYPAGES[i])]).then(([a,b])=>{
+    const c=document.createElement("canvas");c.width=b.naturalWidth;c.height=b.naturalHeight;const g=c.getContext("2d");
+    g.drawImage(a,0,0,c.width,c.height);const A=g.getImageData(0,0,c.width,c.height).data;
+    g.drawImage(b,0,0);const D=g.getImageData(0,0,c.width,c.height),B=D.data;
+    for(let k=0;k<B.length;k+=4){if(Math.abs(B[k]-A[k])+Math.abs(B[k+1]-A[k+1])+Math.abs(B[k+2]-A[k+2])<90)B[k+3]=0;}
+    g.putImageData(D,0,0);return ANS[i]=c;});
+}
+function drawKey(){
+  const g=cKey.getContext("2d");g.clearRect(0,0,cKey.width,cKey.height);
+  if(!(TEACHER&&keyOn&&KEYPAGES))return;
+  const i=idx;answers(i).then(c=>{if(i!==idx||!keyOn)return;g.clearRect(0,0,cKey.width,cKey.height);g.drawImage(c,0,0,cKey.width,cKey.height);});
+}
+function drawAll(){
+  drawKey();
+  paint(x.pull,cPull,SHOW&&pull?sentInk():[]);
+  paint(x.mine,cMine,TEACHER?(pull?sentInk():[]):SHOW?SHOWINK[P(idx)]||[]:mine().ink);
+  drawRed();drawSel();
+}
+function drawRed(){
+  if(SHOW){paint(x.red,cRed,[]);return;}
+  const r=RED[redKey()]||[];paint(x.red,cRed,r);
+  if(!STAFF){$("note").className=r.length?"red":"";$("note").textContent=r.length?"Red = your teacher's notes":"";}
+}
+const INK=TEACHER?"#d62828":SHOW?"#1f5fa8":"#1f2836";
+function changed(){
+  if(TEACHER)pushRed();else if(SHOW)save(K.show,SHOWINK);else{save(K.work,W);render();liveTouch();autoSave();}
+}
+let curS=null,lasso=null,drag=null,pinch=null,SEL=null;
+const fingersDown=new Set();               // touch pointers on the sheet: a second finger means pinch, not ink
+const paintMine=()=>paint(TEACHER?x.red:x.mine,target,myStrokes());
+function ptOf(e){const r=target.getBoundingClientRect();const q=v=>Math.round(v*1000)/1000;
+  return [q((e.clientX-r.left)/r.width),q((e.clientY-r.top)/r.height),e.pointerType==="pen"?q(e.pressure||0.5):0.5];}
+target.addEventListener("pointerdown",e=>{
+  if(e.pointerType==="pen"&&!penOnly){penOnly=true;try{localStorage.setItem("scitem-pen","1")}catch(err){}setScrolly();}
+  const touch=e.pointerType==="touch";
+  if(touch){fingersDown.add(e.pointerId);if(fingersDown.size>1||pinch)return;}
+  // in pencil / ✋ mode a finger scrolls, except on a selection, where it drags the ink
+  if(touch&&(penOnly||hand)&&!(sel&&inSel(ptOf(e))))return;
+  if(curS||lasso||drag||(TEACHER&&!SENT[P(idx)]))return;
+  e.preventDefault();try{target.setPointerCapture(e.pointerId)}catch(err){}
+  if(sel){
+    const p=ptOf(e);
+    if(inSel(p))drag={id:e.pointerId,touch,p0:p,orig:SEL.ss.map(s=>s.p.slice()),dx:0,dy:0};
+    else{SEL=null;lasso={id:e.pointerId,touch,p:[p[0],p[1]]};}
+    drawSel();return;
+  }
+  curS={id:e.pointerId,touch,s:{c:INK,e:!TEACHER&&erase,p:ptOf(e)}};
+  myStrokes().push(curS.s);
+  drawStroke(TEACHER?x.red:x.mine,target,curS.s);
+});
+target.addEventListener("pointermove",e=>{
+  if(pinch&&e.pointerType==="touch")return;
+  if(lasso&&e.pointerId===lasso.id){e.preventDefault();const p=ptOf(e);lasso.p.push(p[0],p[1]);drawSel();return;}
+  if(drag&&e.pointerId===drag.id){
+    e.preventDefault();const p=ptOf(e);drag.dx=p[0]-drag.p0[0];drag.dy=p[1]-drag.p0[1];
+    SEL.ss.forEach((s,k)=>{const o=drag.orig[k];for(let j=0;j<o.length;j+=3){s.p[j]=o[j]+drag.dx;s.p[j+1]=o[j+1]+drag.dy;}});
+    paintMine();drawSel();return;
+  }
+  if(!curS||e.pointerId!==curS.id)return;e.preventDefault();
+  const evs=e.getCoalescedEvents?e.getCoalescedEvents():[],s=curS.s,before=s.p.length;
+  for(const ce of (evs.length?evs:[e])){const p=ptOf(ce),n=s.p.length;
+    if(Math.abs(p[0]-s.p[n-3])+Math.abs(p[1]-s.p[n-2])<0.0012)continue; // keep the Sheet rows small
+    s.p.push(...p);}
+  if(s.p.length>before)drawStroke(TEACHER?x.red:x.mine,target,{c:s.c,e:s.e,p:s.p.slice(Math.max(0,before-3))});
+});
+const MOVES=[];                            // moves to undo: {list, ss, dx, dy, n = strokes on the page right after}
+function endStroke(e){
+  fingersDown.delete(e.pointerId);
+  if(lasso&&e.pointerId===lasso.id){pick(lasso.p);lasso=null;drawSel();return;}
+  if(drag&&e.pointerId===drag.id){
+    const d=drag;drag=null;
+    if(d.dx||d.dy){
+      const q=v=>Math.round(v*1000)/1000;
+      for(const s of SEL.ss)for(let j=0;j<s.p.length;j+=3){s.p[j]=q(s.p[j]);s.p[j+1]=q(s.p[j+1]);}
+      MOVES.push({list:SEL.list,ss:SEL.ss,dx:d.dx,dy:d.dy,n:SEL.list.length});changed();
+    }
+    drawSel();return;
+  }
+  if(!curS||e.pointerId!==curS.id)return;curS=null;changed();
+}
+target.addEventListener("pointerup",endStroke);target.addEventListener("pointercancel",endStroke);
+
+/* ---------- Select: circle ink with the pen (or finger), drag inside the box to move it, tap outside to let go ---------- */
+function inPoly(px,py,poly){
+  let ins=false;
+  for(let i=0,j=poly.length-2;i<poly.length;j=i,i+=2){
+    const xi=poly[i],yi=poly[i+1],xj=poly[j],yj=poly[j+1];
+    if((yi>py)!==(yj>py)&&px<(xj-xi)*(py-yi)/(yj-yi)+xi)ins=!ins;
+  }
+  return ins;
+}
+function pick(poly){                       // a stroke is picked when most of it is inside the loop
+  SEL=null;if(poly.length<8)return;        // a tap: nothing picked (= deselect)
+  const list=myStrokes(),ss=list.filter(s=>{let n=0,k=0;for(let j=0;j<s.p.length;j+=3,k++)if(inPoly(s.p[j],s.p[j+1],poly))n++;return n*2>=k;});
+  if(ss.length)SEL={list,ss};
+}
+function selBox(){
+  if(!SEL||SEL.list!==myStrokes())return SEL=null;
+  let a=1e9,b=1e9,c=-1e9,d=-1e9;
+  for(const s of SEL.ss)for(let j=0;j<s.p.length;j+=3){a=Math.min(a,s.p[j]);b=Math.min(b,s.p[j+1]);c=Math.max(c,s.p[j]);d=Math.max(d,s.p[j+1]);}
+  const m=0.012;return [a-m,b-m*0.7,c+m,d+m*0.7];
+}
+function inSel(p){const r=selBox();return !!r&&p[0]>=r[0]&&p[0]<=r[2]&&p[1]>=r[1]&&p[1]<=r[3];}
+function drawSel(){
+  const g=x.sel,w=cSel.width,h=cSel.height;g.clearRect(0,0,w,h);
+  g.lineWidth=Math.max(1.5,w/500);g.setLineDash([g.lineWidth*4,g.lineWidth*3]);g.strokeStyle="#1f5fa8";
+  if(lasso&&lasso.p.length>2){
+    g.beginPath();g.moveTo(lasso.p[0]*w,lasso.p[1]*h);
+    for(let j=2;j<lasso.p.length;j+=2)g.lineTo(lasso.p[j]*w,lasso.p[j+1]*h);
+    g.stroke();
+  }
+  const r=selBox();
+  if(r){g.fillStyle="rgba(31,95,168,.08)";g.fillRect(r[0]*w,r[1]*h,(r[2]-r[0])*w,(r[3]-r[1])*h);g.strokeRect(r[0]*w,r[1]*h,(r[2]-r[0])*w,(r[3]-r[1])*h);}
+  g.setLineDash([]);
+}
+function unselect(){SEL=null;lasso=null;drawSel();}
+function undoMove(){                       // Undo after a move puts the ink back (strokes drawn since come off first)
+  const l=myStrokes();
+  while(MOVES.length&&(MOVES[MOVES.length-1].list!==l||MOVES[MOVES.length-1].n>l.length))MOVES.pop();
+  const m=MOVES[MOVES.length-1];if(!m||m.n!==l.length)return false;
+  MOVES.pop();
+  const q=v=>Math.round(v*1000)/1000;
+  for(const s of m.ss)for(let j=0;j<s.p.length;j+=3){s.p[j]=q(s.p[j]-m.dx);s.p[j+1]=q(s.p[j+1]-m.dy);}
+  return true;
+}
+
+/* ---------- two fingers: pinch to zoom the sheet (and pan), the pencil keeps writing ---------- */
+const scr=$("scroll"),fingers=e=>[...e.touches].filter(t=>t.touchType!=="stylus");
+function dropFingerInk(){                  // the first finger may have started ink before the second one landed
+  if(curS&&curS.touch){const l=myStrokes(),i=l.lastIndexOf(curS.s);if(i>=0)l.splice(i,1);curS=null;paintMine();}
+  if(lasso&&lasso.touch)lasso=null;
+  if(drag&&drag.touch){SEL.ss.forEach((s,k)=>{s.p=drag.orig[k];});drag=null;paintMine();}
+  drawSel();
+}
+scr.addEventListener("touchstart",e=>{
+  const f=fingers(e);if(f.length<2||pinch)return;
+  e.preventDefault();dropFingerInk();
+  const [a,b]=f,mx=(a.clientX+b.clientX)/2,my=(a.clientY+b.clientY)/2;
+  const sr=scr.getBoundingClientRect(),pr=$("page").getBoundingClientRect();
+  pinch={d:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)||1,z:zoom,
+    fx:(mx-pr.left)/pr.width,fy:(my-pr.top)/pr.height,             // the spot of the sheet under the fingers stays under them
+    ox:pr.left-sr.left+scr.scrollLeft,oy:pr.top-sr.top+scr.scrollTop};
+},{passive:false});
+scr.addEventListener("touchmove",e=>{
+  if(!pinch)return;const f=fingers(e);if(f.length<2)return;
+  if(e.cancelable)e.preventDefault();
+  const [a,b]=f,mx=(a.clientX+b.clientX)/2,my=(a.clientY+b.clientY)/2;
+  zoom=Math.min(ZMAX,Math.max(ZMIN,pinch.z*Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)/pinch.d));
+  const [w,h]=size(),sr=scr.getBoundingClientRect();
+  scr.scrollLeft=pinch.ox+pinch.fx*w-(mx-sr.left);scr.scrollTop=pinch.oy+pinch.fy*h-(my-sr.top);
+},{passive:false});
+function endPinch(e){if(pinch&&fingers(e).length<2){pinch=null;fit();}}
+scr.addEventListener("touchend",endPinch);scr.addEventListener("touchcancel",endPinch);
+// Safari's own page zoom
+for(const t of ["gesturestart","gesturechange"])document.addEventListener(t,e=>e.preventDefault(),{passive:false});
+// stop iPad Safari turning a pencil stroke into a scroll (see tools/light-p5-shell.html); fingers still scroll in ✋ / pencil mode
+$("page").addEventListener("touchstart",e=>{
+  const stylus=[...e.changedTouches].some(t=>t.touchType==="stylus");
+  if(stylus&&!penOnly){penOnly=true;try{localStorage.setItem("scitem-pen","1")}catch(err){}setScrolly();}
+  const onSel=sel&&e.touches.length===1&&inSel(ptOf(e.touches[0]));   // a finger on a selection drags it instead of scrolling
+  if(stylus||onSel||!(penOnly||hand))e.preventDefault();},{passive:false});
+$("page").addEventListener("touchmove",e=>{if([...e.touches].some(t=>t.touchType==="stylus")||drag||!(penOnly||hand))e.preventDefault();},{passive:false});
+setScrolly();
+
+const press=(on,off)=>{on.setAttribute("aria-pressed","true");for(const b of off)b.setAttribute("aria-pressed","false");};
+$("tPen").onclick=()=>{erase=false;sel=false;hand=false;unselect();press($("tPen"),[$("tErase"),$("tSel"),$("tHand")]);setScrolly();};
+$("tErase").onclick=()=>{erase=true;sel=false;hand=false;unselect();press($("tErase"),[$("tPen"),$("tSel"),$("tHand")]);setScrolly();};
+$("tSel").onclick=()=>{sel=true;erase=false;hand=false;press($("tSel"),[$("tPen"),$("tErase"),$("tHand")]);setScrolly();};
+$("tHand").onclick=()=>{hand=!hand;$("tHand").setAttribute("aria-pressed",hand);setScrolly();};
+$("tUndo").onclick=()=>{const l=myStrokes();if(!undoMove()){if(!l.length)return;l.pop();}SEL=null;changed();drawAll();};
+$("tClear").onclick=()=>{const l=myStrokes();if(!l.length||!confirm(TEACHER?"ลบหมึกครูในหน้านี้?":SHOW?"ลบหมึกในหน้านี้?":"Clear this page?"))return;l.length=0;SEL=null;changed();drawAll();};
+// View 2026-10-26: zoom with fingers only (no +/− buttons); a trackpad pinch (ctrl + wheel) on a computer
+let wheelT=null;
+scr.addEventListener("wheel",e=>{if(!e.ctrlKey)return;e.preventDefault();zoom=Math.min(ZMAX,Math.max(ZMIN,zoom*Math.exp(-e.deltaY/150)));size();clearTimeout(wheelT);wheelT=setTimeout(fit,120);},{passive:false});
+
+/* ---------- Save PDF: every page with ink, one A4 each ---------- */
+function pageImage(i,lists){
+  return new Promise(res=>{
+    const im=new Image();
+    im.onload=()=>{
+      const c=document.createElement("canvas");c.width=im.naturalWidth;c.height=im.naturalHeight;const g=c.getContext("2d");g.drawImage(im,0,0);
+      const l=document.createElement("canvas");l.width=c.width;l.height=c.height;const lx=l.getContext("2d");
+      for(const list of lists){lx.clearRect(0,0,l.width,l.height);for(const s of list)drawStroke(lx,l,s);g.drawImage(l,0,0);}
+      res(c.toDataURL("image/jpeg",0.85));
+    };
+    im.src="p/"+P(i)+".jpg";
+  });
+}
+$("saveBtn").onclick=async()=>{
+  const p=$("print");p.innerHTML="";flash("…");
+  for(let i=0;i<N;i++){
+    const ink=TEACHER?(SENT[P(i)]&&SENT[P(i)].ink)||[]:(W[P(i)]&&W[P(i)].ink)||[];
+    const red=RED[redKey(i)]||[];
+    if(!ink.length&&!red.length)continue;
+    const im=document.createElement("img");im.src=await pageImage(i,[ink,red]);p.appendChild(im);
+  }
+  if(!p.children.length){flash(TEACHER?"ยังไม่มีงาน":"Nothing written yet");return;}
+  document.title=CFG.title+" · "+(TEACHER?STU:ME.name||"");
+  setTimeout(()=>window.print(),300);
+};
+})();
+</script>
+</body>
+</html>
