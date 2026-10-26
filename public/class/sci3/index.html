@@ -431,8 +431,13 @@ function fbSet(a,keep){
   FBA={uid:a.localId||a.user_id,id:a.idToken||a.id_token,rt:a.refreshToken||a.refresh_token,exp:Date.now()+1000*(+(a.expiresIn||a.expires_in)||3600)};
   if(keep)save(FBK,{uid:FBA.uid,rt:FBA.rt});
 }
-async function fbToken(){                  // ID tokens last an hour: refresh with the refresh token, or sign the student in anonymously
-  if(FBA&&FBA.exp>Date.now()+120000)return FBA.id;
+// one sign-in at a time: two at once (the ink and the answer stream both start on load) made two accounts, so one student showed up twice on #live
+let fbPending=null;
+function fbToken(){
+  if(FBA&&FBA.exp>Date.now()+120000)return Promise.resolve(FBA.id);
+  return fbPending||(fbPending=fbToken1().finally(()=>{fbPending=null;}));
+}
+async function fbToken1(){                 // ID tokens last an hour: refresh with the refresh token, or sign the student in anonymously
   const keep=!STAFF,old=FBA||(keep?load(FBK,null):null);
   if(old&&old.rt){
     try{fbSet(await fbPost("https://securetoken.googleapis.com/v1/token?key="+FB.key,"grant_type=refresh_token&refresh_token="+encodeURIComponent(old.rt),true),keep);return FBA.id;}
@@ -676,13 +681,17 @@ function drawLive(){
   if(!FOC&&!GRID){const first=Object.keys(CARDS)[0];if(first)openFocus(first);}
   DIRTY.clear();
   // cards sorted by name, so each student stays in the same spot
+  for(const c of Object.values(CARDS))c.el.hidden=dupOf(c.u);
   const g=$("grid"),list=Object.values(CARDS).sort((a,b)=>(a.name.textContent).localeCompare(b.name.textContent,"th"));
   list.forEach((c,k)=>{if(g.children[k+1]!==c.el)g.insertBefore(c.el,g.children[k+1]||null);});
-  $("lEmpty").hidden=list.length>0;$("lCount").textContent=list.length?list.length+" คน":"";
+  const shown=list.filter(c=>!c.el.hidden).length;$("lEmpty").hidden=shown>0;$("lCount").textContent=shown?shown+" คน":"";
   names();
 }
+// the same name twice (an older sign-in of the same student): show only the newest
+const nm=u=>String((TREE[u]&&TREE[u].n)||"").trim().toLowerCase();
+const dupOf=u=>!!nm(u)&&Object.keys(TREE).some(v=>v!==u&&nm(v)===nm(u)&&((+TREE[v].at||0)>(+TREE[u].at||0)));
 function names(){                          // a chip per student on the hidden screen; tap = see her sheet
-  const box=$("fNames"),list=Object.values(CARDS).sort((a,b)=>(a.name.textContent).localeCompare(b.name.textContent,"th"));
+  const box=$("fNames"),list=Object.values(CARDS).filter(c=>!dupOf(c.u)).sort((a,b)=>(a.name.textContent).localeCompare(b.name.textContent,"th"));
   // View 2026-10-26: the tutor sheet is "student 0" (เฉลย), always first
   if(HASKEY)list.unshift({u:KEYU,name:{textContent:"เฉลย"},seen:0,key:1});
   if(box.children.length!==list.length||list.some((c,k)=>box.children[k].dataset.u!==c.u)){
