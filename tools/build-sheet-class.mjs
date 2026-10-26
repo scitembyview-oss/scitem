@@ -5,6 +5,7 @@
 // add --local to keep it in the browser instead (try-out: student and #teacher in two tabs of one browser).
 // Usage: node tools/build-sheet-class.mjs <student.pdf> <key.pdf> <title> <teacher code> <out dir> <class id> [--local]
 //   e.g. node tools/build-sheet-class.mjs lesson3-student.pdf lesson3-key.pdf "Living Things and Weather" <code> public/class/sci3 sci3
+//   or: node tools/build-sheet-class.mjs --reshell public/class/sci3   (after editing the shell only)
 // Needs pdftoppm (poppler). Keep the key PDF out of the repo, and never commit the teacher code.
 import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
@@ -13,6 +14,15 @@ import { execFileSync } from 'node:child_process';
 import { webcrypto as crypto } from 'node:crypto';
 
 const args = process.argv.slice(2);
+// --reshell <out dir>: rebuild index.html from the current shell only (pages and key.json stay as they are; no PDFs or code needed)
+if (args[0] === '--reshell') {
+  const html = readFileSync(join(args[1], 'index.html'), 'utf8');
+  const cfg = JSON.parse(/const CFG=(\{[^\n]*?\});/.exec(html)[1]);
+  const shell = readFileSync(new URL('./sheet-class-shell.html', import.meta.url), 'utf8');
+  writeFileSync(join(args[1], 'index.html'), shell.replace(/\/\*__CFG__\*\/\{[^\n]*?\}(?=;)/, () => JSON.stringify(cfg)).replace('<title>Scitem Class</title>', () => `<title>${cfg.title}</title>`));
+  console.log(`reshelled ${args[1]}`);
+  process.exit(0);
+}
 const local = args.includes('--local');
 const [stuPdf, keyPdf, title, tCode, out, id] = args.filter((a) => a !== '--local');
 if (!stuPdf || !keyPdf || !title || !tCode || !out || !id) {
