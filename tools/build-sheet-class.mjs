@@ -9,6 +9,7 @@
 // Usage: node tools/build-sheet-class.mjs <student.pdf> <key.pdf|-> <title> <teacher code> <out dir> <class id> [--local] [--answers <file>]
 //   e.g. node tools/build-sheet-class.mjs lesson3-student.pdf lesson3-key.pdf "Living Things and Weather" <code> public/class/sci3 sci3
 //   or: node tools/build-sheet-class.mjs --reshell public/class/sci3   (after editing the shell only)
+//   or: node tools/build-sheet-class.mjs --hints public/class/cb2h <hints.json> <code>   (drawn Hint 1 / Hint 2 per question)
 // Needs pdftoppm (poppler). Keep the key PDF out of the repo, and never commit the teacher code.
 import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
@@ -26,6 +27,28 @@ if (args[0] === '--reshell') {
   writeFileSync(join(args[1], 'index.html'), shell.replace(/\/\*__CFG__\*\/\{[^\n]*?\}(?=;)/, () => JSON.stringify(cfg)).replace('<title>Scitem Class</title>', () => `<title>${cfg.title}</title>`));
   console.log(`reshelled ${args[1]}`);
   process.exit(0);
+}
+// --hints <out dir> <hints.json> <teacher code>: put the drawn hints ({qid: [hint 1 svg, hint 2 svg]}, made by a tools/hints-*.py
+// script kept out of the repo) into key.json, re-encrypted with the same code. Nothing else changes.
+if (args[0] === '--hints') {
+  const [, dir, file, code] = args;
+  const B = JSON.parse(readFileSync(join(dir, 'key.json'), 'utf8')), ub = (s) => Buffer.from(s, 'base64');
+  const k0 = await derive(code, ub(B.salt), B.iter, 'decrypt');
+  const plain = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: ub(B.iv) }, k0, ub(B.ct))));
+  plain.hints = JSON.parse(readFileSync(file, 'utf8'));
+  writeFileSync(join(dir, 'key.json'), JSON.stringify(await seal(code, new TextEncoder().encode(JSON.stringify(plain)))));
+  console.log(`${dir}/key.json: hints for ${Object.keys(plain.hints).join(' ')}`);
+  process.exit(0);
+}
+async function derive(code, salt, iter, use) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, [use]);
+}
+async function seal(code, plain) {
+  const b64 = (u) => Buffer.from(u).toString('base64');
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), iter = 200000;
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await derive(code, salt, iter, 'encrypt'), plain));
+  return { iter, salt: b64(salt), iv: b64(iv), ct: b64(ct) };
 }
 function firebase() {
   const m = /FIREBASE\s*=\s*\{\s*key:\s*'([^']*)',\s*db:\s*'([^']*)'/.exec(readFileSync(new URL('../src/data/catalog.ts', import.meta.url), 'utf8'));
@@ -65,12 +88,7 @@ if (kpaged) for (let i = 0, last = 0; i < sp.length; i++) { const q = ansQ.find(
 const plain = new TextEncoder().encode(JSON.stringify({ pages: kp.map((f) => readFileSync(join(tmpK, f)).toString('base64')), answers, ...(kpaged ? { kmap, kq, kh } : {}) }));
 rmSync(tmpS, { recursive: true }); rmSync(tmpK, { recursive: true });
 
-const b64 = (u) => Buffer.from(u).toString('base64');
-const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), iter = 200000;
-const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(tCode), 'PBKDF2', false, ['deriveKey']);
-const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
-const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plain));
-writeFileSync(join(out, 'key.json'), JSON.stringify({ iter, salt: b64(salt), iv: b64(iv), ct: b64(ct) }));
+writeFileSync(join(out, 'key.json'), JSON.stringify(await seal(tCode, plain)));
 
 const sheet = local ? null : /CLASS_SHEET_URL\s*=\s*'([^']*)'/.exec(readFileSync(new URL('../src/data/catalog.ts', import.meta.url), 'utf8'))[1];
 if (!local && !sheet) throw new Error('CLASS_SHEET_URL is empty in src/data/catalog.ts (or build with --local)');

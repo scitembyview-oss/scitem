@@ -421,7 +421,8 @@ function pushRed(){
 /* ---------- live ink on Firebase (Realtime Database over REST, no SDK): each finished stroke goes up, #live streams them ---------- */
 const FB=CFG.fb||null;                     // {key: web API key, db: database URL} from FIREBASE in src/data/catalog.ts; null = no live ink
 const FB_TEACHER="teacher@scitem.net";     // the only account that can read a class (rules: tools/firebase-rules.json)
-const FBK="scitem-fb-anon";                // the student's anonymous sign-in, kept so a reload stays the same card on #live
+const FBK=SHOW?"scitem-fb-show":"scitem-fb-anon";   // #show signs in anonymously too (its own card, never a student's)
+// (the student's anonymous sign-in is kept so a reload stays the same card on #live)
 let FBA=null;                              // {uid, id = ID token, rt = refresh token, exp}
 async function fbPost(url,body,form){
   const r=await fetch(url,{method:"POST",headers:{"Content-Type":form?"application/x-www-form-urlencoded":"application/json"},body:form?body:JSON.stringify(body)});
@@ -440,12 +441,12 @@ function fbToken(){
   return fbPending||(fbPending=fbToken1().finally(()=>{fbPending=null;}));
 }
 async function fbToken1(){                 // ID tokens last an hour: refresh with the refresh token, or sign the student in anonymously
-  const keep=!STAFF,old=FBA||(keep?load(FBK,null):null);
+  const keep=!STAFF||SHOW,old=FBA||(keep?load(FBK,null):null);
   if(old&&old.rt){
     try{fbSet(await fbPost("https://securetoken.googleapis.com/v1/token?key="+FB.key,"grant_type=refresh_token&refresh_token="+encodeURIComponent(old.rt),true),keep);return FBA.id;}
-    catch(e){if(STAFF||!/TOKEN|USER/.test(e.message))throw e;}   // offline: try later; a dead token: start a new card
+    catch(e){if((STAFF&&!SHOW)||!/TOKEN|USER/.test(e.message))throw e;}   // offline: try later; a dead token: start a new card
   }
-  if(STAFF)throw new Error("sign in again");
+  if(STAFF&&!SHOW)throw new Error("sign in again");
   fbSet(await fbPost("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="+FB.key,{returnSecureToken:true}),true);
   return FBA.id;
 }
@@ -785,12 +786,14 @@ function drawRev(force){
       QINFO[q].parts.map((p,k)=>`<span class="k">${esc(p.l)}</span><span class="v">${esc(showK((KEYANS[q]||[])[k]))}</span>`).join("")+"</div>"+pubBtn(q)+"</div>").join(""):'<div class="none">หน้านี้ไม่มีช่องคำตอบ</div>';
     return;
   }
-  const u=FOC.u,a=(TREE[u]&&TREE[u].ans)||{},b=BTREE[u]||{},here=QORDER.filter(q=>QINFO[q].pg===FOC.i),ids=here.filter(q=>a[q]);  // View 2026-10-27: only the page she has open
+  const u=FOC.u,a=(TREE[u]&&TREE[u].ans)||{},b=BTREE[u]||{},ids=QORDER.filter(q=>QINFO[q].pg===FOC.i);  // View 2026-10-27: only the page she has open
   box.hidden=!QORDER.length;
-  if(!ids.length){box.innerHTML=`<div class="none">${here.length?"หน้านี้น้องยังไม่ได้ส่งคำตอบ":"หน้านี้ไม่มีช่องคำตอบ"}</div>`;return;}
+  if(!ids.length){box.innerHTML='<div class="none">หน้านี้ไม่มีช่องคำตอบ</div>';return;}
   const top=box.scrollTop;
   box.innerHTML=ids.map(q=>{
-    const info=QINFO[q],an=a[q],bk=b[q],wait=!bk||bk.for!==an.k,key=KEYANS[q]||[];
+    const info=QINFO[q],an=a[q],bk=b[q];
+    if(!an)return `<div class="rq"><h3>${esc(info.name)}<span>ยังไม่ส่งคำตอบ</span></h3>${pubBtn(q)}</div>`;   // the hints still open from here
+    const wait=!bk||bk.for!==an.k,key=KEYANS[q]||[];
     const parts=info.parts.map((p,k)=>{const v=(an.v||[])[k],r=checkPart(key[k],v);
       const m=r.ok===true?`<span class="m y">${icon("check")}ตรงเฉลย</span>`:r.ok===false?`<span class="m n">${icon("x")}ไม่ตรง${r.num&&!r.unit?" (หน่วย)":""} · เฉลย ${esc(showK(key[k]))}</span>`:`<span class="m t">${icon("help")}ครูตรวจเอง</span>`;
       return `<span class="k">${esc(p.l)}</span><span class="v">${esc(showA(v))}</span>${m}`;}).join("");
