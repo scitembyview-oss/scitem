@@ -76,5 +76,5 @@ export const SHEET_URL = 'https://script.google.com/macros/s/AKfycbyq7E1RkdI8pAR
 // Live class pages (public/class/*) use their own Sheet, also running tools/check-sheet.gs
 // Firebase Realtime Database for the live ink on those pages (hidden teacher screen #live). The web API key is meant to be public;
 // tools/firebase-rules.json is what keeps the work private. Empty = no live screen. Rebuild with build-sheet-class.mjs --reshell.
-export const FIREBASE = { key: '', db: '' };
+export const FIREBASE = { key: 'AIzaSyClZhItG5C3aaz413ToeXPDKzh6Aw5y9CU', db: 'https://scitem-live-default-rtdb.asia-southeast1.firebasedatabase.app' };
 export const CLASS_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzIaVMqROaTFaDN36SwCif7pWF_KEE7GroEUj2V5c9BM2gg4Y2v3wXbUOf-P4T0aBygnw/exec';
