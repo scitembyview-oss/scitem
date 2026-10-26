@@ -60,7 +60,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--peach);outline-
 #note{font-size:14px;color:var(--muted);font-weight:600}
 #note.red{color:var(--red)}
 
-#scroll{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;border-radius:12px;background:#e9e3d8}
+#scroll{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;border-radius:12px;background:#e9e3d8;touch-action:pan-x pan-y} /* two fingers zoom the sheet, not the whole page */
 #page{position:relative;margin:0 auto;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.15)}
 #page img{display:block;width:100%;height:auto;pointer-events:none;-webkit-user-drag:none}
 #page canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -103,6 +103,7 @@ body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:v
     <span class="sp"></span>
     <button class="b" id="tPen" aria-pressed="true" aria-label="Pen"><span class="sw" id="penSw"></span></button>
     <button class="b" id="tErase" aria-pressed="false">Eraser</button>
+    <button class="b" id="tSel" aria-pressed="false" title="Circle ink, then drag it">Select</button>
     <button class="b" id="tHand" aria-pressed="false" title="Finger scrolls the page">✋</button>
     <button class="b" id="tUndo">Undo</button>
     <button class="b" id="tClear">Clear</button>
@@ -119,7 +120,7 @@ body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:v
     <button class="arr" id="next" aria-label="Next page">▶</button>
     <span id="status" aria-live="polite"></span><span id="net"></span><span id="note"></span>
   </div>
-  <div id="scroll"><div id="pages"><div id="page"><img id="img" alt=""><canvas id="cPull"></canvas><canvas id="cMine"></canvas><canvas id="cKey"></canvas><canvas id="cRed"></canvas><span id="keyTag" hidden>เฉลย</span></div></div></div>
+  <div id="scroll"><div id="pages"><div id="page"><img id="img" alt=""><canvas id="cPull"></canvas><canvas id="cMine"></canvas><canvas id="cKey"></canvas><canvas id="cRed"></canvas><canvas id="cSel"></canvas><span id="keyTag" hidden>เฉลย</span></div></div></div>
 </div>
 <div id="print"></div>
 
@@ -312,7 +313,7 @@ function start(){
   addEventListener("resize",fit);
   render();pullRed();
 }
-function go(i){if(i<0||i>=N||i===idx)return;idx=i;if(!STAFF){ME.idx=i;save(K.me,ME);}render();$("scroll").scrollTop=0;pullRed();}
+function go(i){if(i<0||i>=N||i===idx)return;idx=i;SEL=null;lasso=null;drag=null;if(!STAFF){ME.idx=i;save(K.me,ME);}render();$("scroll").scrollTop=0;pullRed();}
 $("prev").onclick=()=>go(idx-1);$("next").onclick=()=>go(idx+1);
 addEventListener("keydown",e=>{if(e.target.tagName==="INPUT")return;if(e.key==="ArrowLeft")go(idx-1);if(e.key==="ArrowRight")go(idx+1);});
 
@@ -340,18 +341,25 @@ function render(){
 /* ---------- ink (vector strokes, 0..1 of the page) ---------- */
 let zoom=1;
 let penOnly=(()=>{try{return localStorage.getItem("scitem-pen")==="1"}catch(e){return false}})(); // after the first Apple Pencil touch, fingers scroll instead of writing
-let erase=false,hand=false;
-const cPull=$("cPull"),cMine=$("cMine"),cKey=$("cKey"),cRed=$("cRed"),x={pull:cPull.getContext("2d"),mine:cMine.getContext("2d"),red:cRed.getContext("2d")};
+let erase=false,hand=false,sel=false;
+const cPull=$("cPull"),cMine=$("cMine"),cKey=$("cKey"),cRed=$("cRed"),cSel=$("cSel"),x={pull:cPull.getContext("2d"),mine:cMine.getContext("2d"),red:cRed.getContext("2d"),sel:cSel.getContext("2d")};
+// only the layers this screen draws on get a full-size canvas (a zoomed-in tall page is heavy on iPad memory)
+const LAYERS=[cMine,cSel].concat(TEACHER?[cKey,cRed]:[],SHOW?[cPull]:[],!STAFF&&RED_TO_STUDENT?[cRed]:[]);
 const target=TEACHER?cRed:cMine;
 target.classList.add("ink");
 function setScrolly(){document.body.classList.toggle("scrolly",penOnly||hand);}
-function fit(){
+const ZMIN=0.5,ZMAX=3;
+function size(){                           // the page box at this zoom (CSS only: cheap enough for every pinch frame)
   const sc=$("scroll"),pg=$("page"),img=$("img");
   const r=img.naturalWidth?img.naturalHeight/img.naturalWidth:1.414;
-  const w=Math.floor(Math.min(sc.clientWidth-32,1100)*zoom);
-  pg.style.width=w+"px";pg.style.height=Math.round(w*r)+"px";
-  const dpr=Math.min(devicePixelRatio||1,1.5); // three layers of a tall page: keep iPad memory low
-  for(const c of [cPull,cMine,cKey,cRed]){c.width=Math.floor(w*dpr);c.height=Math.floor(w*r*dpr);}
+  const w=Math.floor(Math.min(sc.clientWidth-32,1100)*zoom),h=Math.round(w*r);
+  pg.style.width=w+"px";pg.style.height=h+"px";
+  return [w,h];
+}
+function fit(){
+  const [w,h]=size();
+  const dpr=Math.min(devicePixelRatio||1,1.5,2600/w); // keep iPad memory low, also when zoomed in
+  for(const c of LAYERS){c.width=Math.floor(w*dpr);c.height=Math.floor(h*dpr);}
   drawAll();
 }
 function drawStroke(ctx,c,s){
@@ -393,7 +401,7 @@ function drawAll(){
   drawKey();
   paint(x.pull,cPull,SHOW&&pull?sentInk():[]);
   paint(x.mine,cMine,TEACHER?(pull?sentInk():[]):SHOW?SHOWINK[P(idx)]||[]:mine().ink);
-  drawRed();
+  drawRed();drawSel();
 }
 function drawRed(){
   if(SHOW){paint(x.red,cRed,[]);return;}
@@ -404,19 +412,37 @@ const INK=TEACHER?"#d62828":SHOW?"#1f5fa8":"#1f2836";
 function changed(){
   if(TEACHER)pushRed();else if(SHOW)save(K.show,SHOWINK);else{save(K.work,W);render();}
 }
-let curS=null;
+let curS=null,lasso=null,drag=null,pinch=null,SEL=null;
+const fingersDown=new Set();               // touch pointers on the sheet: a second finger means pinch, not ink
+const paintMine=()=>paint(TEACHER?x.red:x.mine,target,myStrokes());
 function ptOf(e){const r=target.getBoundingClientRect();const q=v=>Math.round(v*1000)/1000;
   return [q((e.clientX-r.left)/r.width),q((e.clientY-r.top)/r.height),e.pointerType==="pen"?q(e.pressure||0.5):0.5];}
 target.addEventListener("pointerdown",e=>{
   if(e.pointerType==="pen"&&!penOnly){penOnly=true;try{localStorage.setItem("scitem-pen","1")}catch(err){}setScrolly();}
-  if(e.pointerType==="touch"&&(penOnly||hand))return;
-  if(curS||(TEACHER&&!SENT[P(idx)]))return;
+  const touch=e.pointerType==="touch";
+  if(touch){fingersDown.add(e.pointerId);if(fingersDown.size>1||pinch)return;}
+  // in pencil / ✋ mode a finger scrolls, except on a selection, where it drags the ink
+  if(touch&&(penOnly||hand)&&!(sel&&inSel(ptOf(e))))return;
+  if(curS||lasso||drag||(TEACHER&&!SENT[P(idx)]))return;
   e.preventDefault();try{target.setPointerCapture(e.pointerId)}catch(err){}
-  curS={id:e.pointerId,s:{c:INK,e:!TEACHER&&erase,p:ptOf(e)}};
+  if(sel){
+    const p=ptOf(e);
+    if(inSel(p))drag={id:e.pointerId,touch,p0:p,orig:SEL.ss.map(s=>s.p.slice()),dx:0,dy:0};
+    else{SEL=null;lasso={id:e.pointerId,touch,p:[p[0],p[1]]};}
+    drawSel();return;
+  }
+  curS={id:e.pointerId,touch,s:{c:INK,e:!TEACHER&&erase,p:ptOf(e)}};
   myStrokes().push(curS.s);
   drawStroke(TEACHER?x.red:x.mine,target,curS.s);
 });
 target.addEventListener("pointermove",e=>{
+  if(pinch&&e.pointerType==="touch")return;
+  if(lasso&&e.pointerId===lasso.id){e.preventDefault();const p=ptOf(e);lasso.p.push(p[0],p[1]);drawSel();return;}
+  if(drag&&e.pointerId===drag.id){
+    e.preventDefault();const p=ptOf(e);drag.dx=p[0]-drag.p0[0];drag.dy=p[1]-drag.p0[1];
+    SEL.ss.forEach((s,k)=>{const o=drag.orig[k];for(let j=0;j<o.length;j+=3){s.p[j]=o[j]+drag.dx;s.p[j+1]=o[j+1]+drag.dy;}});
+    paintMine();drawSel();return;
+  }
   if(!curS||e.pointerId!==curS.id)return;e.preventDefault();
   const evs=e.getCoalescedEvents?e.getCoalescedEvents():[],s=curS.s,before=s.p.length;
   for(const ce of (evs.length?evs:[e])){const p=ptOf(ce),n=s.p.length;
@@ -424,24 +450,114 @@ target.addEventListener("pointermove",e=>{
     s.p.push(...p);}
   if(s.p.length>before)drawStroke(TEACHER?x.red:x.mine,target,{c:s.c,e:s.e,p:s.p.slice(Math.max(0,before-3))});
 });
-function endStroke(e){if(!curS||e.pointerId!==curS.id)return;curS=null;changed();}
+const MOVES=[];                            // moves to undo: {list, ss, dx, dy, n = strokes on the page right after}
+function endStroke(e){
+  fingersDown.delete(e.pointerId);
+  if(lasso&&e.pointerId===lasso.id){pick(lasso.p);lasso=null;drawSel();return;}
+  if(drag&&e.pointerId===drag.id){
+    const d=drag;drag=null;
+    if(d.dx||d.dy){
+      const q=v=>Math.round(v*1000)/1000;
+      for(const s of SEL.ss)for(let j=0;j<s.p.length;j+=3){s.p[j]=q(s.p[j]);s.p[j+1]=q(s.p[j+1]);}
+      MOVES.push({list:SEL.list,ss:SEL.ss,dx:d.dx,dy:d.dy,n:SEL.list.length});changed();
+    }
+    drawSel();return;
+  }
+  if(!curS||e.pointerId!==curS.id)return;curS=null;changed();
+}
 target.addEventListener("pointerup",endStroke);target.addEventListener("pointercancel",endStroke);
+
+/* ---------- Select: circle ink with the pen (or finger), drag inside the box to move it, tap outside to let go ---------- */
+function inPoly(px,py,poly){
+  let ins=false;
+  for(let i=0,j=poly.length-2;i<poly.length;j=i,i+=2){
+    const xi=poly[i],yi=poly[i+1],xj=poly[j],yj=poly[j+1];
+    if((yi>py)!==(yj>py)&&px<(xj-xi)*(py-yi)/(yj-yi)+xi)ins=!ins;
+  }
+  return ins;
+}
+function pick(poly){                       // a stroke is picked when most of it is inside the loop
+  SEL=null;if(poly.length<8)return;        // a tap: nothing picked (= deselect)
+  const list=myStrokes(),ss=list.filter(s=>{let n=0,k=0;for(let j=0;j<s.p.length;j+=3,k++)if(inPoly(s.p[j],s.p[j+1],poly))n++;return n*2>=k;});
+  if(ss.length)SEL={list,ss};
+}
+function selBox(){
+  if(!SEL||SEL.list!==myStrokes())return SEL=null;
+  let a=1e9,b=1e9,c=-1e9,d=-1e9;
+  for(const s of SEL.ss)for(let j=0;j<s.p.length;j+=3){a=Math.min(a,s.p[j]);b=Math.min(b,s.p[j+1]);c=Math.max(c,s.p[j]);d=Math.max(d,s.p[j+1]);}
+  const m=0.012;return [a-m,b-m*0.7,c+m,d+m*0.7];
+}
+function inSel(p){const r=selBox();return !!r&&p[0]>=r[0]&&p[0]<=r[2]&&p[1]>=r[1]&&p[1]<=r[3];}
+function drawSel(){
+  const g=x.sel,w=cSel.width,h=cSel.height;g.clearRect(0,0,w,h);
+  g.lineWidth=Math.max(1.5,w/500);g.setLineDash([g.lineWidth*4,g.lineWidth*3]);g.strokeStyle="#1f5fa8";
+  if(lasso&&lasso.p.length>2){
+    g.beginPath();g.moveTo(lasso.p[0]*w,lasso.p[1]*h);
+    for(let j=2;j<lasso.p.length;j+=2)g.lineTo(lasso.p[j]*w,lasso.p[j+1]*h);
+    g.stroke();
+  }
+  const r=selBox();
+  if(r){g.fillStyle="rgba(31,95,168,.08)";g.fillRect(r[0]*w,r[1]*h,(r[2]-r[0])*w,(r[3]-r[1])*h);g.strokeRect(r[0]*w,r[1]*h,(r[2]-r[0])*w,(r[3]-r[1])*h);}
+  g.setLineDash([]);
+}
+function unselect(){SEL=null;lasso=null;drawSel();}
+function undoMove(){                       // Undo after a move puts the ink back (strokes drawn since come off first)
+  const l=myStrokes();
+  while(MOVES.length&&(MOVES[MOVES.length-1].list!==l||MOVES[MOVES.length-1].n>l.length))MOVES.pop();
+  const m=MOVES[MOVES.length-1];if(!m||m.n!==l.length)return false;
+  MOVES.pop();
+  const q=v=>Math.round(v*1000)/1000;
+  for(const s of m.ss)for(let j=0;j<s.p.length;j+=3){s.p[j]=q(s.p[j]-m.dx);s.p[j+1]=q(s.p[j+1]-m.dy);}
+  return true;
+}
+
+/* ---------- two fingers: pinch to zoom the sheet (and pan), the pencil keeps writing ---------- */
+const scr=$("scroll"),fingers=e=>[...e.touches].filter(t=>t.touchType!=="stylus");
+function dropFingerInk(){                  // the first finger may have started ink before the second one landed
+  if(curS&&curS.touch){const l=myStrokes(),i=l.lastIndexOf(curS.s);if(i>=0)l.splice(i,1);curS=null;paintMine();}
+  if(lasso&&lasso.touch)lasso=null;
+  if(drag&&drag.touch){SEL.ss.forEach((s,k)=>{s.p=drag.orig[k];});drag=null;paintMine();}
+  drawSel();
+}
+scr.addEventListener("touchstart",e=>{
+  const f=fingers(e);if(f.length<2||pinch)return;
+  e.preventDefault();dropFingerInk();
+  const [a,b]=f,mx=(a.clientX+b.clientX)/2,my=(a.clientY+b.clientY)/2;
+  const sr=scr.getBoundingClientRect(),pr=$("page").getBoundingClientRect();
+  pinch={d:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)||1,z:zoom,
+    fx:(mx-pr.left)/pr.width,fy:(my-pr.top)/pr.height,             // the spot of the sheet under the fingers stays under them
+    ox:pr.left-sr.left+scr.scrollLeft,oy:pr.top-sr.top+scr.scrollTop};
+},{passive:false});
+scr.addEventListener("touchmove",e=>{
+  if(!pinch)return;const f=fingers(e);if(f.length<2)return;
+  if(e.cancelable)e.preventDefault();
+  const [a,b]=f,mx=(a.clientX+b.clientX)/2,my=(a.clientY+b.clientY)/2;
+  zoom=Math.min(ZMAX,Math.max(ZMIN,pinch.z*Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)/pinch.d));
+  const [w,h]=size(),sr=scr.getBoundingClientRect();
+  scr.scrollLeft=pinch.ox+pinch.fx*w-(mx-sr.left);scr.scrollTop=pinch.oy+pinch.fy*h-(my-sr.top);
+},{passive:false});
+function endPinch(e){if(pinch&&fingers(e).length<2){pinch=null;fit();}}
+scr.addEventListener("touchend",endPinch);scr.addEventListener("touchcancel",endPinch);
+// Safari's own page zoom
+for(const t of ["gesturestart","gesturechange"])document.addEventListener(t,e=>e.preventDefault(),{passive:false});
 // stop iPad Safari turning a pencil stroke into a scroll (see tools/light-p5-shell.html); fingers still scroll in ✋ / pencil mode
 $("page").addEventListener("touchstart",e=>{
   const stylus=[...e.changedTouches].some(t=>t.touchType==="stylus");
   if(stylus&&!penOnly){penOnly=true;try{localStorage.setItem("scitem-pen","1")}catch(err){}setScrolly();}
-  if(stylus||!(penOnly||hand))e.preventDefault();},{passive:false});
-$("page").addEventListener("touchmove",e=>{if([...e.touches].some(t=>t.touchType==="stylus")||!(penOnly||hand))e.preventDefault();},{passive:false});
+  const onSel=sel&&e.touches.length===1&&inSel(ptOf(e.touches[0]));   // a finger on a selection drags it instead of scrolling
+  if(stylus||onSel||!(penOnly||hand))e.preventDefault();},{passive:false});
+$("page").addEventListener("touchmove",e=>{if([...e.touches].some(t=>t.touchType==="stylus")||drag||!(penOnly||hand))e.preventDefault();},{passive:false});
 setScrolly();
 
 const press=(on,off)=>{on.setAttribute("aria-pressed","true");for(const b of off)b.setAttribute("aria-pressed","false");};
-$("tPen").onclick=()=>{erase=false;hand=false;press($("tPen"),[$("tErase"),$("tHand")]);setScrolly();};
-$("tErase").onclick=()=>{erase=true;hand=false;press($("tErase"),[$("tPen"),$("tHand")]);setScrolly();};
+$("tPen").onclick=()=>{erase=false;sel=false;hand=false;unselect();press($("tPen"),[$("tErase"),$("tSel"),$("tHand")]);setScrolly();};
+$("tErase").onclick=()=>{erase=true;sel=false;hand=false;unselect();press($("tErase"),[$("tPen"),$("tSel"),$("tHand")]);setScrolly();};
+$("tSel").onclick=()=>{sel=true;erase=false;hand=false;press($("tSel"),[$("tPen"),$("tErase"),$("tHand")]);setScrolly();};
 $("tHand").onclick=()=>{hand=!hand;$("tHand").setAttribute("aria-pressed",hand);setScrolly();};
-$("tUndo").onclick=()=>{const l=myStrokes();if(!l.length)return;l.pop();changed();drawAll();};
-$("tClear").onclick=()=>{const l=myStrokes();if(!l.length||!confirm(TEACHER?"ลบหมึกครูในหน้านี้?":SHOW?"ลบหมึกในหน้านี้?":"Clear this page?"))return;l.length=0;changed();drawAll();};
-$("zIn").onclick=()=>{zoom=Math.min(2.5,zoom+0.25);fit();};
-$("zOut").onclick=()=>{zoom=Math.max(0.5,zoom-0.25);fit();};
+$("tUndo").onclick=()=>{const l=myStrokes();if(!undoMove()){if(!l.length)return;l.pop();}SEL=null;changed();drawAll();};
+$("tClear").onclick=()=>{const l=myStrokes();if(!l.length||!confirm(TEACHER?"ลบหมึกครูในหน้านี้?":SHOW?"ลบหมึกในหน้านี้?":"Clear this page?"))return;l.length=0;SEL=null;changed();drawAll();};
+$("zIn").onclick=()=>{zoom=Math.min(ZMAX,zoom+0.25);fit();};
+$("zOut").onclick=()=>{zoom=Math.max(ZMIN,zoom-0.25);fit();};
 
 /* ---------- Save PDF: every page with ink, one A4 each ---------- */
 function pageImage(i,lists){
