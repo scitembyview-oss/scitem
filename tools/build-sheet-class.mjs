@@ -3,6 +3,7 @@
 // with the answers filled in — is encrypted with the teacher code into key.json, so only the teacher screens can open it.
 // Work goes to the Google Sheet at CLASS_SHEET_URL in src/data/catalog.ts (tools/check-sheet.gs, tab "คาบสด");
 // add --local to keep it in the browser instead (try-out: student and #teacher in two tabs of one browser).
+// FIREBASE in catalog.ts (when filled in) also streams every stroke live to the hidden #live screen (rules: tools/firebase-rules.json).
 // Usage: node tools/build-sheet-class.mjs <student.pdf> <key.pdf> <title> <teacher code> <out dir> <class id> [--local]
 //   e.g. node tools/build-sheet-class.mjs lesson3-student.pdf lesson3-key.pdf "Living Things and Weather" <code> public/class/sci3 sci3
 //   or: node tools/build-sheet-class.mjs --reshell public/class/sci3   (after editing the shell only)
@@ -18,10 +19,15 @@ const args = process.argv.slice(2);
 if (args[0] === '--reshell') {
   const html = readFileSync(join(args[1], 'index.html'), 'utf8');
   const cfg = JSON.parse(/const CFG=(\{[^\n]*?\});/.exec(html)[1]);
+  if (cfg.sheet) cfg.fb = firebase();
   const shell = readFileSync(new URL('./sheet-class-shell.html', import.meta.url), 'utf8');
   writeFileSync(join(args[1], 'index.html'), shell.replace(/\/\*__CFG__\*\/\{[^\n]*?\}(?=;)/, () => JSON.stringify(cfg)).replace('<title>Scitem Class</title>', () => `<title>${cfg.title}</title>`));
   console.log(`reshelled ${args[1]}`);
   process.exit(0);
+}
+function firebase() {
+  const m = /FIREBASE\s*=\s*\{\s*key:\s*'([^']*)',\s*db:\s*'([^']*)'/.exec(readFileSync(new URL('../src/data/catalog.ts', import.meta.url), 'utf8'));
+  return m && m[1] && m[2] ? { key: m[1], db: m[2] } : null;
 }
 const local = args.includes('--local');
 const [stuPdf, keyPdf, title, tCode, out, id] = args.filter((a) => a !== '--local');
@@ -51,7 +57,7 @@ writeFileSync(join(out, 'key.json'), JSON.stringify({ iter, salt: b64(salt), iv:
 
 const sheet = local ? null : /CLASS_SHEET_URL\s*=\s*'([^']*)'/.exec(readFileSync(new URL('../src/data/catalog.ts', import.meta.url), 'utf8'))[1];
 if (!local && !sheet) throw new Error('CLASS_SHEET_URL is empty in src/data/catalog.ts (or build with --local)');
-const cfg = { id, title, pages: sp.length, sheet };
+const cfg = { id, title, pages: sp.length, sheet, fb: local ? null : firebase() };
 const shell = readFileSync(new URL('./sheet-class-shell.html', import.meta.url), 'utf8');
 writeFileSync(join(out, 'index.html'), shell.replace(/\/\*__CFG__\*\/\{[^\n]*?\}(?=;)/, JSON.stringify(cfg)).replace('<title>Scitem Class</title>', `<title>${title}</title>`));
 console.log(`wrote ${out}: ${sp.length} pages`);

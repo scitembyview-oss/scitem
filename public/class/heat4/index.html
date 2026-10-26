@@ -11,7 +11,8 @@
    A worksheet as a live class. One page, three screens:
    student (default): the student sheet page by page, write with the pencil, "Send to teacher";
    #show: the teacher's screen to share on the call — same pages, no answers, the teacher writes, can bring up the student's sent work;
-   #teacher (retired, opens #show): was hidden — what the student sent, the answer key under it, red pen for marking (not shown to the student), save as PDF. */
+   #teacher (retired, opens #show): was hidden — what the student sent, the answer key under it, red pen for marking (not shown to the student), save as PDF;
+   #live: the teacher's hidden screen — every student's page and ink as she writes (Firebase, CFG.fb), tap one to see it big with the key. */
 :root{
   --bg:#f8f3ea; --card:#fff; --fg:#1f2836; --muted:#5d6676; --line:#ddd4c6;
   --navy:#2b3a55; --peach:#db9e89; --sage:#729783; --mint:#e9f2eb; --good:#2f7a4f; --bad:#b03a2e; --red:#d62828; --blue:#1f5fa8;
@@ -74,6 +75,43 @@ body.scrolly #page canvas.ink{touch-action:pan-x pan-y}
 body.show #bar h1::after{content:" · จอครู (แชร์ได้)";color:var(--blue)}
 body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:var(--red)}
 
+/* ---------- #live: every student at once ---------- */
+#live{height:100dvh;display:flex;flex-direction:column;gap:8px;
+  padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+#live .lbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#live h1{font:700 1.05rem var(--display);margin:0}
+#live h1 span{color:var(--red)}
+#lNet{color:var(--bad);font-weight:600;font-size:14px}
+#lCount{color:var(--muted);font-weight:600}
+#grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--cw,240px),1fr));gap:12px;align-content:start;padding:2px}
+#lEmpty{color:var(--muted);font-weight:600;padding:24px;text-align:center;grid-column:1/-1}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px;cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:opacity .3s}
+.card.quiet{opacity:.55}
+.card.fresh{border-color:var(--sage);box-shadow:0 0 0 2px var(--sage)}
+.card .ch{display:flex;justify-content:space-between;gap:6px;font:600 14px var(--display)}
+.card .ch span:last-child{color:var(--muted);white-space:nowrap}
+.card .pg{position:relative;background:#fff;border-radius:6px;overflow:hidden}
+.card img,.card canvas,#fPage img,#fPage canvas{display:block;width:100%;height:auto;pointer-events:none}
+.card canvas,#fPage canvas{position:absolute;inset:0;height:100%}
+#focus{position:fixed;inset:0;background:var(--bg);z-index:20;display:flex;flex-direction:column;gap:8px;
+  padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+#focus .lbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#focus h1{font:700 1.05rem var(--display);margin:0}
+#focus h1 span:last-child{color:var(--red)}
+#fNet{color:var(--bad);font-weight:600;font-size:14px}
+#fNames,#fDots{display:flex;gap:5px;flex-wrap:wrap}
+#fNames button{min-height:40px;border-radius:999px;border:1px solid var(--line);background:var(--card);padding:0 14px;position:relative}
+#fNames button[aria-current="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+#fNames button.fresh::after{content:"";position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:var(--sage);border:2px solid #fff}
+#fNames button.quiet{opacity:.55}
+#fDots button{min-width:38px;min-height:36px;border-radius:9px;border:1px solid var(--line);background:var(--card);font:600 13px var(--display);padding:0 3px}
+#fDots button.ink{background:var(--mint)}
+#fDots button.here{box-shadow:inset 0 -4px 0 var(--sage)}
+#fDots button[aria-current="true"]{outline:3px solid var(--navy);outline-offset:-3px}
+#fWhere{color:var(--muted);font-weight:600}
+#fScroll{flex:1;min-height:0;overflow:auto;border-radius:12px;background:#e9e3d8;padding:8px}
+#fPage{position:relative;margin:0 auto;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.15);width:min(100%,1100px)}
+
 /* ---------- print (Save PDF) ---------- */
 #print{display:none}
 @media print{
@@ -122,18 +160,44 @@ body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:v
   </div>
   <div id="scroll"><div id="pages"><div id="page"><img id="img" alt=""><canvas id="cPull"></canvas><canvas id="cMine"></canvas><canvas id="cKey"></canvas><canvas id="cRed"></canvas><canvas id="cSel"></canvas><span id="keyTag" hidden>เฉลย</span></div></div></div>
 </div>
+<div id="live" hidden>
+  <div class="lbar">
+    <h1><span id="lTitle"></span> · <span>จอครูดูสด (ซ่อน)</span></h1>
+    <span id="lCount"></span><span id="lNet" aria-live="polite"></span>
+    <span class="sp"></span>
+    <button class="b" id="lSmall" aria-label="Smaller cards">−</button>
+    <button class="b" id="lBig" aria-label="Bigger cards">+</button>
+    <button class="b" id="lClear">ล้างห้อง</button>
+  </div>
+  <div id="grid"><div id="lEmpty">รอน้องเข้าห้อง… (น้องเปิดลิงก์ชีทแล้วใส่ชื่อ ที่ทดจะขึ้นตรงนี้ทันที)</div></div>
+</div>
+<div id="focus" hidden>
+  <div class="lbar">
+    <h1><span id="fTitle"></span> · <span>จอซ่อน</span></h1>
+    <span id="fWhere"></span><span id="fNet"></span>
+    <span class="sp"></span>
+    <button class="b" id="fBack">ดูรวม</button>
+    <button class="b" id="fPrev" aria-label="Previous page">◀</button>
+    <button class="b" id="fNext" aria-label="Next page">▶</button>
+    <button class="b" id="fFollow" aria-pressed="true">ตามน้อง</button>
+    <button class="b" id="fKey" aria-pressed="false">เฉลย</button>
+  </div>
+  <div id="fNames"></div>
+  <div id="fDots"></div>
+  <div id="fScroll"><div id="fPage"><img id="fImg" alt=""><canvas id="fKeyC"></canvas><canvas id="fInk"></canvas></div></div>
+</div>
 <div id="print"></div>
 
 <script>
 (function(){
 "use strict";
-const CFG={"id":"heat4","title":"ความร้อนรวบยอด & สมบัติของสาร","pages":32,"sheet":"https://script.google.com/macros/s/AKfycbzIaVMqROaTFaDN36SwCif7pWF_KEE7GroEUj2V5c9BM2gg4Y2v3wXbUOf-P4T0aBygnw/exec"};
+const CFG={"id":"heat4","title":"ความร้อนรวบยอด & สมบัติของสาร","pages":32,"sheet":"https://script.google.com/macros/s/AKfycbzIaVMqROaTFaDN36SwCif7pWF_KEE7GroEUj2V5c9BM2gg4Y2v3wXbUOf-P4T0aBygnw/exec","fb":null};
 const SHEET=CFG.sheet;                     // Google Apps Script URL (tools/check-sheet.gs); null = this browser only (try-out in two tabs)
 const CLASS=CFG.id,N=CFG.pages;
 const $=id=>document.getElementById(id);
 // the hidden #teacher screen is retired (the teacher marks by hand); old #teacher links open #show
-const SCREEN=location.hash==="#show"||location.hash==="#teacher"?"show":"student";
-const TEACHER=SCREEN==="teacher",SHOW=SCREEN==="show",STAFF=TEACHER||SHOW;
+const SCREEN=location.hash==="#live"?"live":location.hash==="#show"||location.hash==="#teacher"?"show":"student";
+const TEACHER=SCREEN==="teacher",SHOW=SCREEN==="show",LIVE_SCREEN=SCREEN==="live",STAFF=TEACHER||SHOW||LIVE_SCREEN;
 document.body.classList.add(SCREEN);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const P=i=>"p"+String(i+1).padStart(2,"0");          // page id in the Sheet: p01, p02…
@@ -154,15 +218,25 @@ async function openKey(code){
   return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:b64(B.iv)},key,b64(B.ct))));
 }
 let ME=load(K.me,{}),PW="",KEYPAGES=null;
-if(STAFF){$("gTitle").textContent=TEACHER?"จอครู (ซ่อน)":"จอครู (แชร์ให้น้องดู)";$("gNameL").hidden=true;$("gCodeL").hidden=false;$("gGo").textContent="เข้า";}
+if(STAFF){$("gTitle").textContent=LIVE_SCREEN?"จอครูดูสด (ซ่อน)":TEACHER?"จอครู (ซ่อน)":"จอครู (แชร์ให้น้องดู)";$("gNameL").hidden=true;$("gCodeL").hidden=false;$("gGo").textContent="เข้า";}
 else{$("gTitle").textContent=CFG.title;if(ME.name)$("gName").value=ME.name;}
 $("gateForm").addEventListener("submit",async e=>{
   e.preventDefault();$("gErr").textContent="";
   if(STAFF){
     const code=$("gCode").value.trim();$("gGo").disabled=true;
-    try{const k=await openKey(code);if(TEACHER)KEYPAGES=k.pages;}
+    try{const k=await openKey(code);if(TEACHER||LIVE_SCREEN)KEYPAGES=k.pages;}
     catch(err){$("gErr").textContent="รหัสไม่ถูก";$("gGo").disabled=false;return;}
     PW=sessionStorage.getItem("scitem-sheet-pw")||code;
+    if(LIVE_SCREEN){
+      if(!FB){$("gErr").textContent="ห้องนี้ยังไม่ได้ต่อ Firebase";$("gGo").disabled=false;return;}
+      // the Firebase password of teacher@scitem.net is meant to be the teacher code; if not, ask for it
+      try{await fbTeacher(code);}catch(err){
+        const p=prompt("รหัส Firebase ของ "+FB_TEACHER+" (ไม่ตรงกับรหัสครู):");
+        try{if(!p)throw err;await fbTeacher(p.trim());}
+        catch(err2){$("gErr").textContent="เข้า Firebase ไม่ได้ ("+err2.message+")";$("gGo").disabled=false;return;}
+      }
+      $("gate").hidden=true;$("live").hidden=false;startLive();return;
+    }
   }else{
     const n=$("gName").value.trim().slice(0,30);if(!n){$("gErr").textContent="Type your name.";return;}
     ME.name=n;save(K.me,ME);
@@ -179,7 +253,8 @@ const redKey=(i=idx)=>TEACHER&&SHEET?STU+"|"+P(i):P(i);
 /* ---------- the Sheet: cput/cget = the student's pages, rput/rget = the teacher's red ink (tools/check-sheet.gs) ---------- */
 const q3=v=>Math.round(v*1000);
 const packInk=ink=>ink.map(s=>({c:s.c,e:s.e?1:0,p:s.p.map((v,j)=>j%3===2?Math.round(v*9):q3(v))}));
-const unpackInk=ink=>(ink||[]).map(s=>({c:s.c,e:!!s.e,p:s.p.map((v,j)=>j%3===2?v/9:v/1000)}));
+const arr=v=>Array.isArray(v)?v:v&&typeof v==="object"?Object.keys(v).sort((a,b)=>a-b).map(k=>v[k]):[];   // Firebase may hand an array back as {0:…,1:…}
+const unpackInk=ink=>arr(ink).filter(s=>s&&s.p).map(s=>({c:s.c,e:!!s.e,p:arr(s.p).map((v,j)=>j%3===2?v/9:v/1000)}));
 async function post(body){
   let r,t;
   const ab=new AbortController(),tm=setTimeout(()=>ab.abort(),25000);
@@ -215,7 +290,7 @@ async function flush(){
     catch(e){failed++;lastErr=e.message;}
   }
   flushing=false;
-  setNet(failed?"Not sent yet ("+lastErr+"). Trying again…":"");if(!failed)flash("Sent ✓");
+  setNet(failed?"Not saved yet ("+lastErr+"). Trying again…":"");
   render();
 }
 function sendPage(){
@@ -223,7 +298,7 @@ function sendPage(){
   w.sentAt=rec.at;w.sentLen=inkSig(w.ink);
   if(!save(K.work,W))setNet("iPad storage is full: send each page, it still goes to the teacher");
   if(SHEET){outq()[P(idx)]=rec;save(K.out,OUTQ);flush();}
-  else{const sent=load(K.sent,{});rec.name=ME.name||"";sent[P(idx)]=rec;save(K.sent,sent);flash("Sent ✓");}
+  else{const sent=load(K.sent,{});rec.name=ME.name||"";sent[P(idx)]=rec;save(K.sent,sent);}
   render();
 }
 const inkSig=ink=>ink.reduce((a,s)=>a+s.p.length+(s.e?7:1),0);
@@ -277,6 +352,177 @@ function pushRed(){
   redT=setTimeout(()=>{post({action:"rput",cls:CLASS,pw:PW,name,id,red:JSON.stringify(packInk(RED[key]||[]))}).catch(()=>setNet("ส่งหมึกครูไม่ได้"));},1200);
 }
 
+/* ---------- live ink on Firebase (Realtime Database over REST, no SDK): each finished stroke goes up, #live streams them ---------- */
+const FB=CFG.fb||null;                     // {key: web API key, db: database URL} from FIREBASE in src/data/catalog.ts; null = no live ink
+const FB_TEACHER="teacher@scitem.net";     // the only account that can read a class (rules: tools/firebase-rules.json)
+const FBK="scitem-fb-anon";                // the student's anonymous sign-in, kept so a reload stays the same card on #live
+let FBA=null;                              // {uid, id = ID token, rt = refresh token, exp}
+async function fbPost(url,body,form){
+  const r=await fetch(url,{method:"POST",headers:{"Content-Type":form?"application/x-www-form-urlencoded":"application/json"},body:form?body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error((j.error&&j.error.message)||"HTTP "+r.status);
+  return j;
+}
+function fbSet(a,keep){
+  FBA={uid:a.localId||a.user_id,id:a.idToken||a.id_token,rt:a.refreshToken||a.refresh_token,exp:Date.now()+1000*(+(a.expiresIn||a.expires_in)||3600)};
+  if(keep)save(FBK,{uid:FBA.uid,rt:FBA.rt});
+}
+async function fbToken(){                  // ID tokens last an hour: refresh with the refresh token, or sign the student in anonymously
+  if(FBA&&FBA.exp>Date.now()+120000)return FBA.id;
+  const keep=!STAFF,old=FBA||(keep?load(FBK,null):null);
+  if(old&&old.rt){
+    try{fbSet(await fbPost("https://securetoken.googleapis.com/v1/token?key="+FB.key,"grant_type=refresh_token&refresh_token="+encodeURIComponent(old.rt),true),keep);return FBA.id;}
+    catch(e){if(STAFF||!/TOKEN|USER/.test(e.message))throw e;}   // offline: try later; a dead token: start a new card
+  }
+  if(STAFF)throw new Error("sign in again");
+  fbSet(await fbPost("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="+FB.key,{returnSecureToken:true}),true);
+  return FBA.id;
+}
+async function fbTeacher(pw){fbSet(await fbPost("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key="+FB.key,{email:FB_TEACHER,password:pw,returnSecureToken:true}),false);}
+const fbUrl=(path,tok)=>FB.db.replace(/\/+$/,"")+"/live/"+CLASS+path+".json?auth="+encodeURIComponent(tok);
+
+/* the student: live/<class>/<uid> = {n: name, pg: page index, at, ink: {p01: [stroke, …]}}; strokes only added go up one by one,
+   anything else (undo, clear, a move) sends the whole page again */
+const LIVE={};                             // pid -> what Firebase has for that page (a signature per stroke)
+const sigOf=s=>s.p.length+":"+s.p[0]+":"+s.p[1]+(s.e?"e":"");
+let liveT=null,liveBusy=false,liveAgain=false,livePg=-1;
+function liveTouch(){if(!FB||STAFF)return;clearTimeout(liveT);liveT=setTimeout(livePush,120);}
+async function livePush(){
+  if(liveBusy){liveAgain=true;return;}
+  const i=idx,pid=P(i),ink=mine().ink.filter(s=>!curS||s!==curS.s),sig=ink.map(sigOf),had=LIVE[pid];
+  const add=!!had&&had.length<=sig.length&&had.every((v,k)=>v===sig[k]);
+  if(add&&had.length===sig.length&&livePg===i)return;
+  const patch={n:ME.name||"",pg:i,at:{".sv":"timestamp"}};
+  if(add)for(let k=had.length;k<ink.length;k++)patch["ink/"+pid+"/"+k]=packInk([ink[k]])[0];
+  else patch["ink/"+pid]=ink.length?packInk(ink):null;
+  liveBusy=true;
+  try{
+    const tok=await fbToken();
+    const r=await fetch(fbUrl("/"+FBA.uid,tok),{method:"PATCH",body:JSON.stringify(patch)});
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    LIVE[pid]=sig;livePg=i;
+  }catch(e){LIVE[pid]=null;clearTimeout(liveT);liveT=setTimeout(livePush,5000);}
+  finally{liveBusy=false;if(liveAgain){liveAgain=false;liveTouch();}}
+}
+
+/* the teacher's hidden #live screen: one stream of the whole class, a card per student */
+let TREE={},ES=null,cw=240,FOC=null;       // FOC = {u, i, follow}
+const CARDS={},DIRTY=new Set();let rafOn=false,RATIO=1.414;
+const lNet=t=>{$("lNet").textContent=t;$("fNet").textContent=t;};
+function treeSet(path,data){
+  const ks=path.split("/").filter(Boolean);
+  if(!ks.length){TREE=data&&typeof data==="object"?data:{};return;}
+  let o=TREE;
+  for(const k of ks.slice(0,-1)){if(!o[k]||typeof o[k]!=="object")o[k]={};o=o[k];}
+  const last=ks[ks.length-1];if(data==null)delete o[last];else o[last]=data;
+}
+function dirty(path){
+  const u=path.split("/").filter(Boolean)[0];
+  if(u)DIRTY.add(u);else for(const k of Object.keys(CARDS).concat(Object.keys(TREE)))DIRTY.add(k);
+  if(!rafOn){rafOn=true;requestAnimationFrame(drawLive);}
+}
+const inkOf=(u,i)=>{const o=TREE[u]&&TREE[u].ink&&TREE[u].ink[P(i)];if(!o)return [];
+  return unpackInk(o);};
+async function liveConnect(){
+  if(ES)ES.close();
+  let tok;try{tok=await fbToken();}catch(e){lNet("ต่อไม่ได้ ("+e.message+") ลองใหม่…");setTimeout(liveConnect,5000);return;}
+  const es=ES=new EventSource(fbUrl("",tok));
+  const on=(t,fn)=>es.addEventListener(t,ev=>{if(es===ES)fn(ev.data?JSON.parse(ev.data):null);});
+  on("put",d=>{treeSet(d.path,d.data);dirty(d.path);});
+  on("patch",d=>{const base=d.path.replace(/\/+$/,"");for(const [k,v] of Object.entries(d.data||{})){treeSet(base+"/"+k,v);dirty(base+"/"+k);}});
+  on("auth_revoked",()=>{FBA.exp=0;liveConnect();});   // the hour is up: new token, new stream
+  on("cancel",()=>{es.close();lNet("อ่านไม่ได้: เช็ค Rules ใน Firebase");});
+  es.onopen=()=>lNet("");
+  es.onerror=()=>lNet("หลุด กำลังต่อใหม่…");
+}
+function makeCard(u){
+  const el=document.createElement("div");el.className="card";
+  el.innerHTML='<div class="ch"><span></span><span></span></div><div class="pg"><img alt=""><canvas></canvas></div>';
+  const c={u,el,name:el.querySelector(".ch span"),where:el.querySelector(".ch span:last-child"),img:el.querySelector("img"),cv:el.querySelector("canvas"),seen:0};
+  c.img.onload=()=>{RATIO=c.img.naturalHeight/c.img.naturalWidth||RATIO;DIRTY.add(u);if(!rafOn){rafOn=true;requestAnimationFrame(drawLive);}};
+  el.onclick=()=>openFocus(u);
+  return c;
+}
+function paintInk(cv,w,h,list){
+  const d=Math.min(devicePixelRatio||1,2);cv.width=Math.round(w*d);cv.height=Math.round(h*d);
+  paint(cv.getContext("2d"),cv,list);
+}
+function drawLive(){
+  rafOn=false;
+  for(const u of DIRTY){
+    const d=TREE[u];let c=CARDS[u];
+    if(!d||typeof d!=="object"){if(c){c.el.remove();delete CARDS[u];}continue;}
+    if(!c){c=CARDS[u]=makeCard(u);}
+    const i=Math.min(Math.max(+d.pg||0,0),N-1),src="p/"+P(i)+".jpg";
+    c.name.textContent=d.n||"(ไม่มีชื่อ)";c.where.textContent="หน้า "+(i+1);
+    if(c.img.getAttribute("src")!==src)c.img.src=src;
+    const w=c.el.clientWidth-12||cw;paintInk(c.cv,w,w*RATIO,inkOf(u,i));
+    if(c.sig!==JSON.stringify([d.at,i])){c.sig=JSON.stringify([d.at,i]);c.seen=Date.now();c.el.classList.add("fresh");}
+    if(FOC&&FOC.u===u)drawFocus();
+  }
+  if(!FOC&&!GRID){const first=Object.keys(CARDS)[0];if(first)openFocus(first);}
+  DIRTY.clear();
+  // cards sorted by name, so each student stays in the same spot
+  const g=$("grid"),list=Object.values(CARDS).sort((a,b)=>(a.name.textContent).localeCompare(b.name.textContent,"th"));
+  list.forEach((c,k)=>{if(g.children[k+1]!==c.el)g.insertBefore(c.el,g.children[k+1]||null);});
+  $("lEmpty").hidden=list.length>0;$("lCount").textContent=list.length?list.length+" คน":"";
+  names();
+}
+function names(){                          // a chip per student on the hidden screen; tap = see her sheet
+  const box=$("fNames"),list=Object.values(CARDS).sort((a,b)=>(a.name.textContent).localeCompare(b.name.textContent,"th"));
+  if(box.children.length!==list.length||list.some((c,k)=>box.children[k].dataset.u!==c.u)){
+    box.innerHTML="";for(const c of list){const b=document.createElement("button");b.dataset.u=c.u;b.onclick=()=>openFocus(c.u);box.appendChild(b);}
+  }
+  const t=Date.now();
+  [...box.children].forEach((b,k)=>{const c=list[k];b.textContent=c.name.textContent;b.setAttribute("aria-current",!!FOC&&FOC.u===c.u);
+    b.classList.toggle("fresh",t-c.seen<8000);b.classList.toggle("quiet",t-c.seen>120000);});
+}
+function quietTick(){                      // fresh = wrote in the last 8 s, quiet = nothing for 2 minutes
+  const t=Date.now();
+  for(const c of Object.values(CARDS)){c.el.classList.toggle("fresh",t-c.seen<8000);c.el.classList.toggle("quiet",t-c.seen>120000);}
+  names();
+}
+let GRID=false;                            // the hidden screen opens on one student's sheet; "ดูรวม" = every student as cards
+function openFocus(u){GRID=false;FOC={u,i:+(TREE[u]&&TREE[u].pg)||0,follow:true};$("fFollow").setAttribute("aria-pressed","true");$("focus").hidden=false;names();drawFocus();}
+let fKeyOn=false;
+function drawFocus(){
+  if(!FOC)return;const d=TREE[FOC.u];if(!d){$("focus").hidden=true;FOC=null;return;}
+  const here=Math.min(Math.max(+d.pg||0,0),N-1);
+  if(FOC.follow)FOC.i=here;
+  const i=FOC.i,img=$("fImg"),src="p/"+P(i)+".jpg";
+  $("fWhere").textContent=(d.n||"")+" · หน้า "+(i+1)+"/"+N+(here===i?" · น้องอยู่หน้านี้":" · น้องอยู่หน้า "+(here+1));
+  const dots=$("fDots");
+  if(dots.children.length!==N)for(let k=0;k<N;k++){const b=document.createElement("button");b.textContent=k+1;
+    b.onclick=()=>{FOC.i=k;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();};dots.appendChild(b);}
+  const ink=d.ink||{};
+  [...dots.children].forEach((b,k)=>{b.setAttribute("aria-current",k===i);b.classList.toggle("ink",!!ink[P(k)]);b.classList.toggle("here",k===here);});
+  if(img.getAttribute("src")!==src){img.onload=drawFocus;img.src=src;return;}
+  const w=$("fPage").clientWidth,h=w*(img.naturalHeight/img.naturalWidth||RATIO);
+  paintInk($("fInk"),w,h,inkOf(FOC.u,i));
+  const kc=$("fKeyC"),dd=Math.min(devicePixelRatio||1,2);kc.width=Math.round(w*dd);kc.height=Math.round(h*dd);
+  if(fKeyOn&&KEYPAGES)answers(i).then(a=>{if(FOC&&FOC.i===i&&fKeyOn)kc.getContext("2d").drawImage(a,0,0,kc.width,kc.height);});
+}
+function startLive(){
+  $("lTitle").textContent=CFG.title;
+  cw=+load("scitem-live-cw",240)||240;$("grid").style.setProperty("--cw",cw+"px");
+  const size=dz=>{cw=Math.min(600,Math.max(140,cw+dz));save("scitem-live-cw",cw);$("grid").style.setProperty("--cw",cw+"px");dirty("");};
+  $("lSmall").onclick=()=>size(-60);$("lBig").onclick=()=>size(60);
+  $("lClear").onclick=async()=>{
+    if(!confirm("ลบที่ทดของทุกคนในห้องนี้ออกจากจอสด? (งานที่น้องกดส่งเข้าชีทยังอยู่)"))return;
+    try{const r=await fetch(fbUrl("",await fbToken()),{method:"DELETE"});if(!r.ok)throw new Error("HTTP "+r.status);}catch(e){lNet("ล้างไม่ได้ ("+e.message+")");}
+  };
+  $("fBack").onclick=()=>{$("focus").hidden=true;FOC=null;GRID=true;};
+  $("fTitle").textContent=CFG.title;
+  $("fPrev").onclick=()=>{if(FOC&&FOC.i>0){FOC.i--;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();}};
+  $("fNext").onclick=()=>{if(FOC&&FOC.i<N-1){FOC.i++;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();}};
+  $("fFollow").onclick=()=>{if(!FOC)return;FOC.follow=!FOC.follow;$("fFollow").setAttribute("aria-pressed",FOC.follow);drawFocus();};
+  $("fKey").onclick=()=>{fKeyOn=!fKeyOn;$("fKey").setAttribute("aria-pressed",fKeyOn);drawFocus();};
+  addEventListener("keydown",e=>{if(!FOC)return;if(e.key==="ArrowLeft")$("fPrev").click();if(e.key==="ArrowRight")$("fNext").click();});
+  addEventListener("resize",()=>{dirty("");});
+  setInterval(quietTick,2000);
+  liveConnect();
+}
+
 /* ---------- screens ---------- */
 function start(){
   $("title").textContent=CFG.title;
@@ -288,7 +534,7 @@ function start(){
       SEEN=load(K.seen,{});if(!SHEET)RED=load(K.red,{});
       $("stu").onchange=()=>{STU=$("stu").value;SENT=ALL[STU]||{};render();};
     }else{
-      $("tPull").hidden=false;$("penSw").style.background="var(--blue)";$("saveBtn").hidden=true;
+      $("penSw").style.background="var(--blue)";$("saveBtn").hidden=true;   // View 2026-10-26: #show shows no student work (that is #live)
       SHOWINK=load(K.show,{});
     }
     let busy=false;
@@ -305,15 +551,23 @@ function start(){
     idx=Math.min(ME.idx||0,N-1);
     if(SHEET){setInterval(()=>{if(!document.hidden)flush();},6000);addEventListener("online",flush);flush();}
     setInterval(()=>{if(!document.hidden)pullRed();},8000);
-    document.addEventListener("visibilitychange",()=>{if(!document.hidden){flush();pullRed();}});
+    document.addEventListener("visibilitychange",()=>{if(document.hidden)autoSave(true);else{flush();pullRed();}});
     if(!SHEET)addEventListener("storage",e=>{if(e.key===K.red)pullRed();});
-    $("send").onclick=sendPage;
+    // View 2026-10-26: no Send button; the ink goes live to #live, and each page saves to the Sheet by itself as a backup
+    $("send").hidden=true;
+    liveTouch();
   }
   for(let i=0;i<N;i++){const b=document.createElement("button");b.textContent=i+1;b.onclick=()=>go(i);$("dots").appendChild(b);}
   addEventListener("resize",fit);
   render();pullRed();
 }
-function go(i){if(i<0||i>=N||i===idx)return;idx=i;SEL=null;lasso=null;drag=null;if(!STAFF){ME.idx=i;save(K.me,ME);}render();$("scroll").scrollTop=0;pullRed();}
+let autoT=null;
+function autoSave(now){                    // a page goes to the Sheet 3 s after the pen stops, or when she turns the page
+  clearTimeout(autoT);
+  const w=W[P(idx)];if(!w||w.sentLen===inkSig(w.ink)||(!w.ink.length&&!w.sentAt))return;
+  if(now)sendPage();else autoT=setTimeout(()=>{if(!curS)sendPage();else autoSave();},3000);
+}
+function go(i){if(i<0||i>=N||i===idx)return;if(!STAFF)autoSave(true);idx=i;SEL=null;lasso=null;drag=null;if(!STAFF){ME.idx=i;save(K.me,ME);liveTouch();}render();$("scroll").scrollTop=0;pullRed();}
 $("prev").onclick=()=>go(idx-1);$("next").onclick=()=>go(idx+1);
 addEventListener("keydown",e=>{if(e.target.tagName==="INPUT")return;if(e.key==="ArrowLeft")go(idx-1);if(e.key==="ArrowRight")go(idx+1);});
 
@@ -410,7 +664,7 @@ function drawRed(){
 }
 const INK=TEACHER?"#d62828":SHOW?"#1f5fa8":"#1f2836";
 function changed(){
-  if(TEACHER)pushRed();else if(SHOW)save(K.show,SHOWINK);else{save(K.work,W);render();}
+  if(TEACHER)pushRed();else if(SHOW)save(K.show,SHOWINK);else{save(K.work,W);render();liveTouch();autoSave();}
 }
 let curS=null,lasso=null,drag=null,pinch=null,SEL=null;
 const fingersDown=new Set();               // touch pointers on the sheet: a second finger means pinch, not ink
