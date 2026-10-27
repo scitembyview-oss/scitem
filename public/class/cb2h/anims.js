@@ -712,7 +712,7 @@
     const S = K.slider({ min: 0, max: wSlip * 1.35, v: wSlip * .55, title: coin ? 'ลากเปลี่ยนความเร็วการหมุน' : 'ลากเปลี่ยนความเร็วรถ',
       marks: [[0, coin ? 'ไม่หมุน' : 'จอด', C.grey, 'start'], [wSlip * 1.35, 'เร็ว', C.red, 'end']], tick: false,
       onChange: () => { ramp = false; if (!K.run) reset(); } });
-    const rb = button(K.ui, 390, 150, 120, 'เร่งเรื่อยๆ', C.red, () => { if (objs.some((o) => o.off)) reset(); ramp = true; K.set(true); });
+    const rb = button(K.ui, 390, 150, 120, 'เร่งจนหลุด', C.red, () => { if (objs.some((o) => o.off)) reset(); ramp = true; K.set(true); });
     const disc = add(K.scene, 'g');
     if (coin) {
       add(disc, 'circle', { cx, cy, r: P * 2 + 40, fill: '#f1ebe0', stroke: C.navy, 'stroke-width': 4 });
@@ -748,10 +748,15 @@
             if (ramp) ramp = false;
           }
         } else {
-          const sp = Math.hypot(o.vx, o.vy), dec = .8 * mu * G * (o.R / o.rm) * k * k;
-          const onDisc = coin && Math.hypot(o.x - cx, o.y - cy) < P * 2 + 40;
-          if (sp > 1 && (!coin || onDisc)) { const k = Math.max(0, sp - dec * dt) / sp; o.vx *= k; o.vy *= k; }
-          o.x += o.vx * dt; o.y += o.vy * dt;
+          // kinetic friction (μk ≈ 0.8μ on the disc, less on the road) against the motion relative to the surface under it;
+          // on the turntable the surface moves (Ω × r), so the coin is dragged round while it slides out, then flies off the edge
+          const dec = (coin ? .8 : .35) * mu * G * (o.R / o.rm) * k * k, W = coin ? w * k : 0;
+          for (let i = 0; i < 6; i++) {
+            const h = dt / 6, dx = o.x - cx, dy = o.y - cy, onDisc = !coin || Math.hypot(dx, dy) < P * 2 + 40;
+            const ux = o.vx - W * dy, uy = o.vy + W * dx, ul = Math.hypot(ux, uy);
+            if (onDisc && ul > .5) { const dv = Math.min(ul, dec * h); o.vx -= ux / ul * dv; o.vy -= uy / ul * dv; }
+            o.x += o.vx * h; o.y += o.vy * h;
+          }
         }
       }
     }
