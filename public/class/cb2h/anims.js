@@ -823,7 +823,7 @@
   // c9 c11: a car over a hill / through a dip at a steady speed v (slider). Hill: N = m(g cosα − v²/r), N < 0 → the car
   // leaves the road and flies (projectile). Dip: N = m(g cosα + v²/r). data: kind hill|dip|toggle (t-dip picks), r (m),
   // v (start speed, hill), vd (dip), cx cy R (picture), t1 (readout "{v}")
-  function hill(g, d) {
+  function hillSim(g, d) {
     const K = kit(g, { onPlay: (on) => { if (on && fly) { fly = null; al = -1; } } });
     const G = 10, r = +d.r, R = +d.rpx || 230, vc = Math.sqrt(G * r), k = Math.sqrt(r / G);   // picture: at v = √(gr) the arc (2 rad) takes 2 s
     let al = 0, fly = null, kind = '';
@@ -942,7 +942,7 @@
 
   // c13: a conical pendulum turned at ω (slider). In the turning frame θ'' = ω² sinθ cosθ − (g/L) sinθ (− a little damping),
   // so it settles where cosθ = g/(ω²L) (or hangs straight if ω²L < g). data: l (m), w (start ω), px py lpx
-  function cone(g, d) {
+  function coneSim(g, d) {
     const K = kit(g);
     const G = 10, Lm = +d.l, px = 260, py = 80, L = 220, w0 = +d.w, sq = .16;
     const eq = (w) => (w * w * Lm > G ? Math.acos(G / (w * w * Lm)) : 0);
@@ -1344,6 +1344,6 @@
       p28: [{ id: 'level', x: .88, y: .2, t: 'ระดับน้ำเปลี่ยน' }],
     },
     make: { circ, cut, ice, hill, vert, cone, swing, press, sinkfloat, scales, level },
-    sims: { tilt, ring, pend, hill, bucket, cone, bank, track, rotor, sink2, scale, layers, hollow, woodmetal },
+    sims: { tilt, ring, pend, hill: hillSim, bucket, cone: coneSim, bank, track, rotor, sink2, scale, layers, hollow, woodmetal },
   };
 })();
