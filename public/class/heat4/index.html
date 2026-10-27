@@ -96,7 +96,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--peach);outline-
 #hintBox .hbTop button{min-height:40px;min-width:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);font:700 15px var(--display);padding:0 12px}
 #hintBox .hbTop button[aria-current="true"]{background:var(--blue);color:#fff;border-color:var(--blue)}
 #hbBody{overflow:auto;-webkit-user-select:none;user-select:none;touch-action:manipulation}
-#hbBody svg{display:block;width:100%;height:auto;max-height:calc(100dvh - 90px)}
+#hbBody svg{display:block;width:100%;height:auto;max-height:calc(100dvh - 90px);background-color:#fffdf8;background-image:linear-gradient(#eef1f6 1px,transparent 1px),linear-gradient(90deg,#eef1f6 1px,transparent 1px);background-size:2.5% 4.1667%;transform:translateZ(0)}
+/* while a hint or animation is open the sheet underneath is not painted (iPad Safari lagged repainting both) */
+body.hbOpen #work,body.hbOpen #fWork{visibility:hidden}
 #hbBody [data-go],#hbBody [data-tog]{cursor:pointer}
 #toast{position:fixed;left:50%;top:max(12px,env(safe-area-inset-top));transform:translateX(-50%);z-index:30;background:var(--blue);color:#fff;border-radius:14px;padding:10px 12px 10px 16px;
   display:flex;align-items:center;gap:10px;font:600 16px var(--body);box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:calc(100% - 32px)}
@@ -622,7 +624,7 @@ function openAnim(a){
   const A=window.SC_ANIMS;if(!A||!A.make[a.id])return;
   if(ANIMSTOP){try{ANIMSTOP();}catch(e){}ANIMSTOP=null;}
   HB=null;$("hbT").textContent=a.t||"";$("hbTabs").innerHTML="";$("hbBody").innerHTML="";
-  $("hintBox").hidden=false;ANIMSTOP=A.make[a.id]($("hbBody"))||null;
+  $("hintBox").hidden=false;document.body.classList.add("hbOpen");ANIMSTOP=A.make[a.id]($("hbBody"))||null;
 }
 const hintOf=q=>{const h=BACK._hint&&BACK._hint[q];if(h&&typeof h==="object")return [h.h1,h.h2].filter(Boolean);return OPENH[q]?[OPENH[q]]:[];};
 /* a hint: a drawn SVG (key.json "hints", tools/hints-*.py). Inside it, [data-go="s"] sets the picture's state (svg[data-s]),
@@ -633,10 +635,10 @@ function openHint(q,list,k){
   $("hbT").textContent=(QINFO[q]?QINFO[q].name:"")+" · Hint "+(k+1);
   $("hbTabs").innerHTML=list.length>1?list.map((_,j)=>`<button type="button" data-k="${j}" aria-current="${j===k}">Hint ${j+1}</button>`).join(""):"";
   $("hbBody").innerHTML=String(list[k]).replace(/<script[\s\S]*?<\/script>/gi,"").replace(/\son\w+\s*=\s*("[^"]*"|'[^']*')/gi,"");
-  $("hintBox").hidden=false;
+  $("hintBox").hidden=false;document.body.classList.add("hbOpen");
 }
 $("hbTabs").onclick=e=>{const b=e.target.closest("button");if(b&&HB)openHint(HB.q,HB.list,+b.dataset.k);};
-$("hbX").onclick=()=>{$("hintBox").hidden=true;if(ANIMSTOP){try{ANIMSTOP();}catch(e){}ANIMSTOP=null;}$("hbBody").innerHTML="";};
+$("hbX").onclick=()=>{$("hintBox").hidden=true;document.body.classList.remove("hbOpen");if(ANIMSTOP){try{ANIMSTOP();}catch(e){}ANIMSTOP=null;}$("hbBody").innerHTML="";};
 $("hintBox").onclick=e=>{if(e.target===$("hintBox"))$("hbX").onclick();};
 $("hbBody").onclick=e=>{
   const svg=$("hbBody").querySelector("svg");if(!svg)return;

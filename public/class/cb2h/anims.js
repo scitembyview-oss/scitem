@@ -12,10 +12,7 @@
     const s = document.createElementNS(NS, 'svg');
     s.setAttribute('viewBox', `0 0 ${W} ${H}`);
     s.style.cssText = 'display:block;width:100%;height:auto;max-height:calc(100dvh - 90px);touch-action:none;font-family:var(--body,"Sarabun",sans-serif)';
-    let bg = `<rect width="${W}" height="${H}" fill="${C.paper}"/>`;
-    for (let x = 0; x < W; x += 25) bg += `<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="#eef1f6"/>`;
-    for (let y = 0; y < H; y += 25) bg += `<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="#eef1f6"/>`;
-    s.innerHTML = bg;
+    // the graph-paper background is CSS on the svg (#hbBody svg in the shell), so animating never repaints it
     el.appendChild(s);
     return s;
   }
