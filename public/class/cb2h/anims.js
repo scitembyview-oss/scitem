@@ -651,7 +651,8 @@
       add(ui, 'line', { x1: x0, y1: y, x2: x1, y2: y, stroke: C.line, 'stroke-width': 8, 'stroke-linecap': 'round' });
       for (const [v, t, c, anchor] of s.marks || []) {
         if (s.tick !== false) add(ui, 'line', { x1: X(v), y1: y - 12, x2: X(v), y2: y + 12, stroke: C.grey, 'stroke-width': 2 });
-        label(ui, X(v), y + 34, t, c || C.grey, 17, anchor || 'middle');
+        if (s.side) label(ui, v === min ? x0 - 22 : x1 + 22, y + 6, t, c || C.grey, 17, v === min ? 'end' : 'start');
+        else label(ui, X(v), y + 34, t, c || C.grey, 17, anchor || 'middle');
       }
       const knob = add(ui, 'circle', { cy: y, r: 15, fill: C.purple, stroke: '#fff', 'stroke-width': 3 });
       const hit = add(ui, 'rect', { x: x0 - 30, y: y - 30, width: x1 - x0 + 60, height: 56, fill: 'transparent', style: 'cursor:ew-resize;touch-action:none' });
@@ -693,7 +694,8 @@
     if (L < 4) return;
     arrow(g, x, y, x + dx, y + dy, color, w);
     const ux = dx / L, uy = dy / L;
-    label(g, x + dx + ux * 14 - uy * 16, y + dy + uy * 14 + ux * 16 + 7, name, color, 20);
+    const m = /^([^_]*)_(\S+)(.*)$/.exec(name), e = label(g, x + dx + ux * 14 - uy * 16, y + dy + uy * 14 + ux * 16 + 7, m ? m[1] : name, color, 20, 'middle', m ? m[2] : null);
+    if (m && m[3]) add(e, 'tspan', { dy: '-0.3em' }, m[3]);
   }
   function setT(el, x, y, a = 0, s = 1) { el.setAttribute('transform', `translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${a.toFixed(2)})${s !== 1 ? ` scale(${s})` : ''}`); }
   // only show a live number while it is well clear of the critical value (q = value / critical)
@@ -1070,6 +1072,264 @@
     return K.go(step, draw);
   }
 
+  // ---------- homework hints (public hint1.json): generic values only, never the question's numbers ----------
+  const TK = { x0: 70, x1: 450, y0: 200, y1: 480 };          // the tank drawn by the hint (inside)
+  const GP = 600;                                            // g in the picture, px/s²
+  // the water in front of what is under the surface, so it looks under water
+  function wetOver(g, level, color = '#9cc9ec', top = TK.y0 - 30) {
+    return add(g, 'rect', { x: TK.x0, y: Math.max(level, top), width: TK.x1 - TK.x0, height: Math.max(0, TK.y1 - Math.max(level, top)), fill: color, opacity: .35, 'pointer-events': 'none' });
+  }
+
+  // c7: people on the wall of a turning drum, then the floor drops. The wall pushes in: N = mω²r. Friction holds them up
+  // only if μN ≥ mg, i.e. ω big enough; otherwise they slide down (a = g − μω²r). Slider ω, ▶ turns the drum.
+  function rotor(g) {
+    const K = kit(g), mu = .5;                                 // q = ω / ω_min: μω²r = g at q = 1
+    let psi = 0, y = 0, vy = 0;                               // y: how far the person has slid down
+    const S = K.slider({ min: 0, max: 1.6, v: 1.25, tick: false, marks: [[0, 'ไม่หมุน', C.grey, 'start'], [1.6, 'หมุนเร็ว', C.red, 'end']], onChange: () => { if (!K.run) { y = 0; vy = 0; } } });
+    const stripes = add(K.scene, 'g');
+    const ln = []; for (let i = 0; i < 6; i++) ln.push(add(stripes, 'line', { y1: 92, y2: 468, stroke: C.grey, 'stroke-width': 2, opacity: .35 }));
+    const man = add(K.scene, 'g');
+    add(man, 'circle', { cx: 0, cy: -58, r: 14, fill: C.peach, stroke: C.ink, 'stroke-width': 2 });
+    add(man, 'rect', { x: -11, y: -44, width: 22, height: 60, rx: 8, fill: C.blue });
+    add(man, 'line', { x1: -6, y1: 16, x2: -6, y2: 60, stroke: C.ink, 'stroke-width': 5 }); add(man, 'line', { x1: 6, y1: 16, x2: 6, y2: 60, stroke: C.ink, 'stroke-width': 5 });
+    const l1 = K.text(260, 526, 18, C.purple, 'middle');
+    const floorY = () => (K.state() === 'drop' ? 430 : 360);
+    function step(dt) {
+      const q = S.v;
+      psi += q * 2.2 * dt;
+      if (K.state() === 'drop' && y + 300 + 60 < floorY()) {
+        const a = Math.max(0, 1 - q * q) * GP;                 // what friction can't hold
+        if (a > 0 || vy > 0) { vy += (a - (q * q >= 1 ? 6 * vy : 0)) * dt; y += vy * dt; }
+        if (300 + y + 60 > floorY()) { y = floorY() - 360; vy = 0; }
+      }
+    }
+    function draw() {
+      if (K.state() !== 'drop') { y = 0; vy = 0; }
+      ln.forEach((l, i) => { const a = psi + i * Math.PI / 3, x = 270 + 150 * Math.sin(a); l.setAttribute('x1', x); l.setAttribute('x2', x); l.style.display = Math.cos(a) < 0 ? '' : 'none'; });
+      const px = 404, py = 300 + y;
+      setT(man, px, py);
+      clear(K.fx);
+      const q = S.v, N = q * q / mu, drop = K.state() === 'drop';      // N in units of mg
+      farrow(K.fx, px - 14, py - 10, -Math.min(200, 40 * N), 0, C.blue, 'N');
+      farrow(K.fx, px - 2, py - 14, 0, 40, C.red, 'mg');
+      if (drop) {
+        const fmax = mu * N, f = Math.min(1, fmax);
+        add(K.fx, 'line', { x1: px + 22, y1: py - 30, x2: px + 22, y2: py - 30 - Math.min(200, 40 * fmax), stroke: C.orange, 'stroke-width': 2, 'stroke-dasharray': '4 5' });
+        farrow(K.fx, px + 22, py - 30, 0, -40 * f, C.orange, 'fₛ');
+        l1.textContent = q * q >= 1 ? 'fₛ ที่ได้มากสุด (เส้นประ) ≥ mg → คนติดผนัง' : 'fₛ สูงสุด (เส้นประ) น้อยกว่า mg → คนไถลลง';
+      } else l1.textContent = 'หมุนเร็วขึ้น → ผนังดัน N = mω²r มากขึ้น';
+    }
+    return K.go(step, draw);
+  }
+
+  // a box floating / sinking in one liquid: dy'' = g(1 − ρ_l·(under)/(ρ·h)) − drag. Used by b2.
+  // b2: two blocks of the same size, one dense (iron-like), one light metal: same V under → same F_B, different mg.
+  function sink2(g) {
+    const K = kit(g, { onPlay: (on) => { if (on && objs.every((o) => o.y >= TK.y1 - o.h - .5)) objs.forEach((o) => { o.y = o.y0; o.v = 0; }); } });
+    const level = 240;
+    const objs = [{ x: 130, w: 100, h: 100, rho: 7.8, fill: '#6d7684', name: 'เหล็ก' }, { x: 290, w: 100, h: 100, rho: 2.7, fill: '#c9ced6', name: 'อะลูมิเนียม' }];
+    for (const o of objs) {
+      o.y = o.y0 = 330; o.v = 0; o.el = add(K.scene, 'g');
+      add(o.el, 'rect', { x: 0, y: 0, width: o.w, height: o.h, rx: 4, fill: o.fill, stroke: C.ink, 'stroke-width': 2.5 });
+      label(o.el, o.w / 2, o.h / 2 + 7, o.name, o.rho > 5 ? '#fff' : C.ink, 17);
+      K.drag(o.el, (p, ph) => { if (ph === 'down') { K.set(false); o.dy = p.y - o.y; } o.y = Math.max(80, Math.min(TK.y1 - o.h, p.y - o.dy)); o.v = 0; o.y0 = o.y; });
+    }
+    wetOver(K.scene, level);
+    const l1 = K.text(20, 76, 18, C.purple);
+    const under = (o) => Math.max(0, Math.min(o.h, o.y + o.h - level)) / o.h;
+    function step(dt) {
+      for (const o of objs) {
+        const u = under(o);
+        o.v += (GP * (1 - u / o.rho) - 3 * u * o.v) * dt; o.y += o.v * dt;
+        if (o.y > TK.y1 - o.h) { o.y = TK.y1 - o.h; o.v = 0; }
+      }
+    }
+    function draw() {
+      clear(K.fx);
+      for (const o of objs) {
+        setT(o.el, o.x, o.y);
+        const u = under(o), cx = o.x + o.w / 2, bottom = o.y >= TK.y1 - o.h - .5;
+        farrow(K.fx, cx - 18, o.y, 0, -18 * u, FBC, 'F_B');
+        farrow(K.fx, cx + 18, o.y + o.h / 2, 0, 18 * o.rho, C.red, 'mg');
+        if (bottom) farrow(K.fx, cx - 34, TK.y1 - 4, 0, -18 * (o.rho - u), C.navy, 'N');
+      }
+      l1.textContent = 'จมมิด V เท่ากัน → F_B เท่ากัน แม้ mg ต่างกัน';
+    }
+    return K.go(step, draw);
+  }
+  const FBC = C.green;
+
+  // b5 b6: something hung on a spring scale, the tank raised under it (drag the tank, or the state buttons).
+  // T = mg − F_B, F_B = ρ_water V_under g. The spring stretches with T. data: kind block|crown, rho (relative), states "half:.5,full:1"
+  function scale(g, d) {
+    const K = kit(g, { play: false });
+    const rho = +d.rho || 3, crown = d.kind === 'crown', hx = 260, W = crown ? 110 : 100, Hh = crown ? 60 : 80;
+    const st = {}; for (const kv of (d.states || '').split(',')) { const [k, v] = kv.split(':'); if (k) st[k] = +v; }
+    let lift = 0, target = null, lastS = null;                 // lift: how far the tank is raised (px)
+    const tankG = add(K.scene, 'g');
+    const liq = add(tankG, 'rect', { x: TK.x0, width: TK.x1 - TK.x0, fill: C.water || '#cfe6f7' });
+    liq.setAttribute('fill', '#cfe6f7');
+    const glass = add(tankG, 'path', { fill: 'none', stroke: C.navy, 'stroke-width': 5, 'stroke-linejoin': 'round' });
+    add(K.scene, 'rect', { x: hx - 80, y: 28, width: 160, height: 12, fill: C.grey });
+    add(K.scene, 'rect', { x: hx - 22, y: 40, width: 44, height: 50, rx: 8, fill: '#fff', stroke: C.navy, 'stroke-width': 3 });
+    const coil = add(K.scene, 'polyline', { fill: 'none', stroke: C.ink, 'stroke-width': 2 });
+    const hook = add(K.scene, 'line', { x1: hx, stroke: C.ink, 'stroke-width': 2.5 });
+    const obj = add(K.scene, 'g');
+    if (crown) add(obj, 'path', { d: `M${-55},${Hh} l0,-50 l28,28 l27,-40 l27,40 l28,-28 l0,50 Z`, fill: '#e7b84a', stroke: C.ink, 'stroke-width': 2.5 });
+    else add(obj, 'rect', { x: -W / 2, y: 0, width: W, height: Hh, rx: 4, fill: C.metal || '#9aa3ad', stroke: C.ink, 'stroke-width': 2.5 });
+    obj.firstChild.setAttribute('fill', crown ? '#e7b84a' : '#9aa3ad');
+    const wet = wetOver(K.scene, 0);
+    const gauge = add(K.ui, 'g');
+    add(gauge, 'rect', { x: hx + 40, y: 52, width: 170, height: 40, rx: 8, fill: '#fff', stroke: C.navy, 'stroke-width': 2 });
+    const bar = add(gauge, 'rect', { x: hx + 48, y: 62, height: 20, rx: 4, fill: C.blue });
+    label(gauge, hx + 222, 80, 'T', C.navy, 22, 'start');
+    const l1 = K.text(20, 526, 18, C.purple);
+    l1.setAttribute('x', 260); l1.setAttribute('text-anchor', 'middle');
+    const base = 330;                                         // water level with the tank down
+    K.drag(tankG, (p, ph) => { if (ph === 'down') tankG.dy = p.y + lift; target = null; lift = Math.max(0, Math.min(230, tankG.dy - p.y)); });
+    function solve() {                                        // object height y (top) and the part under water
+      const level = base - lift;
+      let y = 200, u = 0;
+      for (let i = 0; i < 20; i++) { u = Math.max(0, Math.min(1, (y + Hh - level) / Hh)); const T = 1 - u / rho; y = 150 + 50 * T; }
+      return { y, u, level, T: 1 - u / rho };
+    }
+    function step() {}
+    function draw() {
+      const s = K.state();
+      if (s !== lastS) { lastS = s; if (s in st) {                // raise the tank until the part under water is st[s]
+        const cur = lift; let lo = 0, hi = 230; for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; lift = m; (solve().u < st[s] ? (lo = m) : (hi = m)); } target = (lo + hi) / 2; lift = cur; } }
+      if (target != null) { lift += (target - lift) * .12; if (Math.abs(target - lift) < .3) { lift = target; target = null; } else K.dirty = true; }
+      const { y, u, level, T } = solve();
+      liq.setAttribute('y', level); liq.setAttribute('height', TK.y1 + 4 - level - 0);
+      tankG.setAttribute('transform', '');
+      const top = TK.y0 - 30 - lift, bot = TK.y1 + 4 - lift;
+      glass.setAttribute('d', `M${TK.x0 - 4},${top} V${bot} H${TK.x1 + 4} V${top}`);
+      liq.setAttribute('height', Math.max(0, bot - 4 - level));
+      wet.setAttribute('y', level); wet.setAttribute('height', Math.max(0, bot - 4 - level));
+      const c0 = 90, c1 = y - 12, pts = [];
+      for (let i = 0; i <= 12; i++) pts.push(`${hx + (i % 2 ? 12 : -12) * (i && i < 12 ? 1 : 0)},${c0 + (c1 - c0) * i / 12}`);
+      coil.setAttribute('points', pts.join(' '));
+      hook.setAttribute('y1', c1); hook.setAttribute('x2', hx); hook.setAttribute('y2', y);
+      setT(obj, hx, y);
+      bar.setAttribute('width', 150 * T);
+      clear(K.fx);
+      farrow(K.fx, hx + 30, y, 0, -60 * T, C.blue, 'T');
+      if (u > .01) farrow(K.fx, hx - 30, y + Hh / 2, 0, -60 * u / rho, FBC, 'F_B');
+      farrow(K.fx, hx, y + Hh, 0, 60, C.red, 'mg');
+      l1.textContent = u <= .01 ? 'ลากภาชนะขึ้นให้วัตถุจมน้ำ' : u >= .99 ? 'จมมิด: T = mg − F_B (เท่านี้แล้ว ยกต่อก็ไม่ลด)' : 'จมมากขึ้น → F_B มากขึ้น → T ลดลง';
+    }
+    return K.go(step, draw);
+  }
+
+  // b11: a cube between oil (top) and water (bottom). F_B = ρ_oil V_oil g + ρ_water V_water g. Slider: the cube's density.
+  function layers(g) {
+    const K = kit(g, { onPlay: (on) => { if (on) v = 0; } });
+    const iface = 340, top = 200, ro = .8, rw = 1, X = 200, A = 120;
+    let y = 150, v = 0;
+    const S = K.slider({ min: .6, max: 1.15, v: .97, tick: false, side: true, x0: 130, x1: 390, y: 512, marks: [[.6, 'ก้อนเบา', C.grey, 'start'], [1.15, 'ก้อนหนัก', C.red, 'end']], onChange: () => { K.dirty = true; } });
+    const cube = add(K.scene, 'rect', { x: X, width: A, height: A, rx: 4, fill: C.wood || '#d8a86a', stroke: C.ink, 'stroke-width': 2.5 });
+    cube.setAttribute('fill', '#d8a86a');
+    add(K.scene, 'rect', { x: TK.x0, y: top, width: TK.x1 - TK.x0, height: iface - top, fill: '#f3dd8a', opacity: .35, 'pointer-events': 'none' });
+    wetOver(K.scene, iface);
+    const l1 = K.text(20, 76, 18, C.purple);
+    K.drag(cube, (p, ph) => { if (ph === 'down') { K.set(false); cube.dy = p.y - y; } y = Math.max(60, Math.min(TK.y1 - A, p.y - cube.dy)); v = 0; });
+    const parts = () => ({ vo: Math.max(0, Math.min(y + A, iface) - Math.max(y, top)) / A, vw: Math.max(0, y + A - Math.max(y, iface)) / A });
+    function step(dt) {
+      const { vo, vw } = parts();
+      v += (GP * (1 - (ro * vo + rw * vw) / S.v) - 3.5 * (vo + vw) * v) * dt; y += v * dt;
+      if (y > TK.y1 - A) { y = TK.y1 - A; v = 0; }
+    }
+    function draw() {
+      cube.setAttribute('y', y);
+      clear(K.fx);
+      const { vo, vw } = parts(), cx = X + A / 2;
+      if (vo > .01) farrow(K.fx, cx - 40, y, 0, -70 * ro * vo, C.orange, 'น้ำมันดัน');
+      if (vw > .01) farrow(K.fx, cx + 40, y, 0, -70 * rw * vw, C.blue, 'น้ำดัน');
+      farrow(K.fx, cx, y + A, 0, 70 * S.v, C.red, 'mg');
+      if (K.on('v')) {
+        if (vo > .01) { add(K.fx, 'rect', { x: X - 12, y: Math.max(y, top), width: A + 24, height: vo * A, fill: 'none', stroke: C.orange, 'stroke-width': 3, 'stroke-dasharray': '7 5' }); label(K.fx, X + A + 20, Math.max(y, top) + vo * A / 2 + 8, 'V', C.orange, 22, 'start', 'o'); }
+        if (vw > .01) { add(K.fx, 'rect', { x: X - 12, y: Math.max(y, iface), width: A + 24, height: vw * A, fill: 'none', stroke: C.blue, 'stroke-width': 3, 'stroke-dasharray': '7 5' }); label(K.fx, X + A + 20, Math.max(y, iface) + vw * A / 2 + 8, 'V', C.blue, 22, 'start', 'w'); }
+      }
+      l1.textContent = K.run ? 'ปล่อยแล้ว: ลอยนิ่งเมื่อแรงขึ้นรวม = mg' : 'ลากก้อนไปวาง แล้วกด ▶ ปล่อย';
+    }
+    return K.go(step, draw);
+  }
+
+  // b12: a hollow iron ball. A bigger hole → less mass, same outside V. Floats just under when ρ_water V g = mg.
+  function hollow(g) {
+    const K = kit(g, { onPlay: (on) => { if (on) v = 0; } });
+    const level = 240, R = 60, cx = 260, rhoFe = 8;
+    let y = 330, v = 0;                                       // y: centre
+    const S = K.slider({ min: .5, max: .985, v: .8, tick: false, side: true, x0: 130, x1: 390, y: 512, marks: [[.5, 'โพรงเล็ก', C.grey, 'start'], [.985, 'โพรงใหญ่', C.grey, 'end']], onChange: () => { K.dirty = true; } });
+    const ball = add(K.scene, 'circle', { cx, r: R, fill: '#6d7684', stroke: C.ink, 'stroke-width': 2.5 });
+    const hole = add(K.scene, 'circle', { cx, fill: '#fff', stroke: C.ink, 'stroke-width': 2 });
+    wetOver(K.scene, level);
+    const l1 = K.text(20, 76, 18, C.purple);
+    K.drag(ball, (p, ph) => { if (ph === 'down') { K.set(false); ball.dy = p.y - y; } y = Math.max(90, Math.min(TK.y1 - R, p.y - ball.dy)); v = 0; });
+    const rho = () => rhoFe * (1 - S.v ** 3);
+    const under = () => { const h = Math.max(0, Math.min(2 * R, y + R - level)); return h * h * (3 * R - h) / (4 * R ** 3); };   // spherical cap / sphere
+    function step(dt) {
+      const u = under();
+      v += (GP * (1 - u / rho()) - 3 * u * v) * dt; y += v * dt;
+      if (y > TK.y1 - R) { y = TK.y1 - R; v = 0; }
+    }
+    function draw() {
+      ball.setAttribute('cy', y); hole.setAttribute('cy', y); hole.setAttribute('r', R * S.v);
+      hole.style.display = K.on('cut') ? '' : 'none';
+      clear(K.fx);
+      const u = under(), r = rho();
+      farrow(K.fx, cx - 20, y - R, 0, -40 * u, FBC, 'F_B');
+      farrow(K.fx, cx + 20, y + R, 0, Math.min(120, 40 * r), C.red, 'mg');
+      l1.textContent = K.run ? (r > 1.02 ? 'mg มากกว่า F_B ตอนจมมิด → จม' : r < .98 ? 'เบากว่าน้ำที่แทนที่ → ลอยโผล่' : 'ปริ่มพอดี: F_B (จมมิด) = mg') : 'ลากเปลี่ยนขนาดโพรง แล้วกด ▶ ปล่อย';
+    }
+    return K.go(step, draw);
+  }
+
+  // b16: wood with a metal block hung under it by a string. The whole system floats when ΣF_B = Σmg. Slider: metal size.
+  function woodmetal(g) {
+    const K = kit(g, { onPlay: (on) => { if (on) v = 0; } });
+    const level = 220, Ww = 140, Hw = 70, rw = .6, rm = 4, L = 90, x = 260;
+    let y = 220, v = 0;                                       // y: top of the wood
+    const S = K.slider({ min: .04, max: .35, v: .09, tick: false, side: true, x0: 130, x1: 390, y: 512, marks: [[.04, 'โลหะเล็ก', C.grey, 'start'], [.35, 'โลหะใหญ่', C.grey, 'end']], onChange: () => { K.dirty = true; } });
+    const wood = add(K.scene, 'rect', { x: x - Ww / 2, width: Ww, height: Hw, rx: 4, fill: '#d8a86a', stroke: C.ink, 'stroke-width': 2.5 });
+    const str = add(K.scene, 'line', { x1: x, x2: x, stroke: C.ink, 'stroke-width': 3 });
+    const met = add(K.scene, 'rect', { rx: 4, fill: '#9aa3ad', stroke: C.ink, 'stroke-width': 2.5 });
+    wetOver(K.scene, level);
+    const l1 = K.text(20, 76, 18, C.purple);
+    const msize = () => { const a = Math.cbrt(S.v * Ww * Hw * Ww) ; return { w: a * 1.3, h: a / 1.3 }; };   // metal volume = S.v × wood volume
+    K.drag(wood, (p, ph) => { if (ph === 'down') { K.set(false); wood.dy = p.y - y; } y = Math.max(80, Math.min(TK.y1 - Hw - L - msize().h, p.y - wood.dy)); v = 0; });
+    const uw = () => Math.max(0, Math.min(Hw, y + Hw - level)) / Hw;
+    function step(dt) {
+      const { h } = msize(), mt = rw + rm * S.v, fb = uw() + S.v;   // per wood volume (metal always under)
+      v += (GP * (1 - fb / mt) - 3 * v) * dt; y += v * dt;
+      const yMax = TK.y1 - Hw - L - h;
+      if (y > yMax) { y = yMax; v = 0; }
+    }
+    function draw() {
+      const { w, h } = msize(), my = y + Hw + L, s = K.state();
+      wood.setAttribute('y', y); str.setAttribute('y1', y + Hw); str.setAttribute('y2', my);
+      met.setAttribute('x', x - w / 2); met.setAttribute('y', my); met.setAttribute('width', w); met.setAttribute('height', h);
+      clear(K.fx);
+      const k = 50, u = uw(), onBottom = my + h >= TK.y1 - .5;
+      const T = Math.max(0, onBottom ? u - rw : (rm - 1) * S.v);            // T holds the metal up: m g − F_B (per wood volume)
+      if (s === 'all') {
+        farrow(K.fx, x - 40, y, 0, -k * (u + S.v), FBC, 'F_B รวม');
+        farrow(K.fx, x + 40, my + h, 0, k * (rw + rm * S.v), C.red, 'mg รวม');
+      } else if (s === 'wood') {
+        farrow(K.fx, x - 40, y, 0, -k * u, FBC, 'F_B');
+        farrow(K.fx, x - 20, y + Hw, 0, k * rw, C.red, 'mg');
+        farrow(K.fx, x + 20, y + Hw, 0, k * T, C.blue, 'T');
+      } else if (s === 'metal') {
+        farrow(K.fx, x + 14, my, 0, -k * T, C.blue, 'T');
+        farrow(K.fx, x - 14 - w / 2, my, 0, -k * S.v, FBC, 'F_B');
+        farrow(K.fx, x, my + h, 0, k * rm * S.v, C.red, 'mg');
+      }
+      const flush = Math.abs(y - level) < 2;
+      l1.textContent = !K.run ? 'ลากเปลี่ยนขนาดโลหะ แล้วกด ▶ ปล่อย' : onBottom ? 'โลหะหนักไป ทั้งระบบจมถึงก้น' : flush ? 'ผิวบนไม้ปริ่มน้ำพอดี' : 'ลอยนิ่งเมื่อ F_B รวม = mg รวม';
+    }
+    return K.go(step, draw);
+  }
+
   window.SC_ANIMS = {
     pages: {
       p02: [{ id: 'circ', x: .86, y: .31, t: 'วัตถุเคลื่อนที่เป็นวงกลม: v กับ ΣF' }, { id: 'cut', x: .86, y: .655, t: 'ถ้าเชือกขาด ลูกบอลไปทางไหน' }],
@@ -1084,6 +1344,6 @@
       p28: [{ id: 'level', x: .88, y: .2, t: 'ระดับน้ำเปลี่ยน' }],
     },
     make: { circ, cut, ice, hill, vert, cone, swing, press, sinkfloat, scales, level },
-    sims: { tilt, ring, pend, hill, bucket, cone, bank, track },
+    sims: { tilt, ring, pend, hill, bucket, cone, bank, track, rotor, sink2, scale, layers, hollow, woodmetal },
   };
 })();
