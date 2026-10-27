@@ -11,7 +11,7 @@
 //   or: node tools/build-sheet-class.mjs --reshell public/class/sci3   (after editing the shell only)
 //   or: node tools/build-sheet-class.mjs --hints public/class/cb2h <hints.json> <code>   (drawn Hint 1 / Hint 2 per question)
 // Needs pdftoppm (poppler). Keep the key PDF out of the repo, and never commit the teacher code.
-import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, renameSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
@@ -23,6 +23,7 @@ if (args[0] === '--reshell') {
   const html = readFileSync(join(args[1], 'index.html'), 'utf8');
   const cfg = JSON.parse(/const CFG=(\{[^\n]*?\});/.exec(html)[1]);
   if (cfg.sheet) cfg.fb = firebase();
+  if (existsSync(join(args[1], 'anims.js'))) cfg.anims = Date.now() % 1e8; else delete cfg.anims;   // page animations (cache-busting stamp)
   const shell = readFileSync(new URL('./sheet-class-shell.html', import.meta.url), 'utf8');
   writeFileSync(join(args[1], 'index.html'), shell.replace(/\/\*__CFG__\*\/\{[^\n]*?\}(?=;)/, () => JSON.stringify(cfg)).replace('<title>Scitem Class</title>', () => `<title>${cfg.title}</title>`));
   console.log(`reshelled ${args[1]}`);
