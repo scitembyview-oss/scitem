@@ -631,6 +631,440 @@
     });
   }
 
+  // ---------- hint sims: a small kit. The picture is still until ▶; dragging changes the inputs while still ----------
+  // K.scene (drawn once, moved by transforms), K.fx (arrows, redrawn), K.ui (slider, buttons). K.go(step, draw): step(dt) runs
+  // only while playing; draw() runs when something changed (an input, a hint button that toggles a class or sets data-s).
+  function kit(g, o = {}) {
+    const svg = g.ownerSVGElement, K = { svg, run: false, dirty: true, num: g.dataset.num === '1' };
+    K.scene = add(g, 'g'); K.fx = add(g, 'g'); K.ui = add(g, 'g');
+    K.on = (n) => svg.classList.contains('t-' + n);
+    K.state = () => svg.getAttribute('data-s');
+    K.set = (run) => { K.run = run; if (K.play) K.play.set(run, run ? '❚❚ หยุด' : '▶ เล่น'); K.dirty = true; };
+    if (o.play !== false) {
+      const [x, y] = o.playAt || [390, 92];
+      K.play = button(K.ui, x, y, 120, '▶ เล่น', C.green, () => { K.set(!K.run); o.onPlay && o.onPlay(K.run); });
+    }
+    // a slider: value v in [min, max]; marks = [[value, text, color]]
+    K.slider = (s) => {
+      const { x0 = 70, x1 = 470, y = 462, min, max, onChange } = s, ui = add(K.ui, 'g');
+      const X = (v) => x0 + (v - min) / (max - min) * (x1 - x0);
+      add(ui, 'line', { x1: x0, y1: y, x2: x1, y2: y, stroke: C.line, 'stroke-width': 8, 'stroke-linecap': 'round' });
+      for (const [v, t, c, anchor] of s.marks || []) {
+        if (s.tick !== false) add(ui, 'line', { x1: X(v), y1: y - 12, x2: X(v), y2: y + 12, stroke: C.grey, 'stroke-width': 2 });
+        label(ui, X(v), y + 34, t, c || C.grey, 17, anchor || 'middle');
+      }
+      const knob = add(ui, 'circle', { cy: y, r: 15, fill: C.purple, stroke: '#fff', 'stroke-width': 3 });
+      const hit = add(ui, 'rect', { x: x0 - 30, y: y - 30, width: x1 - x0 + 60, height: 56, fill: 'transparent', style: 'cursor:ew-resize;touch-action:none' });
+      const S = { v: s.v, set(v) { S.v = Math.max(min, Math.min(max, v)); knob.setAttribute('cx', X(S.v)); K.dirty = true; } };
+      let id = null;
+      const mv = (e) => { let v = min + (pt(svg, e).x - x0) / (x1 - x0) * (max - min); if (s.snap != null && Math.abs(v - s.snap) < (max - min) * .025) v = s.snap; S.set(v); onChange && onChange(S.v); };
+      hit.addEventListener('pointerdown', (e) => { id = e.pointerId; try { hit.setPointerCapture(id); } catch (x) {} mv(e); e.preventDefault(); e.stopPropagation(); });
+      hit.addEventListener('pointermove', (e) => { if (e.pointerId === id) mv(e); });
+      const end = (e) => { if (e.pointerId === id) id = null; };
+      hit.addEventListener('pointerup', end); hit.addEventListener('pointercancel', end);
+      S.set(s.v);
+      return S;
+    };
+    // drag an element: fn(point, phase) with phase 'down' | 'move' | 'up'
+    K.drag = (el, fn) => {
+      let id = null;
+      el.style.cursor = 'grab'; el.style.touchAction = 'none';
+      el.addEventListener('pointerdown', (e) => { id = e.pointerId; try { el.setPointerCapture(id); } catch (x) {} fn(pt(svg, e), 'down'); K.dirty = true; e.preventDefault(); e.stopPropagation(); });
+      el.addEventListener('pointermove', (e) => { if (e.pointerId === id) { fn(pt(svg, e), 'move'); K.dirty = true; } });
+      const end = (e) => { if (e.pointerId === id) { id = null; fn(pt(svg, e), 'up'); K.dirty = true; } };
+      el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+    };
+    K.text = (x, y, size = 20, color = C.purple, anchor = 'start') => label(K.ui, x, y, '', color, size, anchor);
+    K.go = (step, draw) => {
+      let key = '';
+      draw();
+      return loop((dt) => {
+        const k = svg.getAttribute('class') + '|' + svg.getAttribute('data-s');
+        if (k !== key) { key = k; K.dirty = true; }
+        if (K.run) { step(dt); K.dirty = true; }
+        if (K.dirty) { K.dirty = false; draw(); }
+      });
+    };
+    return K;
+  }
+  // a small force arrow with its label beside the tip; (x, y) start, (dx, dy) the arrow
+  function farrow(g, x, y, dx, dy, color, name, w = 4) {
+    const L = Math.hypot(dx, dy);
+    if (L < 4) return;
+    arrow(g, x, y, x + dx, y + dy, color, w);
+    const ux = dx / L, uy = dy / L;
+    label(g, x + dx + ux * 14 - uy * 16, y + dy + uy * 14 + ux * 16 + 7, name, color, 20);
+  }
+  function setT(el, x, y, a = 0, s = 1) { el.setAttribute('transform', `translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${a.toFixed(2)})${s !== 1 ? ` scale(${s})` : ''}`); }
+  // only show a live number while it is well clear of the critical value (q = value / critical)
+  const safe = (q, lo = .85, hi = 1.15) => q < lo || q > hi;
+  const f1 = (x) => (Math.round(x * 10) / 10).toFixed(1);
+
+  // c5 car on a flat curve / c6 coins on a turntable (seen from above). Friction is the only force to the centre:
+  // it can give at most μmg, so once mω²r > μmg the object slides off along the tangent (kinetic friction slows it).
+  // data: kind car|coin, r (m), mu, px (radius in the picture), t1/t1hi/t2 (readout lines; {v} {w} {r} filled in)
+  function ring(g, d) {
+    const K = kit(g, { onPlay: (on) => { if (on && objs.some((o) => o.off)) reset(); } });
+    const coin = d.kind === 'coin', mu = +d.mu, r0 = +d.r, P = +d.px, G = 10;
+    const cx = 260, cy = coin ? 285 : 280;
+    const wSlip = Math.sqrt(mu * G / r0), k = 2 * Math.PI / 2.6 / wSlip;   // picture ω = k × real ω: at the slip speed one lap takes 2.6 s
+    let phi = 0, ramp = false;
+    const S = K.slider({ min: 0, max: wSlip * 1.35, v: wSlip * .55, title: coin ? 'ลากเปลี่ยนความเร็วการหมุน' : 'ลากเปลี่ยนความเร็วรถ',
+      marks: [[0, coin ? 'ไม่หมุน' : 'จอด', C.grey, 'start'], [wSlip * 1.35, 'เร็ว', C.red, 'end']], tick: false,
+      onChange: () => { ramp = false; if (!K.run) reset(); } });
+    const rb = button(K.ui, 390, 150, 120, 'เร่งเรื่อยๆ', C.red, () => { if (objs.some((o) => o.off)) reset(); ramp = true; K.set(true); });
+    const disc = add(K.scene, 'g');
+    if (coin) {
+      add(disc, 'circle', { cx, cy, r: P * 2 + 40, fill: '#f1ebe0', stroke: C.navy, 'stroke-width': 4 });
+      add(disc, 'line', { x1: cx - P * 2 - 40, y1: cy, x2: cx + P * 2 + 40, y2: cy, stroke: '#d9cdb8', 'stroke-width': 2 });
+      add(disc, 'line', { x1: cx, y1: cy - P * 2 - 40, x2: cx, y2: cy + P * 2 + 40, stroke: '#d9cdb8', 'stroke-width': 2 });
+    } else {
+      add(K.scene, 'circle', { cx, cy, r: P, fill: 'none', stroke: '#c9ced8', 'stroke-width': 56 });
+      add(K.scene, 'circle', { cx, cy, r: P, fill: 'none', stroke: '#fff', 'stroke-width': 2, 'stroke-dasharray': '12 10' });
+    }
+    add(K.scene, 'circle', { cx, cy, r: 6, fill: C.grey });
+    const mk = (R, rm) => {
+      const el = add(K.scene, 'g');
+      if (coin) add(el, 'circle', { r: 14, fill: '#e7b84a', stroke: C.ink, 'stroke-width': 2 });
+      else { add(el, 'rect', { x: -16, y: -30, width: 32, height: 60, rx: 8, fill: C.blue }); add(el, 'rect', { x: -12, y: -14, width: 24, height: 16, rx: 3, fill: '#fff', opacity: .7 }); }
+      return { el, R, rm, off: false };
+    };
+    const objs = [mk(P, r0)];
+    if (coin) objs.push(mk(P * 2, r0 * 2));
+    const l1 = K.text(20, 76, 18, C.red), l2 = K.text(20, 102, 18, C.grey);
+    function reset() { for (const o of objs) o.off = false; }
+    function shown(o) { return objs.indexOf(o) === 0 || K.on('far'); }
+    function step(dt) {
+      if (ramp) { S.set(S.v + wSlip * .12 * dt); if (S.v >= wSlip * 1.35) ramp = false; }
+      const w = S.v;
+      phi += w * k * dt;
+      for (const o of objs) {
+        if (!shown(o)) continue;
+        if (!o.off) {
+          if (w * w * o.rm > mu * G) {                          // friction can't give mω²r any more: off along the tangent
+            const a = phi, sp = w * k * o.R;
+            o.off = true; o.x = cx + o.R * Math.cos(a); o.y = cy - o.R * Math.sin(a);
+            o.vx = -sp * Math.sin(a); o.vy = -sp * Math.cos(a); o.ang = a;
+            if (ramp) ramp = false;
+          }
+        } else {
+          const sp = Math.hypot(o.vx, o.vy), dec = .8 * mu * G * (o.R / o.rm) * k * k;
+          const onDisc = coin && Math.hypot(o.x - cx, o.y - cy) < P * 2 + 40;
+          if (sp > 1 && (!coin || onDisc)) { const k = Math.max(0, sp - dec * dt) / sp; o.vx *= k; o.vy *= k; }
+          o.x += o.vx * dt; o.y += o.vy * dt;
+        }
+      }
+    }
+    function draw() {
+      const w = S.v;
+      disc.setAttribute('transform', `rotate(${(-phi * 180 / Math.PI).toFixed(2)} ${cx} ${cy})`);
+      clear(K.fx);
+      let crit = null;
+      for (const o of objs) {
+        o.el.style.display = shown(o) ? '' : 'none';
+        if (!shown(o)) continue;
+        if (!o.off) {
+          const x = cx + o.R * Math.cos(phi), y = cy - o.R * Math.sin(phi);
+          setT(o.el, x, y, -phi * 180 / Math.PI);
+          const need = w * w * o.rm / (mu * G), Lm = coin ? 60 : 80, ux = -Math.cos(phi), uy = Math.sin(phi);
+          // dashed outline = the most friction can give (μmg); solid = what going round needs (mω²r)
+          add(K.fx, 'line', { x1: x + ux * 16, y1: y + uy * 16, x2: x + ux * (16 + Lm), y2: y + uy * (16 + Lm), stroke: C.orange, 'stroke-width': 2, 'stroke-dasharray': '4 5', opacity: .7 });
+          farrow(K.fx, x + ux * 16, y + uy * 16, ux * Lm * need, uy * Lm * need, C.orange, 'fₛ');
+          if (!crit || o.rm > crit.rm) crit = o;
+        } else {
+          setT(o.el, o.x, o.y, -o.ang * 180 / Math.PI);
+          o.el.firstChild.setAttribute('fill', C.red);
+        }
+        if (!o.off) o.el.firstChild.setAttribute('fill', coin ? '#e7b84a' : C.blue);
+      }
+      const slipped = objs.some((o) => shown(o) && o.off);
+      const q = crit ? w * Math.sqrt(crit.rm / (mu * G)) : 2;
+      if (slipped) { l1.textContent = (coin ? 'เหรียญ' : 'รถ') + 'หลุด! ต้องใช้ mω²r มากกว่า fₛ ที่ได้มากสุด'; l2.textContent = 'ไถลออกตามแนวสัมผัส (กด ▶ เริ่มใหม่)'; }
+      else if (K.num && safe(q, .85, 99)) {
+        const fill = (t) => t.replace(/\{v\}/g, f1(w * r0)).replace(/\{w\}/g, f1(w)).replace(/\{r\}/g, String(crit.rm));
+        l1.textContent = fill(d.t1); l2.textContent = d.t2;
+      } else if (K.num) { l1.textContent = d.t1hi; l2.textContent = d.t2; }
+      else { l1.textContent = q > .85 ? 'ใกล้หลุดแล้ว: ต้องใช้แรงเกือบเท่า f_s สูงสุด' : (coin ? 'หมุนเร็วขึ้น → ต้องใช้ mω²r มากขึ้น' : 'เร็วขึ้น → ต้องใช้ mv²/r มากขึ้น'); l2.textContent = 'แต่ f_s ได้มากสุดแค่ μₛmg (เส้นประ)'; }
+    }
+    return K.go(step, draw);
+  }
+
+  // c8 c16 c17: a pendulum. Drag the bob to where it is let go, ▶ lets it swing: φ'' = −(g/L) sinφ (no friction).
+  // On the bob: T = m(g cosφ + v²/L) along the string, mg down, v along the path. data: a (deg), l (m), px py lpx
+  function pend(g, d) {
+    const K = kit(g, { onPlay: (on) => { if (on && Math.abs(om) < 1e-3 && Math.abs(phi) < .02) phi = a0; } });
+    const G = 10, Lm = +d.l, px = +d.px, py = +d.py, L = +d.lpx, a0 = +d.a * Math.PI / 180;
+    let phi = a0, om = 0;
+    const str = add(K.scene, 'line', { x1: px, y1: py, stroke: C.ink, 'stroke-width': 3 });
+    const bob = add(K.scene, 'circle', { r: 17, fill: C.peach, stroke: C.ink, 'stroke-width': 2 });
+    const tip = K.text(20, 470, 18, C.grey);
+    K.drag(bob, (p, ph) => { if (ph === 'down') K.set(false); phi = Math.max(-1.75, Math.min(1.75, Math.atan2(p.x - px, p.y - py))); om = 0; });
+    function step(dt) { for (let i = 0; i < 8; i++) { const h = dt / 8; om += -G / Lm * Math.sin(phi) * h; phi += om * h; } }
+    function draw() {
+      const bx = px + L * Math.sin(phi), by = py + L * Math.cos(phi);
+      str.setAttribute('x2', bx); str.setAttribute('y2', by); bob.setAttribute('cx', bx); bob.setAttribute('cy', by);
+      clear(K.fx);
+      const T = Math.cos(phi) + om * om * Lm / G, ux = (px - bx) / L, uy = (py - by) / L, v = om * Lm;   // T in units of mg
+      farrow(K.fx, bx + ux * 18, by + uy * 18, ux * 60 * T, uy * 60 * T, C.blue, 'T');
+      farrow(K.fx, bx, by + 18, 0, 60, C.red, 'mg');
+      if (Math.abs(v) > .15) { const s = Math.sign(om) * 14 * Math.abs(v) / Math.sqrt(G * Lm); arrow(K.fx, bx, by, bx - uy * s * 4, by + ux * s * 4, C.grey, 3); }
+      tip.textContent = K.run ? 'เร็วสุดที่จุดต่ำสุด → T มากสุดตรงนั้น' : 'ลากลูกตุ้มไปจุดที่จะปล่อย แล้วกด ▶';
+    }
+    return K.go(step, draw);
+  }
+
+  // c9 c11: a car over a hill / through a dip at a steady speed v (slider). Hill: N = m(g cosα − v²/r), N < 0 → the car
+  // leaves the road and flies (projectile). Dip: N = m(g cosα + v²/r). data: kind hill|dip|toggle (t-dip picks), r (m),
+  // v (start speed, hill), vd (dip), cx cy R (picture), t1 (readout "{v}")
+  function hill(g, d) {
+    const K = kit(g, { onPlay: (on) => { if (on && fly) { fly = null; al = -1; } } });
+    const G = 10, r = +d.r, R = +d.rpx || 230, vc = Math.sqrt(G * r), k = Math.sqrt(r / G);   // picture: at v = √(gr) the arc (2 rad) takes 2 s
+    let al = 0, fly = null, kind = '';
+    const pos = { hill: [260, 470], dip: [260, 60] };
+    const roads = {};
+    for (const kn of ['hill', 'dip']) {
+      const [cx, cy] = pos[kn], sg = kn === 'hill' ? -1 : 1, e = add(K.scene, 'g');
+      const sx = R * Math.sin(1), sy = R * Math.cos(1);
+      add(e, 'path', { d: `M${cx - sx},${cy + sg * sy} A${R},${R} 0 0 ${kn === 'hill' ? 1 : 0} ${cx + sx},${cy + sg * sy}`, fill: 'none', stroke: C.navy, 'stroke-width': 8, 'stroke-linecap': 'round' });
+      add(e, 'line', { x1: cx, y1: cy + sg * R, x2: cx, y2: kn === 'hill' ? 432 : 120, stroke: C.grey, 'stroke-width': 2, 'stroke-dasharray': '6 6' });
+      label(e, cx + 10, kn === 'hill' ? 420 : 140, (d.rl || 'r') + (kn === 'hill' ? ' ↓ ศูนย์กลาง' : ' ↑ ศูนย์กลาง'), C.grey, 18, 'start');
+      roads[kn] = e;
+    }
+    const S = K.slider({ min: 0, max: vc * 1.3, v: +d.v || vc * .6, title: 'ลากเปลี่ยนความเร็วรถ', tick: false,
+      marks: [[0, 'ช้า', C.grey, 'start'], [vc * 1.3, 'เร็ว', C.red, 'end']], onChange: () => { if (!K.run && fly) { fly = null; al = 0; } } });
+    const car = add(K.scene, 'g');
+    add(car, 'rect', { x: -45, y: -43, width: 90, height: 29, rx: 9, fill: C.blue });
+    add(car, 'path', { d: 'M-25,-43 l9,-22 h31 l11,22Z', fill: C.blue, opacity: .85 });
+    add(car, 'circle', { cx: -27, cy: -14, r: 13, fill: C.ink }); add(car, 'circle', { cx: 27, cy: -14, r: 13, fill: C.ink });
+    const l1 = K.text(20, 76, 18, C.purple), l2 = K.text(20, 102, 17, C.grey);
+    K.drag(car, (p) => { if (fly) return; K.set(false); const [cx, cy] = pos[kind]; al = Math.max(-1, Math.min(1, Math.atan2(p.x - cx, kind === 'hill' ? cy - p.y : p.y - cy))); });
+    const cur = () => (d.kind === 'toggle' ? (K.on('dip') ? 'dip' : 'hill') : d.kind);
+    if (d.kind === 'toggle' && d.vd) S.set(+d.v || vc * .6);
+    function N() { return kind === 'hill' ? Math.cos(al) - S.v * S.v / (G * r) : Math.cos(al) + S.v * S.v / (G * r); }
+    function place() {
+      const [cx, cy] = pos[kind], hillK = kind === 'hill';
+      const x = cx + R * Math.sin(al), y = hillK ? cy - R * Math.cos(al) : cy + R * Math.cos(al);
+      return { x, y, rot: hillK ? al : -al, nx: hillK ? Math.sin(al) : -Math.sin(al), ny: hillK ? -Math.cos(al) : -Math.cos(al) };
+    }
+    function step(dt) {
+      if (fly) {
+        const gp = G * (R / r) * k * k;
+        fly.vy += gp * dt; fly.x += fly.vx * dt; fly.y += fly.vy * dt; fly.rot += fly.spin * dt;
+        if (fly.y > 560 || fly.x > 560) { fly = null; al = -1; }
+        return;
+      }
+      al += S.v / r * k * dt;
+      if (al > 1) al = -1;
+      if (kind === 'hill' && N() < 0) {                                     // no road force left: it leaves the road
+        const p = place(), sp = S.v * k * R / r;
+        fly = { x: p.x, y: p.y, rot: p.rot, vx: sp * Math.cos(al), vy: sp * Math.sin(al), spin: .3 };
+      }
+    }
+    function draw() {
+      const kn = cur();
+      if (kn !== kind) { kind = kn; fly = null; al = 0; if (d.kind === 'toggle') { S.set(kind === 'dip' ? +d.vd : +d.v || vc * .6); } }
+      clear(K.fx);
+      let x, y, rot, nx, ny;
+      if (fly) { ({ x, y, rot } = fly); nx = Math.sin(rot); ny = -Math.cos(rot); }
+      else ({ x, y, rot, nx, ny } = place());
+      setT(car, x, y, rot * 180 / Math.PI);
+      const mx = x + nx * 30, my = y + ny * 30, n = fly ? 0 : Math.max(0, N());
+      const sc = kind === 'dip' ? 48 : 70;
+      if (n > .02) farrow(K.fx, mx, my - 10, nx * sc * n, ny * sc * n, C.blue, 'N');
+      farrow(K.fx, mx + 4, my + 6, 0, sc, C.red, 'mg');
+      roads.hill.style.display = kind === 'hill' ? '' : 'none'; roads.dip.style.display = kind === 'dip' ? '' : 'none';
+      const q = S.v / vc;
+      if (fly) { l1.textContent = 'รถลอยหลุดจากถนน!'; l2.textContent = 'mg มากกว่าแรงสู่ศูนย์กลางที่ต้องใช้ไม่ได้แล้ว: N = 0'; }
+      else if (K.num && (kind === 'dip' || safe(q))) { l1.textContent = (d.t1 || 'v = {v} m/s').replace('{v}', f1(S.v)); l2.textContent = kind === 'hill' ? 'เร็วขึ้น → N น้อยลง' : 'เร็วขึ้น → N มากขึ้น'; }
+      else if (K.num) { l1.textContent = 'ใกล้ความเร็วที่ N = 0'; l2.textContent = 'เร็วขึ้น → N น้อยลง'; }
+      else { l1.textContent = kind === 'hill' ? 'บนเนิน: เร็วขึ้น → N น้อยลง' : 'ในแอ่ง: เร็วขึ้น → N มากขึ้น'; l2.textContent = 'ลากรถหรือกด ▶'; }
+    }
+    return K.go(step, draw);
+  }
+
+  // c10: a bucket of water swung in a vertical circle at a steady speed. The bottom pushes the water to the centre:
+  // N = m(v²/r − g cosβ) (β from the top). N < 0 → the water falls out. data: r (m), v (start), rpx
+  function bucket(g, d) {
+    const K = kit(g, { onPlay: (on) => { if (on && drop) drop = null; } });
+    const G = 10, r = +d.r, R = 140, cx = 260, cy = 290, vc = Math.sqrt(G * r), k = (2 * Math.PI / 2.4) / (vc / r);
+    let be = 0, drop = null;
+    const S = K.slider({ min: vc * .4, max: vc * 2.2, v: +d.v || vc * 1.5, title: 'ลากเปลี่ยนความเร็วที่แกว่ง', tick: false,
+      marks: [[vc * .4, 'ช้า', C.grey, 'start'], [vc * 2.2, 'เร็ว', C.red, 'end']], onChange: () => { if (!K.run) drop = null; } });
+    add(K.scene, 'circle', { cx, cy, r: R, fill: 'none', stroke: C.grey, 'stroke-width': 2, 'stroke-dasharray': '7 6' });
+    add(K.scene, 'circle', { cx, cy, r: 8, fill: C.ink });
+    const rope = add(K.scene, 'line', { x1: cx, y1: cy, stroke: C.ink, 'stroke-width': 3 });
+    const bk = add(K.scene, 'g');
+    add(bk, 'path', { d: 'M-34,28 L-28,-30 L28,-30 L34,28', fill: '#eef1f6', stroke: C.ink, 'stroke-width': 3 });
+    const wat = add(bk, 'path', { d: 'M-31,-2 L-28,-28 L28,-28 L31,-2Z', fill: '#9cc9ec' });
+    const blob = add(K.scene, 'ellipse', { rx: 26, ry: 12, fill: '#9cc9ec', opacity: .9 });
+    const l1 = K.text(20, 76, 18, C.purple), l2 = K.text(20, 102, 17, C.grey);
+    K.drag(bk, (p) => { K.set(false); be = Math.atan2(p.x - cx, cy - p.y); drop = null; });
+    const Nw = () => S.v * S.v / (G * r) - Math.cos(be);
+    function step(dt) {
+      be += S.v / r * k * dt; if (be > Math.PI) be -= 2 * Math.PI;
+      if (drop) {
+        if (!drop.fall) return;
+        drop.vy += G * (R / r) * k * k * dt; drop.x += drop.vx * dt; drop.y += drop.vy * dt;
+        if (drop.y > 600) drop.fall = false;
+      } else if (Nw() < 0) {                       // the bucket can't pull it round: it leaves on its own path
+        const sp = S.v * k * R / r, wx = cx + (R + 14) * Math.sin(be), wy = cy - (R + 14) * Math.cos(be);
+        drop = { fall: true, x: wx, y: wy, vx: sp * Math.cos(be), vy: sp * Math.sin(be) };
+      }
+    }
+    function draw() {
+      const bx = cx + R * Math.sin(be), by = cy - R * Math.cos(be);
+      rope.setAttribute('x2', cx + (R - 30) * Math.sin(be)); rope.setAttribute('y2', cy - (R - 30) * Math.cos(be));
+      setT(bk, bx, by, be * 180 / Math.PI);
+      wat.style.display = drop ? 'none' : '';
+      blob.style.display = drop && drop.fall ? '' : 'none';
+      if (drop) { blob.setAttribute('cx', drop.x); blob.setAttribute('cy', drop.y); }
+      clear(K.fx);
+      if (!drop) {
+        const wx = cx + (R + 14) * Math.sin(be), wy = cy - (R + 14) * Math.cos(be), n = Nw(), ux = -Math.sin(be), uy = Math.cos(be);
+        if (n > .02) farrow(K.fx, wx + ux * 20 + 40 * Math.cos(be), wy + uy * 20 + 40 * Math.sin(be), ux * 30 * n, uy * 30 * n, C.blue, 'N');
+        farrow(K.fx, wx - 40 * Math.cos(be), wy - 40 * Math.sin(be), 0, 30, C.red, 'mg');
+      }
+      const q = S.v / vc;
+      if (drop) { l1.textContent = 'น้ำหล่นจากถัง!'; l2.textContent = 'ช้าเกินไป: mg มากกว่า mv²/r ที่ต้องใช้ (กด ▶ เริ่มใหม่)'; }
+      else if (K.num && safe(q)) { l1.textContent = (d.t1 || 'v = {v} m/s').replace('{v}', f1(S.v)); l2.textContent = 'ที่จุดสูงสุด N + mg = mv²/r'; }
+      else if (K.num) { l1.textContent = 'ใกล้ความเร็วต่ำสุดที่น้ำไม่หก'; l2.textContent = 'ที่จุดสูงสุด N + mg = mv²/r'; }
+      else { l1.textContent = 'ช้าลง → N ที่จุดสูงสุดน้อยลง'; l2.textContent = 'ถ้า N ต้องติดลบ น้ำจะหล่น'; }
+    }
+    return K.go(step, draw);
+  }
+
+  // c13: a conical pendulum turned at ω (slider). In the turning frame θ'' = ω² sinθ cosθ − (g/L) sinθ (− a little damping),
+  // so it settles where cosθ = g/(ω²L) (or hangs straight if ω²L < g). data: l (m), w (start ω), px py lpx
+  function cone(g, d) {
+    const K = kit(g);
+    const G = 10, Lm = +d.l, px = 260, py = 80, L = 220, w0 = +d.w, sq = .16;
+    const eq = (w) => (w * w * Lm > G ? Math.acos(G / (w * w * Lm)) : 0);
+    const S = K.slider({ min: 0, max: w0 * 1.6, v: w0, title: 'ลากเปลี่ยนความเร็วการหมุน', tick: false,
+      marks: [[0, 'ไม่หมุน', C.grey, 'start'], [w0 * 1.6, 'เร็ว', C.red, 'end']], onChange: (w) => { if (!K.run) { th = eq(w); tw = 0; } } });
+    let th = eq(w0), tw = 0, ps = .5;
+    add(K.scene, 'rect', { x: 150, y: py - 14, width: 220, height: 14, fill: C.grey }); add(K.scene, 'circle', { cx: px, cy: py, r: 6, fill: C.ink });
+    const path = add(K.scene, 'ellipse', { cx: px, fill: 'none', stroke: C.grey, 'stroke-width': 2, 'stroke-dasharray': '8 6' });
+    const axis = add(K.scene, 'line', { x1: px, y1: py, x2: px, stroke: C.grey, 'stroke-width': 2, 'stroke-dasharray': '4 6' });
+    const str = add(K.scene, 'line', { x1: px, y1: py, stroke: C.ink, 'stroke-width': 3 });
+    const bob = add(K.scene, 'circle', { r: 17, fill: C.peach, stroke: C.ink, 'stroke-width': 2 });
+    const l1 = K.text(20, 404, 18, C.grey);
+    function step(dt) {
+      const w = S.v;
+      for (let i = 0; i < 6; i++) { const h = dt / 6; tw += (w * w * Math.sin(th) * Math.cos(th) - G / Lm * Math.sin(th) - 1.5 * tw) * h; th += tw * h; }
+      if (th < 0) { th = -th; tw = -tw; }
+      ps += w * dt;
+    }
+    function draw() {
+      const rr = L * Math.sin(th), cyy = py + L * Math.cos(th);
+      path.setAttribute('cy', cyy); path.setAttribute('rx', rr); path.setAttribute('ry', rr * sq); axis.setAttribute('y2', cyy);
+      const bx = px + rr * Math.cos(ps), by = cyy + rr * sq * Math.sin(ps);
+      str.setAttribute('x2', bx); str.setAttribute('y2', by); bob.setAttribute('cx', bx); bob.setAttribute('cy', by);
+      clear(K.fx);
+      const T = Math.cos(th) + (Lm * tw * tw + Lm * S.v * S.v * Math.sin(th) ** 2) / G, dl = Math.hypot(px - bx, py - by);
+      farrow(K.fx, bx + (px - bx) / dl * 18, by + (py - by) / dl * 18, (px - bx) / dl * 55 * T, (py - by) / dl * 55 * T, C.blue, 'T');
+      farrow(K.fx, bx, by + 18, 0, 55, C.red, 'mg');
+      l1.textContent = th < .03 ? 'หมุนช้า: เชือกยังห้อยตรง' : 'หมุนเร็วขึ้น → เชือกกางออก มุม θ มากขึ้น';
+    }
+    return K.go(step, draw);
+  }
+
+  // c14: a car on a smooth banked curve (cross-section). Along the slope (up +): a = (v²/r) cosθ − g sinθ, zero only at
+  // tanθ = v²/(rg). Slower slides in, faster slides out. N = m(g cosθ + (v²/r) sinθ). data: r (m), deg, v0 (design speed)
+  function bank(g, d) {
+    const K = kit(g, { onPlay: (on) => { if (on && (s <= 40 || s >= 420)) { s = 250; u = 0; } } });
+    const G = 10, r = +d.r, th = +d.deg * Math.PI / 180, x0 = 60, y0 = 420, v0 = Math.sqrt(G * r * Math.tan(th));
+    let s = 250, u = 0, ang = 0;
+    const S = K.slider({ min: 0, max: v0 * 1.6, v: v0 * .6, title: 'ลากเปลี่ยนความเร็วรถ', tick: false,
+      marks: [[0, 'ช้า', C.grey, 'start'], [v0 * 1.6, 'เร็ว', C.red, 'end']], onChange: () => { u = 0; } });
+    const car = add(K.scene, 'g');
+    add(car, 'rect', { x: -55, y: -49, width: 110, height: 35, rx: 10, fill: C.blue });
+    add(car, 'path', { d: 'M-31,-49 l11,-26 h37 l13,26Z', fill: C.blue, opacity: .85 });
+    add(car, 'circle', { cx: -33, cy: -14, r: 13, fill: C.ink }); add(car, 'circle', { cx: 33, cy: -14, r: 13, fill: C.ink });
+    const mini = add(K.scene, 'g');
+    add(mini, 'rect', { x: -7, y: -13, width: 14, height: 27, rx: 4, fill: C.blue });
+    const l1 = K.text(190, 112, 18, C.purple);
+    K.drag(car, (p) => { K.set(false); s = Math.max(40, Math.min(420, (p.x - x0) * Math.cos(th) + (y0 - p.y) * Math.sin(th))); u = 0; });
+    function step(dt) {
+      const a = S.v * S.v / r * Math.cos(th) - G * Math.sin(th);
+      u += a * 25 * dt; s += u * dt;                       // 25 px per m/s² in the picture
+      if (s < 40) { s = 40; u = 0; } if (s > 420) { s = 420; u = 0; }
+      ang += S.v / v0 * 2.4 * dt;
+    }
+    function draw() {
+      const x = x0 + s * Math.cos(th), y = y0 - s * Math.sin(th);
+      setT(car, x, y, -d.deg);
+      setT(mini, 110 + 55 * Math.cos(ang), 140 - 55 * Math.sin(ang), -ang * 180 / Math.PI);
+      clear(K.fx);
+      const nx = -Math.sin(th), ny = -Math.cos(th), mx = x + nx * 32, my = y + ny * 32;
+      const N = Math.cos(th) + S.v * S.v / (G * r) * Math.sin(th);
+      farrow(K.fx, mx, my, nx * 70 * N, ny * 70 * N, C.blue, 'N');
+      farrow(K.fx, mx, my + 6, 0, 70, C.red, 'mg');
+      const q = S.v / v0;
+      l1.textContent = q < .96 ? 'ช้าไป: ไถลลงด้านใน' : q > 1.04 ? 'เร็วไป: ไถลขึ้นด้านนอก' : 'พอดี: อยู่นิ่งบนทางเอียงได้';
+    }
+    return K.go(step, draw);
+  }
+
+  // c15: a ball let go on a smooth track: along the track a = g × (slope), N = m(g cosα + v²κ) (κ = curvature).
+  // Drag the ball to where it starts. data: path (the track, two cubic Béziers), gpx (g in the picture)
+  function track(g, d) {
+    const K = kit(g, { onPlay: (on) => { if (on && (fly || Math.abs(u) < 1e-3 && s === s0)) { fly = null; s = s0; u = 0; } } });
+    const nums = d.path.match(/-?\d+(\.\d+)?/g).map(Number), gp = +d.gpx || 700;
+    const segs = [nums.slice(0, 8), [nums[6], nums[7], ...nums.slice(8, 14)]];
+    const P = [];
+    for (const [ax, ay, bx, by, cx2, cy2, ex, ey] of segs) for (let i = 0; i < 300; i++) {
+      const t = i / 300, m = 1 - t;
+      P.push([m * m * m * ax + 3 * m * m * t * bx + 3 * m * t * t * cx2 + t * t * t * ex, m * m * m * ay + 3 * m * m * t * by + 3 * m * t * t * cy2 + t * t * t * ey]);
+    }
+    P.push([nums[12], nums[13]]);
+    const len = [0];
+    for (let i = 1; i < P.length; i++) len.push(len[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+    const Ltot = len[len.length - 1];
+    const at = (s) => {                                 // point, unit tangent, curvature vector at arc length s
+      let i = 1; while (i < len.length - 1 && len[i] < s) i++;
+      const j = Math.max(1, Math.min(P.length - 2, i));
+      const tx = P[j + 1][0] - P[j - 1][0], ty = P[j + 1][1] - P[j - 1][1], tl = Math.hypot(tx, ty);
+      const t0x = (P[j][0] - P[j - 1][0]), t0y = (P[j][1] - P[j - 1][1]), t1x = (P[j + 1][0] - P[j][0]), t1y = (P[j + 1][1] - P[j][1]);
+      const l0 = Math.hypot(t0x, t0y), l1 = Math.hypot(t1x, t1y);
+      const kx = (t1x / l1 - t0x / l0) / ((l0 + l1) / 2), ky = (t1y / l1 - t0y / l0) / ((l0 + l1) / 2);
+      const f = (s - len[i - 1]) / Math.max(1e-6, len[i] - len[i - 1]);
+      return { x: P[i - 1][0] + (P[i][0] - P[i - 1][0]) * f, y: P[i - 1][1] + (P[i][1] - P[i - 1][1]) * f, tx: tx / tl, ty: ty / tl, kx, ky };
+    };
+    let s0 = 0, s = 0, u = 0, fly = null;
+    const ball = add(K.scene, 'circle', { r: 15, fill: C.peach, stroke: C.ink, 'stroke-width': 2 });
+    const l1 = K.text(20, 70, 17, C.grey);
+    K.drag(ball, (p) => {
+      K.set(false); fly = null; u = 0;
+      let best = 0, bd = 1e9; for (let i = 0; i < P.length; i += 2) { const dd = Math.hypot(P[i][0] - p.x, P[i][1] - p.y); if (dd < bd) { bd = dd; best = len[i]; } }
+      s = s0 = best;
+    });
+    const Nof = (q, uu) => { const nx = q.ty, ny = -q.tx; return { nx, ny, n: (gp * -ny + uu * uu * (q.kx * nx + q.ky * ny)) / gp }; };
+    function step(dt) {
+      for (let i = 0; i < 10; i++) {
+        const h = dt / 10;
+        if (fly) { fly.vy += gp * h; fly.x += fly.vx * h; fly.y += fly.vy * h; if (fly.y > 620 || fly.x > 640) { K.set(false); } continue; }
+        const q = at(s);
+        u += gp * q.ty * h; s += u * h;
+        if (s < 0) { s = 0; u = 0; }
+        const q2 = at(Math.min(s, Ltot));
+        if (s >= Ltot || Nof(q2, u).n < 0) {             // past the end, or the track would have to pull: it flies off
+          const nx = q2.ty, ny = -q2.tx;
+          fly = { x: q2.x + nx * 15, y: q2.y + ny * 15, vx: u * q2.tx, vy: u * q2.ty };
+        }
+      }
+    }
+    function draw() {
+      clear(K.fx);
+      if (fly) { ball.setAttribute('cx', fly.x); ball.setAttribute('cy', fly.y); farrow(K.fx, fly.x, fly.y + 15, 0, 55, C.red, 'mg'); l1.textContent = 'หลุดจากรางแล้ว (กด ▶ ปล่อยใหม่)'; return; }
+      const q = at(s), { nx, ny, n } = Nof(q, u), bx = q.x + nx * 15, by = q.y + ny * 15;
+      ball.setAttribute('cx', bx); ball.setAttribute('cy', by);
+      if (n > .02) farrow(K.fx, bx + nx * 15, by + ny * 15, nx * 50 * n, ny * 50 * n, C.blue, 'N');
+      farrow(K.fx, bx, by + 15, 0, 50, C.red, 'mg');
+      l1.textContent = K.run ? 'ต่ำลง → เร็วขึ้น · ก้นราง N มากกว่า mg' : 'ลากลูกบอลไปจุดปล่อย แล้วกด ▶';
+    }
+    return K.go(step, draw);
+  }
+
   window.SC_ANIMS = {
     pages: {
       p02: [{ id: 'circ', x: .86, y: .31, t: 'วัตถุเคลื่อนที่เป็นวงกลม: v กับ ΣF' }, { id: 'cut', x: .86, y: .655, t: 'ถ้าเชือกขาด ลูกบอลไปทางไหน' }],
@@ -645,6 +1079,6 @@
       p28: [{ id: 'level', x: .88, y: .2, t: 'ระดับน้ำเปลี่ยน' }],
     },
     make: { circ, cut, ice, hill, vert, cone, swing, press, sinkfloat, scales, level },
-    sims: { tilt },
+    sims: { tilt, ring, pend, hill, bucket, cone, bank, track },
   };
 })();
