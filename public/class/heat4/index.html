@@ -1221,26 +1221,27 @@ function pageImage(i,lists){
       const c=document.createElement("canvas");c.width=im.naturalWidth;c.height=im.naturalHeight;const g=c.getContext("2d");g.drawImage(im,0,0);
       const l=document.createElement("canvas");l.width=c.width;l.height=c.height;const lx=l.getContext("2d");
       for(const list of lists){lx.clearRect(0,0,l.width,l.height);for(const s of list)drawStroke(lx,l,s);g.drawImage(l,0,0);}
-      res(c.toDataURL("image/jpeg",0.85));
+      res(c.toDataURL("image/jpeg",0.8));
     };
     im.src="p/"+P(i)+".jpg";
   });
 }
-// Save PDF makes the PDF file itself (the JPEG pages, one A4 each) and hands it to the share sheet / a download:
+// Save PDF makes the PDF file itself (every page of the sheet with her ink, one A4 each) and hands it to the share sheet / a download:
 // window.print() does nothing in some iPad browsers (in-app ones like LINE's). Sharing only works from the tap itself
 // (not after an await), so the pages are drawn ahead: 3 s after the pen stops, and on the tap if anything changed (then tap again).
 let printSig=null,printBusy=null,PRINTJ=[];
 const printWork=i=>TEACHER?(SENT[P(i)]&&SENT[P(i)].ink)||[]:(W[P(i)]&&W[P(i)].ink)||[];
 const printNow=()=>JSON.stringify([...Array(N).keys()].map(i=>[printWork(i),RED[redKey(i)]||[]]));
+let printProg=null;                       // shows "PDF 12/48" while she waits for it
 function prepPrint(){
   if(printBusy)return printBusy;
   const sig=printNow();if(sig===printSig)return Promise.resolve();
   return printBusy=(async()=>{
     const out=[];
-    for(let i=0;i<N;i++){const ink=printWork(i),red=RED[redKey(i)]||[];if(!ink.length&&!red.length)continue;
+    for(let i=0;i<N;i++){const ink=printWork(i),red=RED[redKey(i)]||[];   // View 2026-10-27: the whole sheet, every page
       const url=await pageImage(i,[ink,red]),im=new Image();im.src=url;await im.decode().catch(()=>{});
       const bin=atob(url.split(",")[1]),b=new Uint8Array(bin.length);for(let k=0;k<bin.length;k++)b[k]=bin.charCodeAt(k);
-      out.push({b,w:im.naturalWidth,h:im.naturalHeight});}
+      out.push({b,w:im.naturalWidth,h:im.naturalHeight});if(printProg)printProg(i+1);}
     PRINTJ=out;printSig=sig;
   })().finally(()=>{printBusy=null;});
 }
@@ -1271,15 +1272,15 @@ function sharePdf(){
 function dl(file){const u=URL.createObjectURL(file),a=document.createElement("a");a.href=u;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);}
 $("saveBtn").onclick=()=>{
   if(printSig===printNow()&&!printBusy){sharePdf();return;}
-  flash("…");
-  prepPrint().then(()=>{
+  printProg=k=>{$("status").textContent="PDF "+k+"/"+N;};printProg(0);
+  prepPrint().then(()=>{printProg=null;$("status").textContent="";
     if(!PRINTJ.length){flash(TEACHER?"ยังไม่มีงาน":"Nothing written yet");return;}
     $("toastT").textContent="PDF ready";$("toastGo").textContent="Save PDF";$("toast").hidden=false;   // a fresh tap for the share sheet
     clearTimeout(toastT);toastT=setTimeout(()=>{$("toast").hidden=true;},15000);
     $("toastGo").onclick=()=>{$("toast").hidden=true;sharePdf();};
   });
 };
-if(!STAFF)setTimeout(prepPrint,1500);
+if(!STAFF)setTimeout(prepPrint,4000);
 })();
 </script>
 </body>
