@@ -79,7 +79,7 @@
     const trail = add(s, 'g', {}), live = add(s, 'g', {});
     // right: the two velocities a moment apart, tail to tail, and the change between them
     add(s, 'line', { x1: 560, y1: 20, x2: 560, y2: 530, stroke: C.line, 'stroke-width': 2, 'stroke-dasharray': '6 6' });
-    add(s, 'text', { x: 585, y: 40, 'font-size': 22, 'font-weight': 700, fill: C.grey }, 'ความเร็วก่อน–หลัง (ห่างกันนิดเดียว)');
+    add(s, 'text', { x: 585, y: 40, 'font-size': 22, 'font-weight': 700, fill: C.grey }, 'v ก่อน–หลัง ที่ตำแหน่งเดียวกัน');
     const vec = add(s, 'g', {});
     let th = -Math.PI / 2 + .6, play = false, showTrail = false, lastMark = null;
     const pb = button(s, 20, 545, 130, '▶ เล่น', C.blue, () => { play = !play; pb.set(play, play ? '❚❚ หยุด' : '▶ เล่น'); });
@@ -99,22 +99,31 @@
         lastMark = th;
         arrow(trail, x, y, x + 90 * tx, y + 90 * ty, '#9bb7dd', 3);
       }
-      // velocity before and after (±0.35 rad), from one point
+      // the same ball on a copy of the circle: velocity a moment before and after, tail to tail at the ball,
+      // and the change between them moved to start at the ball, so it is seen pointing at the centre
       clear(vec);
-      const ox = 760, oy = 250, L = 140, d = .35;
+      const ox = 780, oy = 265, r2 = 140, L = 115, d = .5;
+      const px = ox + r2 * Math.cos(th), py = oy + r2 * Math.sin(th);
+      const arc = (a0, a1) => `M${ox + r2 * Math.cos(a0)},${oy + r2 * Math.sin(a0)} A${r2},${r2} 0 0 1 ${ox + r2 * Math.cos(a1)},${oy + r2 * Math.sin(a1)}`;
+      add(vec, 'circle', { cx: ox, cy: oy, r: r2, fill: 'none', stroke: C.line, 'stroke-width': 2, 'stroke-dasharray': '6 8' });
+      add(vec, 'path', { d: arc(th - 1.1, th + 1.1), fill: 'none', stroke: C.grey, 'stroke-width': 3 });
+      add(vec, 'line', { x1: px, y1: py, x2: ox, y2: oy, stroke: C.grey, 'stroke-width': 2, 'stroke-dasharray': '5 6' });
+      add(vec, 'circle', { cx: ox, cy: oy, r: 6, fill: C.ink });
+      label(vec, ox, py > oy + 20 ? oy - 16 : oy + 30, 'ศูนย์กลาง', C.ink, 18);
       const v1 = [-Math.sin(th - d), Math.cos(th - d)], v2 = [-Math.sin(th + d), Math.cos(th + d)];
-      arrow(vec, ox, oy, ox + L * v1[0], oy + L * v1[1], '#9bb7dd', 5);
-      label(vec, ox + (L + 26) * v1[0], oy + (L + 26) * v1[1] + 8, 'v', '#6f8fbd', 24, 'middle', 'ก่อน');
-      arrow(vec, ox, oy, ox + L * v2[0], oy + L * v2[1], C.blue, 5);
-      label(vec, ox + (L + 26) * v2[0], oy + (L + 26) * v2[1] + 8, 'v', C.blue, 24, 'middle', 'หลัง');
-      arrow(vec, ox + L * v1[0], oy + L * v1[1], ox + L * v2[0], oy + L * v2[1], C.red, 4);
-      const mx = ox + L * (v1[0] + v2[0]) / 2, my = oy + L * (v1[1] + v2[1]) / 2;
-      const am = Math.hypot(mx - ox, my - oy) || 1;
-      label(vec, mx + 40 * (mx - ox) / am, my + 40 * (my - oy) / am + 8, 'Δv', C.red, 24);
-      add(vec, 'circle', { cx: ox, cy: oy, r: 5, fill: C.ink });
+      const t1 = [px + L * v1[0], py + L * v1[1]], t2 = [px + L * v2[0], py + L * v2[1]];
+      arrow(vec, px, py, t1[0], t1[1], '#9bb7dd', 5);
+      label(vec, px + (L + 24) * v1[0], py + (L + 24) * v1[1] + 8, 'v', '#6f8fbd', 22, 'middle', 'ก่อน');
+      arrow(vec, px, py, t2[0], t2[1], C.blue, 5);
+      label(vec, px + (L + 24) * v2[0], py + (L + 24) * v2[1] + 8, 'v', C.blue, 22, 'middle', 'หลัง');
+      arrow(vec, t1[0], t1[1], t2[0], t2[1], C.red, 3, true);
+      const dx = t2[0] - t1[0], dy = t2[1] - t1[1];
+      arrow(vec, px, py, px + dx, py + dy, C.red, 5);
+      label(vec, px + dx * .55 + 24 * Math.sin(th), py + dy * .55 - 24 * Math.cos(th) + 8, 'Δv', C.red, 24);
+      add(vec, 'circle', { cx: px, cy: py, r: 12, fill: '#c4cad6', stroke: C.ink, 'stroke-width': 2 });
       // the same direction as ΣF, drawn small beside it
-      add(vec, 'text', { x: 585, y: 505, 'font-size': 20, 'font-weight': 700, fill: C.grey }, 'Δv ชี้ทางเดียวกับ ΣF ไหม? ΣF ตอนนี้ →');
-      arrow(vec, 950 + 26 * Math.cos(th), 497 + 26 * Math.sin(th), 950 - 26 * Math.cos(th), 497 - 26 * Math.sin(th), C.orange, 4);
+      add(vec, 'text', { x: 585, y: 522, 'font-size': 20, 'font-weight': 700, fill: C.grey }, 'Δv ชี้ทางเดียวกับ ΣF ไหม? ΣF ตอนนี้ →');
+      arrow(vec, 950 + 26 * Math.cos(th), 514 + 26 * Math.sin(th), 950 - 26 * Math.cos(th), 514 - 26 * Math.sin(th), C.orange, 4);
     }
     draggable(s, () => { if (play) { play = false; pb.set(false, '▶ เล่น'); } }, (p) => {
       if (p.x > 560 || p.y > 530) return;
