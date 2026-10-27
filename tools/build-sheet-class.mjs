@@ -24,9 +24,20 @@ if (args[0] === '--reshell') {
   const cfg = JSON.parse(/const CFG=(\{[^\n]*?\});/.exec(html)[1]);
   if (cfg.sheet) cfg.fb = firebase();
   if (existsSync(join(args[1], 'anims.js'))) cfg.anims = Date.now() % 1e8; else delete cfg.anims;   // page animations (cache-busting stamp)
+  if (existsSync(join(args[1], 'hint1.json'))) cfg.openHints = Date.now() % 1e8; else delete cfg.openHints;   // homework Hint 1, open to all
   const shell = readFileSync(new URL('./sheet-class-shell.html', import.meta.url), 'utf8');
   writeFileSync(join(args[1], 'index.html'), shell.replace(/\/\*__CFG__\*\/\{[^\n]*?\}(?=;)/, () => JSON.stringify(cfg)).replace('<title>Scitem Class</title>', () => `<title>${cfg.title}</title>`));
   console.log(`reshelled ${args[1]}`);
+  process.exit(0);
+}
+// --open-hints <out dir> <hints.json>: homework hints ({qid: [hint 1 svg]}), public in hint1.json; students open them from the
+// answer box without the teacher. Hint 1 only: symbols, never numbers or answers (the repo is public). Then --reshell.
+if (args[0] === '--open-hints') {
+  const [, dir, file] = args;
+  const H = JSON.parse(readFileSync(file, 'utf8')), out = {};
+  for (const [q, list] of Object.entries(H)) out[q] = list[0];
+  writeFileSync(join(dir, 'hint1.json'), JSON.stringify(out));
+  console.log(`${join(dir, 'hint1.json')}: open Hint 1 for ${Object.keys(out).join(' ')}`);
   process.exit(0);
 }
 // --hints <out dir> <hints.json> <teacher code>: put the drawn hints ({qid: [hint 1 svg, hint 2 svg]}, made by a tools/hints-*.py

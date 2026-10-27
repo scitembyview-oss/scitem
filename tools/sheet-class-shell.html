@@ -604,6 +604,9 @@ function startAns(){
 /* page animations (anims.js next to index.html, public: no answers in it): a play button on the sheet's figure opens the
    animation full screen in the hint box; SC_ANIMS = {pages: {p02: [{id, x, y, t}]}, make: {id(el) -> stop()}} (x, y = 0..1 of the page) */
 let ANIMSTOP=null;
+/* homework hints (hint1.json, public: Hint 1 only, symbols, no numbers) are open to everyone from the answer box, no teacher step */
+var OPENH={};
+if(CFG.openHints)fetch("hint1.json?v="+CFG.openHints).then(r=>r.ok?r.json():{}).then(j=>{OPENH=j||{};try{ansStatus();}catch(e){}try{drawRev();}catch(e){}}).catch(()=>{});
 if(CFG.anims){const sc=document.createElement("script");sc.src="anims.js?v="+(CFG.anims===true?1:CFG.anims);sc.onload=()=>placePlays();document.head.appendChild(sc);}
 function placePlays(){
   const pg=$("page");pg.querySelectorAll(".play").forEach(b=>b.remove());
@@ -621,7 +624,7 @@ function openAnim(a){
   HB=null;$("hbT").textContent=a.t||"";$("hbTabs").innerHTML="";$("hbBody").innerHTML="";
   $("hintBox").hidden=false;ANIMSTOP=A.make[a.id]($("hbBody"))||null;
 }
-const hintOf=q=>{const h=BACK._hint&&BACK._hint[q];return h&&typeof h==="object"?[h.h1,h.h2].filter(Boolean):[];};
+const hintOf=q=>{const h=BACK._hint&&BACK._hint[q];if(h&&typeof h==="object")return [h.h1,h.h2].filter(Boolean);return OPENH[q]?[OPENH[q]]:[];};
 /* a hint: a drawn SVG (key.json "hints", tools/hints-*.py). Inside it, [data-go="s"] sets the picture's state (svg[data-s]),
    [data-tog="x"] toggles class t-x on the svg, [data-smil="id"] starts that SMIL animation; the SVG's own <style> does the rest */
 let HB=null;
@@ -832,7 +835,7 @@ function drawRev(force){
 /* the worked-solution box of a question, cut from the key page, opened to every student (back/<class>/<uid>/_hint/<qid>;
    _pub/<qid> remembers what is open, so a student who joins later gets it too) */
 const pubLv=q=>{const p=BTREE._pub&&BTREE._pub[q];return p&&p.lv||0;};
-const pubBtn=q=>{const H=KEYHINT[q];if(!H||!H.length)return "";const lv=pubLv(q);
+const pubBtn=q=>{const H=KEYHINT[q];if(!H||!H.length)return OPENH[q]?`<div class="hl"><button class="hv" type="button" data-prev="${q}" data-k="0">ดู Hint 1</button> เปิดให้น้องดูเองได้ (การบ้าน)</div>`:"";const lv=pubLv(q);
   return `<div class="hl">${H.map((_,j)=>`<button class="hv" type="button" data-prev="${q}" data-k="${j}">ดู Hint ${j+1}</button>`).join("")}</div>
     <div class="hl">ให้น้องเห็น: ${["ปิด"].concat(H.map((_,j)=>"Hint "+(j===0?"1":"1–"+(j+1)))).map((t,j)=>`<button class="pub${lv===j?" on":""}" type="button" data-pub="${q}" data-lv="${j}">${t}</button>`).join("")}</div>`;};
 const hintVal=(q,lv)=>{const H=KEYHINT[q]||[];if(!lv)return null;const o={lv};for(let j=0;j<lv&&j<H.length;j++)o["h"+(j+1)]=H[j];return o;};
@@ -886,7 +889,7 @@ function startLive(){
   $("rev").addEventListener("focusout",()=>setTimeout(()=>{if(revLater)drawRev();},0));
   $("rev").addEventListener("click",e=>{
     const pb=e.target.closest(".pub");if(pb){publish(pb.dataset.pub,+pb.dataset.lv);return;}
-    const pv=e.target.closest(".hv");if(pv){openHint(pv.dataset.prev,KEYHINT[pv.dataset.prev],+pv.dataset.k);return;}
+    const pv=e.target.closest(".hv");if(pv){openHint(pv.dataset.prev,KEYHINT[pv.dataset.prev]||[OPENH[pv.dataset.prev]],+pv.dataset.k);return;}
     const c=e.target.closest(".rq");if(!c||!c.dataset.q)return;
     if(e.target.closest(".y"))sendBack(c,true);else if(e.target.closest(".n"))sendBack(c,false);
     else if(e.target.closest("h3")){FOC.i=QINFO[c.dataset.q].pg;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);}
