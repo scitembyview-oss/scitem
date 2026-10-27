@@ -4,6 +4,8 @@
 // Work goes to the Google Sheet at CLASS_SHEET_URL in src/data/catalog.ts (tools/check-sheet.gs, tab "คาบสด");
 // add --local to keep it in the browser instead (try-out: student and #teacher in two tabs of one browser).
 // FIREBASE in catalog.ts (when filled in) also streams every stroke live to the hidden #live screen (rules: tools/firebase-rules.json).
+// A game class (heat5): the answers file also has skills: [names] and level: {item: easy/hard}, each question sec 'A' | 'D' | 'B'
+// (pre-test / drill with coin bets / post-test), stage, boss, skill (= its item number in A and B). See tools/sheet-class-shell.html GAME.
 // Answer boxes: --answers <answers.json> (kept OUT of the repo, e.g. project files) = {q: [{id, page, name, parts: [{l, v, u, tol?} | {l, c: [choices], a} | {l, t: 1}]}]}.
 // The labels and choices go into the page; the values (v, u, a) only into key.json. Use "-" as key.pdf for a class without key pages.
 // Usage: node tools/build-sheet-class.mjs <student.pdf> <key.pdf|-> <title> <teacher code> <out dir> <class id> [--local] [--answers <file>]
@@ -81,7 +83,7 @@ mkdirSync(join(out, 'p'), { recursive: true });
 for (const f of readdirSync(join(out, 'p'))) rmSync(join(out, 'p', f));
 const tmpS = mkdtempSync(join(tmpdir(), 'sc-s-')), tmpK = mkdtempSync(join(tmpdir(), 'sc-k-'));
 const sp = render(stuPdf, tmpS), kp = keyPdf === '-' ? [] : render(keyPdf, tmpK, 70, 1100);
-const ansQ = ansFile ? JSON.parse(readFileSync(ansFile, 'utf8')).q : [];
+const ansAll = ansFile ? JSON.parse(readFileSync(ansFile, 'utf8')) : {}, ansQ = ansAll.q || [];
 const kpaged = ansQ.length && ansQ.every((q) => q.kpage);   // a tutor sheet laid out its own way: each question says its key page
 if (kp.length && !kpaged && sp.length !== kp.length) throw new Error(`the key has ${kp.length} pages, the student sheet ${sp.length}: they must match page for page`);
 sp.forEach((f, i) => renameSync(join(tmpS, f), join(out, 'p', 'p' + String(i + 1).padStart(2, '0') + '.jpg')));
@@ -90,7 +92,9 @@ const kq = {}, kh = {}, kmap = [];
 for (const q of ansQ) {
   if (!(q.page >= 1 && q.page <= sp.length)) throw new Error(`${q.id}: page ${q.page} is not in the sheet`);
   const pid = 'p' + String(q.page).padStart(2, '0');
-  (qs[pid] ||= []).push({ id: q.id, name: q.name, parts: q.parts.map((p) => (p.c ? { l: p.l, c: p.c } : { l: p.l })) });
+  // sec/stage/boss/skill: a game class (the answers file has "skills"); public, no answers in them
+  const meta = Object.fromEntries(['sec', 'stage', 'boss', 'skill'].filter((k) => q[k] != null).map((k) => [k, q[k]]));
+  (qs[pid] ||= []).push({ id: q.id, name: q.name, ...meta, parts: q.parts.map((p) => (p.c ? { l: p.l, c: p.c } : { l: p.l })) });
   if (q.kpage) kq[q.id] = q.kpage - 1;
   if (q.hint) kh[q.id] = q.hint;                    // [top, bottom] of its worked-solution box on the key page, 0..1
   answers[q.id] = q.parts.map((p) => (p.c ? { c: 1, a: p.a } : p.t ? { t: 1 } : { v: p.v, u: p.u ?? '', ...(p.tol ? { tol: p.tol } : {}) }));
@@ -104,7 +108,8 @@ writeFileSync(join(out, 'key.json'), JSON.stringify(await seal(tCode, plain)));
 
 const sheet = local ? null : /CLASS_SHEET_URL\s*=\s*'([^']*)'/.exec(readFileSync(new URL('../src/data/catalog.ts', import.meta.url), 'utf8'))[1];
 if (!local && !sheet) throw new Error('CLASS_SHEET_URL is empty in src/data/catalog.ts (or build with --local)');
-const cfg = { id, title, pages: sp.length, sheet, fb: local ? null : firebase(), ...(ansFile ? { qs } : {}) };
+const cfg = { id, title, pages: sp.length, sheet, fb: local ? null : firebase(), ...(ansFile ? { qs } : {}), ...(ansAll.skills ? { game: { skills: ansAll.skills, level: ansAll.level || {} } } : {}),
+  ...(existsSync(join(out, 'anims.js')) ? { anims: Date.now() % 1e8 } : {}) };
 const shell = readFileSync(new URL('./sheet-class-shell.html', import.meta.url), 'utf8');
 writeFileSync(join(out, 'index.html'), shell.replace(/\/\*__CFG__\*\/\{[^\n]*?\}(?=;)/, JSON.stringify(cfg)).replace('<title>Scitem Class</title>', `<title>${title}</title>`));
 console.log(`wrote ${out}: ${sp.length} pages`);
