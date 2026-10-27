@@ -563,6 +563,74 @@
     });
   }
 
+  // ---------- live physics inside a hint (<g data-sim="…">, started by the shell's startSims) ----------
+  // c12: a bob hanging in a van. The slider sets the van's acceleration; the bob obeys
+  // φ'' = −(g/L)sinφ + (a/L)cosφ − damping·φ' (in the van's frame), so it settles where tanφ = a/g.
+  function tilt(g, d) {
+    const num = d.num === '1', svg = g.ownerSVGElement;
+    const px = 260, py = 216, L = 100, G = 10, wL = 9;            // wL = g/L in 1/s²
+    let k = +(d.k || 1), phi = 0, om = 0, v = 0, off = 0;
+    const road = add(g, 'g'), van = add(g, 'g'), fx = add(g, 'g'), ui = add(g, 'g');
+    add(van, 'rect', { x: 110, y: 210, width: 300, height: 150, rx: 16, fill: '#eef4fc', stroke: C.blue, 'stroke-width': 4 });
+    add(van, 'circle', { cx: 165, cy: 370, r: 24, fill: C.ink }); add(van, 'circle', { cx: 355, cy: 370, r: 24, fill: C.ink });
+    add(van, 'line', { x1: px, y1: py, x2: px, y2: py + L + 10, stroke: C.grey, 'stroke-width': 2, 'stroke-dasharray': '4 5' });
+    const str = add(van, 'line', { stroke: C.ink, 'stroke-width': 3 }), bob = add(van, 'circle', { r: 14, fill: C.peach, stroke: C.ink, 'stroke-width': 2 });
+    // slider: brake ← 0 → speed up
+    const sx0 = 70, sx1 = 470, sy = 462, k0 = -1, k1 = 1.5, kx = (kk) => sx0 + (kk - k0) / (k1 - k0) * (sx1 - sx0);
+    add(ui, 'line', { x1: sx0, y1: sy, x2: sx1, y2: sy, stroke: C.line, 'stroke-width': 8, 'stroke-linecap': 'round' });
+    add(ui, 'line', { x1: kx(0), y1: sy - 12, x2: kx(0), y2: sy + 12, stroke: C.grey, 'stroke-width': 2 });
+    label(ui, sx0, sy + 34, 'เบรก', C.red, 17, 'start'); label(ui, kx(0), sy + 34, 'ความเร็วคงที่', C.grey, 17);
+    label(ui, sx1, sy + 34, 'เร่ง', C.green, 17, 'end');
+    const knob = add(ui, 'circle', { cy: sy, r: 15, fill: C.purple, stroke: '#fff', 'stroke-width': 3 });
+    const hit = add(ui, 'rect', { x: sx0 - 30, y: sy - 30, width: sx1 - sx0 + 60, height: 56, fill: 'transparent', style: 'cursor:ew-resize;touch-action:none' });
+    const read = label(ui, 20, 140, '', C.purple, 21, 'start');
+    label(ui, 20, 112, 'ลากปุ่มม่วงเปลี่ยนความเร่งของรถ', C.grey, 17, 'start');
+    let id = null;
+    const setK = (e) => { k = Math.max(k0, Math.min(k1, k0 + (pt(svg, e).x - sx0) / (sx1 - sx0) * (k1 - k0))); if (Math.abs(k) < .06) k = 0; };
+    hit.addEventListener('pointerdown', (e) => { id = e.pointerId; try { hit.setPointerCapture(id); } catch (x) {} setK(e); e.preventDefault(); e.stopPropagation(); });
+    hit.addEventListener('pointermove', (e) => { if (e.pointerId === id) setK(e); });
+    const end = (e) => { if (e.pointerId === id) id = null; };
+    hit.addEventListener('pointerup', end); hit.addEventListener('pointercancel', end);
+    const dash = [];
+    for (let i = 0; i < 14; i++) dash.push(add(road, 'line', { y1: 420, y2: 420, stroke: C.grey, 'stroke-width': 3 }));
+    add(road, 'line', { x1: 0, y1: 406, x2: 530, y2: 406, stroke: C.navy, 'stroke-width': 4 });
+    // still until ▶: dragging the slider then shows where the bob settles (tanφ = a/g); ▶ runs the van and the swing
+    let run = false;
+    const play = button(ui, 380, 92, 130, '▶ เล่น', C.green, () => {
+      run = !run; play.set(run, run ? '❚❚ หยุด' : '▶ เล่น');
+      if (run && v <= 0) v = 8;
+    });
+    const rest = () => { if (!run) { phi = Math.atan(k); om = 0; draw(k * G); } };
+    hit.addEventListener('pointermove', rest); hit.addEventListener('pointerdown', rest);
+    v = 8;
+    function draw(a) {
+      dash.forEach((l, i) => { const x = i * 40 - off; l.setAttribute('x1', Math.max(0, x)); l.setAttribute('x2', Math.min(530, Math.max(0, x + 18))); });
+      const bx = px - L * Math.sin(phi), by = py + L * Math.cos(phi);
+      str.setAttribute('x1', px); str.setAttribute('y1', py); str.setAttribute('x2', bx); str.setAttribute('y2', by);
+      bob.setAttribute('cx', bx); bob.setAttribute('cy', by);
+      knob.setAttribute('cx', kx(k));
+      // forces on the bob: T along the string (size m·√(g²+a²) once settled), mg straight down; 10 m/s² ↔ 50 px
+      clear(fx);
+      const Tm = Math.max(0, G * Math.cos(phi) + a * Math.sin(phi) + L / 50 * om * om) * 5, ux = (px - bx) / L, uy = (py - by) / L;
+      arrow(fx, bx + ux * 15, by + uy * 15, bx + ux * (15 + Tm), by + uy * (15 + Tm), C.blue, 4);
+      label(fx, bx + ux * (15 + Tm * .6) - uy * 22, by + uy * (15 + Tm * .6) + ux * 22 + 7, 'T', C.blue, 21);
+      arrow(fx, bx, by + 15, bx, by + 65, C.red, 4); label(fx, bx - 10, by + 60, 'mg', C.red, 20, 'end');
+      if (Math.abs(a) > .3) { arrow(fx, 260, 170, 260 + a * 9, 170, C.purple, 4, true); label(fx, 260 + a * 9 + (a > 0 ? 8 : -8), 158, 'a', C.purple, 22, a > 0 ? 'start' : 'end'); }
+      read.textContent = num ? `a = ${Math.abs(a).toFixed(1)} m/s²${a < -.3 ? ' (เบรก)' : ''}` : (Math.abs(a) < .3 ? 'ไม่เร่ง: เชือกตรง' : a > 0 ? 'เร่งไปข้างหน้า' : 'เบรก');
+    }
+    phi = Math.atan(k); draw(k * G);
+    return loop((dt) => {
+      if (!run) return;
+      let a = k * G;
+      if (v <= 0 && a < 0) { v = 0; a = 0; }                        // a stopped van can't brake backwards
+      v = Math.min(60, v + a * dt);
+      // pendulum in the van's frame, small sub-steps for stability
+      for (let i = 0; i < 4; i++) { const h = dt / 4; om += (-wL * Math.sin(phi) + wL * (a / G) * Math.cos(phi) - 2.2 * om) * h; phi += om * h; }
+      off = (off + Math.min(v, 30) * 40 * dt) % 40;
+      draw(a);
+    });
+  }
+
   window.SC_ANIMS = {
     pages: {
       p02: [{ id: 'circ', x: .86, y: .31, t: 'วัตถุเคลื่อนที่เป็นวงกลม: v กับ ΣF' }, { id: 'cut', x: .86, y: .655, t: 'ถ้าเชือกขาด ลูกบอลไปทางไหน' }],
@@ -577,5 +645,6 @@
       p28: [{ id: 'level', x: .88, y: .2, t: 'ระดับน้ำเปลี่ยน' }],
     },
     make: { circ, cut, ice, hill, vert, cone, swing, press, sinkfloat, scales, level },
+    sims: { tilt },
   };
 })();

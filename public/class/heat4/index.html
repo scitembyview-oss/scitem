@@ -636,6 +636,15 @@ function openHint(q,list,k){
   $("hbTabs").innerHTML=list.length>1?list.map((_,j)=>`<button type="button" data-k="${j}" aria-current="${j===k}">Hint ${j+1}</button>`).join(""):"";
   $("hbBody").innerHTML=String(list[k]).replace(/<script[\s\S]*?<\/script>/gi,"").replace(/\son\w+\s*=\s*("[^"]*"|'[^']*')/gi,"");
   $("hintBox").hidden=false;document.body.classList.add("hbOpen");
+  startSims();
+}
+/* live physics in a hint: <g data-sim="name" data-…> is drawn and run by SC_ANIMS.sims[name](g, dataset) from anims.js (public code;
+   the numbers stay in the encrypted hint). Several sims in one hint stop together. */
+function startSims(){
+  const A=window.SC_ANIMS,els=$("hbBody").querySelectorAll("[data-sim]");if(!els.length)return;
+  if(!A||!A.sims){setTimeout(()=>{if($("hbBody").querySelector("[data-sim]")&&!ANIMSTOP&&window.SC_ANIMS)startSims();},400);return;}
+  const stops=[];for(const el of els){const f=A.sims[el.dataset.sim];if(f)try{const st=f(el,el.dataset);if(st)stops.push(st);}catch(e){console.error(e);}}
+  ANIMSTOP=()=>stops.forEach(f=>{try{f();}catch(e){}});
 }
 $("hbTabs").onclick=e=>{const b=e.target.closest("button");if(b&&HB)openHint(HB.q,HB.list,+b.dataset.k);};
 $("hbX").onclick=()=>{$("hintBox").hidden=true;document.body.classList.remove("hbOpen");if(ANIMSTOP){try{ANIMSTOP();}catch(e){}ANIMSTOP=null;}$("hbBody").innerHTML="";};
