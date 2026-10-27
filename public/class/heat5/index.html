@@ -1,0 +1,1531 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>ความร้อนทั้งบท · ก่อน/หลังเรียน</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Sarabun:wght@400;600&display=swap">
+<style>
+/* Built by tools/build-sheet-class.mjs from tools/sheet-class-shell.html — edit those, not the built page.
+   A worksheet as a live class. One page, three screens:
+   student (default): the student sheet page by page, write with the pencil, "Send to teacher";
+   #show: the teacher's screen to share on the call — same pages, no answers, the teacher writes, can bring up the student's sent work;
+   #teacher (retired, opens #show): was hidden — what the student sent, the answer key under it, red pen for marking (not shown to the student), save as PDF;
+   #live: the teacher's hidden screen — every student's page and ink as she writes (Firebase, CFG.fb), tap one to see it big with the key. */
+:root{
+  --bg:#f8f3ea; --card:#fff; --fg:#1f2836; --muted:#5d6676; --line:#ddd4c6;
+  --navy:#2b3a55; --peach:#db9e89; --sage:#729783; --mint:#e9f2eb; --good:#2f7a4f; --bad:#b03a2e; --red:#d62828; --blue:#1f5fa8;
+  --display:"Poppins","Sarabun",system-ui,sans-serif; --body:"Sarabun","Noto Sans Thai",system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overscroll-behavior:none}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:17px;line-height:1.4;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overflow:hidden}
+button,select{font:600 15px var(--display);color:var(--fg);cursor:pointer;touch-action:manipulation}
+button:focus-visible,input:focus-visible{outline:3px solid var(--peach);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* ---------- gate ---------- */
+#gate{position:fixed;inset:0;display:grid;place-items:center;padding:16px;background:var(--bg);z-index:50}
+#gate form{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px;width:min(420px,100%);display:flex;flex-direction:column;gap:14px}
+#gate h1{font:700 1.5rem var(--display);margin:0}
+#gate label{font:600 15px var(--display);display:flex;flex-direction:column;gap:6px}
+#gate input{font:600 20px var(--display);padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);-webkit-user-select:text;user-select:text}
+#gate .err{color:var(--bad);min-height:1.4em;font-weight:600}
+.big{font:700 1.15rem var(--display);min-height:56px;padding:0 24px;border-radius:14px;border:none;background:var(--navy);color:#fff}
+.big:disabled{opacity:.45}
+
+/* ---------- app ---------- */
+#app{height:100dvh;display:flex;flex-direction:column;
+  padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));gap:8px}
+#bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#bar h1{font:700 1.05rem var(--display);margin:0 4px 0 0;white-space:nowrap}
+#who{color:var(--muted);font-weight:600}
+.sp{flex:1}
+.b{min-width:44px;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);padding:0 10px}
+.b[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.sw{width:22px;height:22px;border-radius:50%;display:inline-block;vertical-align:middle}
+#send{background:var(--sage);color:#fff;border-color:var(--sage);min-width:150px}
+#send.done{background:var(--mint);color:var(--good);border-color:var(--mint)}
+#net{color:var(--bad);font-weight:600;font-size:14px}
+#status{color:var(--good);font-weight:600;font-size:14px;min-width:4em}
+#nav{display:flex;align-items:center;gap:5px}
+#nav .arr{min-width:52px;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-size:18px}
+#dots{display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;padding:4px 2px}   /* one row, slides sideways on long sheets */
+#dots::-webkit-scrollbar{display:none}
+#dots button{flex:none}
+#dots button{min-width:38px;min-height:38px;border-radius:9px;border:1px solid var(--line);background:var(--card);font:600 13px var(--display);position:relative;padding:0 3px}
+#dots button[aria-current="true"]{outline:3px solid var(--navy);outline-offset:-3px}
+#dots button.sent{background:var(--mint)}
+#dots button.new::after{content:"";position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:#e07a1f;border:2px solid #fff}
+#stu{min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);padding:0 8px}
+#note{font-size:14px;color:var(--muted);font-weight:600}
+.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.b.i{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+#tPen .sw{width:12px;height:12px;margin-left:-2px}
+#colors{display:inline-flex;gap:4px;align-items:center;padding:0 2px}
+#colors button{width:32px;height:32px;border-radius:50%;border:3px solid var(--card);box-shadow:0 0 0 1px var(--line);padding:0}
+#colors button[aria-pressed="true"]{box-shadow:0 0 0 2px var(--fg)}
+#sizes{display:inline-flex;gap:2px;align-items:center;padding:0 2px}
+#sizes button{width:34px;height:34px;border-radius:9px;border:1px solid transparent;background:none;padding:0;display:grid;place-items:center}
+#sizes button i{display:block;border-radius:50%;background:var(--fg)}
+#sizes button[aria-pressed="true"]{border-color:var(--fg);background:var(--card)}
+#nav .arr{display:inline-flex;align-items:center;justify-content:center}
+#work,#fWork{flex:1;min-height:0;display:flex;gap:8px}
+#work #scroll,#fWork #fScroll{flex:1;min-width:0}
+/* answer boxes: one card per question on this page */
+#ans{width:min(330px,34vw);overflow:auto;display:flex;flex-direction:column;gap:8px;-webkit-user-select:text;user-select:text}
+#ans .sym{display:flex;gap:4px;flex-wrap:wrap}
+#ans .sym button{min-width:40px;min-height:38px;border-radius:9px;border:1px solid var(--line);background:var(--card);font:600 17px var(--body)}
+.qa{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:7px}
+.qa h3{font:700 15px var(--display);margin:0}
+.qa .pt{display:flex;flex-direction:column;gap:3px;font-size:14px;color:var(--muted);font-weight:600}
+.qa .row{display:flex;gap:5px}
+.qa input,.qa select{font:600 17px var(--body);min-height:42px;border:1px solid var(--line);border-radius:9px;background:var(--bg);padding:0 8px;min-width:0;color:var(--fg)}
+.qa input.num{flex:1.6}.qa input.unit{flex:1}
+.qa select{width:100%}
+.qa .go{min-height:44px;border-radius:10px;border:none;background:var(--navy);color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.qa .go:disabled{background:var(--line);color:var(--muted)}
+.qa .st{font-size:14px;font-weight:600;color:var(--muted);display:flex;align-items:flex-start;gap:6px}
+.qa .st .ic{width:18px;height:18px}
+.qa.ok{border-color:var(--good);box-shadow:inset 4px 0 0 var(--good)}.qa.ok .st{color:var(--good)}
+.qa.no{border-color:var(--bad);box-shadow:inset 4px 0 0 var(--bad)}.qa.no .st{color:var(--bad)}
+.qa .hb{display:flex;gap:6px;flex-wrap:wrap}
+.qa .hb button,.rq .hv{min-height:42px;border-radius:10px;border:1.5px solid var(--blue);background:#eef4fc;color:var(--blue);font:700 15px var(--display);padding:0 14px;display:inline-flex;align-items:center;gap:6px}
+#hintBox{position:fixed;inset:0;z-index:40;background:rgba(20,24,32,.6);display:flex;align-items:center;justify-content:center;padding:max(10px,env(safe-area-inset-top)) 10px 10px}
+#hintBox .hbIn{background:#fff;border-radius:16px;width:min(100%,1180px);max-height:100%;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+#hintBox .hbTop{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}
+#hintBox .hbTop b{font:700 17px var(--display);margin-right:auto}
+#hintBox .hbTop button{min-height:40px;min-width:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);font:700 15px var(--display);padding:0 12px}
+#hintBox .hbTop button[aria-current="true"]{background:var(--blue);color:#fff;border-color:var(--blue)}
+#hbBody{overflow:auto;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+#hbBody svg{display:block;width:100%;height:auto;max-height:calc(100dvh - 90px);background-color:#fffdf8;background-image:linear-gradient(#eef1f6 1px,transparent 1px),linear-gradient(90deg,#eef1f6 1px,transparent 1px);background-size:2.5% 4.1667%;transform:translateZ(0)}
+/* while a hint or animation is open the sheet underneath is not painted (iPad Safari lagged repainting both) */
+body.hbOpen #work,body.hbOpen #fWork{visibility:hidden}
+#hbBody [data-go],#hbBody [data-tog]{cursor:pointer}
+#toast{position:fixed;left:50%;top:max(12px,env(safe-area-inset-top));transform:translateX(-50%);z-index:30;background:var(--blue);color:#fff;border-radius:14px;padding:10px 12px 10px 16px;
+  display:flex;align-items:center;gap:10px;font:600 16px var(--body);box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:calc(100% - 32px)}
+#toast button{min-height:40px;border-radius:10px;border:none;background:#fff;color:var(--blue);padding:0 14px}
+#zoomSol{position:fixed;inset:0;z-index:40;background:rgba(20,24,32,.75);display:grid;place-items:center;padding:16px}
+#zoomSol img{max-width:min(100%,1000px);max-height:100%;background:#fff;border-radius:10px}
+.rq .pub{min-height:38px;border-radius:10px;border:1px dashed var(--blue);background:var(--card);color:var(--blue);display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.rq .pub.on{background:var(--blue);color:#fff;border-style:solid}
+.rq .hl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted);font-weight:600}
+.rq .hl .pub{padding:0 12px}
+.qa .hint{color:var(--fg);font-weight:600;background:var(--bg);border-radius:8px;padding:6px 8px;white-space:pre-wrap}
+/* game classes (CFG.game): ก ข ค ง buttons, a bet of 1–3 coins on the drill, the coin counter */
+.qa .ch4{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.qa .ch4 button{min-height:52px;border-radius:12px;border:2px solid var(--line);background:var(--bg);font:700 22px var(--display);color:var(--fg)}
+.qa .ch4 button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.qa .ch4 button:disabled{opacity:.75}
+.qa .bets{display:flex;gap:6px;align-items:center;font-size:14px;font-weight:600;color:var(--muted)}
+.qa .bets button{flex:1;min-height:44px;border-radius:22px;border:2px solid #e9b949;background:#fff8e1;color:#8a5a00;font:700 17px var(--display);display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.qa .bets button.on{background:#f5b301;border-color:#f5b301;color:#3b2a00}
+.qa .bets button:disabled{opacity:.6}
+.qa .boss{font:700 13px var(--display);color:#fff;background:#c2410c;border-radius:8px;padding:2px 8px;align-self:flex-start}
+.coin{display:inline-block;width:1em;height:1em;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe58a,#f5b301 60%,#c98a00);box-shadow:inset 0 0 0 1.5px #b07800;vertical-align:-.12em}
+#coins{display:none;align-items:center;gap:6px;font:700 20px var(--display);background:#fff8e1;border:2px solid #f5b301;border-radius:22px;padding:2px 12px 2px 8px;color:#3b2a00;position:relative;min-height:40px}
+body.game #coins{display:inline-flex}body.game.show:not(.pulling) #coins{display:none}
+#coins .fire{display:none;color:#c2410c;font-size:15px;align-items:center;gap:2px}#coins .fire.on{display:inline-flex}
+#coins .fire svg{width:18px;height:18px;fill:#ea580c;stroke:none}
+#coins.shake{animation:shake .45s}
+@keyframes shake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+.pop{position:fixed;z-index:60;font:800 34px var(--display);pointer-events:none;animation:pop 1.3s ease-out forwards;text-shadow:0 2px 0 #fff,0 0 12px #fff}
+.pop.y{color:#16a34a}.pop.n{color:#dc2626}
+@keyframes pop{0%{transform:translate(-50%,10px) scale(.6);opacity:0}15%{transform:translate(-50%,0) scale(1.25);opacity:1}70%{opacity:1}100%{transform:translate(-50%,-70px) scale(1);opacity:0}}
+#sumBox{position:fixed;inset:0;z-index:70;background:rgba(20,28,45,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+#sumBox[hidden]{display:none}
+#sumBox .in{background:var(--card);border-radius:18px;max-width:640px;width:100%;max-height:calc(100dvh - 32px);overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+#sumBox h2{font:700 22px var(--display);margin:0;display:flex;justify-content:space-between;align-items:center;gap:8px}
+#sumBox .big3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+#sumBox .big3 div{background:var(--bg);border-radius:12px;padding:10px 6px;font-size:13px;font-weight:600;color:var(--muted)}
+#sumBox .big3 b{display:block;font:800 30px var(--display);color:var(--fg)}
+#sumBox table{border-collapse:collapse;width:100%;font-size:13px}
+#sumBox th,#sumBox td{border-bottom:1px solid var(--line);padding:4px 6px;text-align:left}
+#sumBox td.c{text-align:center;font-weight:700}#sumBox .y{color:var(--good)}#sumBox .n{color:var(--bad)}
+#sumBox .row{display:flex;gap:8px;flex-wrap:wrap}
+#sumBox .row button{min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);padding:0 14px;font:600 15px var(--body)}
+.rq .m.a{color:#7b3fb0}
+#note.red{color:var(--red)}
+
+#scroll{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;border-radius:12px;background:#e9e3d8;touch-action:pan-x pan-y} /* two fingers zoom the sheet, not the whole page */
+#page{position:relative;margin:0 auto;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.15)}
+#page img{display:block;width:100%;height:auto;pointer-events:none;-webkit-user-drag:none}
+#page canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#page canvas.ink{pointer-events:auto;touch-action:none}
+body.scrolly #page canvas.ink{touch-action:pan-x pan-y}
+#pages{padding:8px}
+#page{margin:0;flex:none}
+#page .play{position:absolute;z-index:5;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:50%;border:3px solid #fff;background:var(--blue);color:#fff;
+  display:grid;place-items:center;box-shadow:0 3px 12px rgba(0,0,0,.3);padding:0;touch-action:manipulation}
+#page .play svg{width:26px;height:26px;margin-left:4px;fill:#fff;stroke:none}
+#page .play::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:3px solid var(--blue);opacity:.5;animation:playPulse 2s infinite}
+@keyframes playPulse{0%{transform:scale(.85);opacity:.6}100%{transform:scale(1.25);opacity:0}}
+#keyTag{position:absolute;top:8px;right:8px;background:var(--red);color:#fff;font:700 13px var(--display);border-radius:999px;padding:2px 10px}
+
+/* ---------- screens ---------- */
+body.show #bar h1::after{content:" · จอครู (แชร์ได้)";color:var(--blue)}
+body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:var(--red)}
+
+/* ---------- #live: every student at once ---------- */
+#live{height:100dvh;display:flex;flex-direction:column;gap:8px;
+  padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+#live .lbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#live h1{font:700 1.05rem var(--display);margin:0}
+#live h1 span{color:var(--red)}
+#lNet{color:var(--bad);font-weight:600;font-size:14px}
+#lCount{color:var(--muted);font-weight:600}
+#grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--cw,240px),1fr));gap:12px;align-content:start;padding:2px}
+#lEmpty{color:var(--muted);font-weight:600;padding:24px;text-align:center;grid-column:1/-1}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px;cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:opacity .3s}
+.card.quiet{opacity:.55}
+.card.fresh{border-color:var(--sage);box-shadow:0 0 0 2px var(--sage)}
+.card .ch{display:flex;justify-content:space-between;gap:6px;font:600 14px var(--display)}
+.card .ch span:last-child{color:var(--muted);white-space:nowrap}
+.card .pg{position:relative;background:#fff;border-radius:6px;overflow:hidden}
+.card img,.card canvas,#fPage img,#fPage canvas{display:block;width:100%;height:auto;pointer-events:none}
+.card canvas,#fPage canvas{position:absolute;inset:0;height:100%}
+#focus{position:fixed;inset:0;background:var(--bg);z-index:20;display:flex;flex-direction:column;gap:8px;
+  padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+#focus .lbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#focus h1{font:700 1.05rem var(--display);margin:0}
+#focus h1 span:last-child{color:var(--red)}
+#fNet{color:var(--bad);font-weight:600;font-size:14px}
+#fNames{display:flex;gap:5px;flex-wrap:wrap}
+#fDots{display:flex;gap:5px;overflow-x:auto;padding:3px 2px}#fDots button{flex:none}
+#fNames button{min-height:40px;border-radius:999px;border:1px solid var(--line);background:var(--card);padding:0 14px;position:relative}
+#fNames button[aria-current="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+#fNames button.fresh::after{content:"";position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:var(--sage);border:2px solid #fff}
+#fNames button.quiet{opacity:.55}
+#fNames .keychip{display:inline-flex;align-items:center;gap:5px;color:var(--good);border-color:var(--good)}
+#fNames .keychip[aria-current="true"]{background:var(--good);color:#fff}
+#fNames .keychip .ic{width:18px;height:18px}
+#fDots button{min-width:38px;min-height:36px;border-radius:9px;border:1px solid var(--line);background:var(--card);font:600 13px var(--display);padding:0 3px}
+#fDots button.ink{background:var(--mint)}
+#fDots button.wait{position:relative}#fDots button.wait::after{content:"";position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:var(--bad)}
+#fDots button.here{box-shadow:inset 0 -4px 0 var(--sage)}
+#fDots button[aria-current="true"]{outline:3px solid var(--navy);outline-offset:-3px}
+#fWhere{color:var(--muted);font-weight:600}
+#fScroll{flex:1;min-height:0;overflow:auto;border-radius:12px;background:#e9e3d8;padding:8px}
+#fPage{position:relative;margin:0 auto;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.15);width:min(100%,1100px)}
+#fWait b{font-weight:700}#fWait.has{background:#e07a1f;color:#fff;border-color:#e07a1f}
+.wait{display:inline-block;min-width:20px;height:20px;border-radius:999px;background:#e07a1f;color:#fff;font:700 12px/20px var(--display);text-align:center;padding:0 5px;margin-left:5px}
+/* the teacher's review of a student's answers */
+#rev{width:min(380px,36vw);overflow:auto;display:flex;flex-direction:column;gap:8px;-webkit-user-select:text;user-select:text}
+#rev .none{color:var(--muted);font-weight:600;padding:12px}
+.rq{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.rq.waiting{border-color:#e07a1f;box-shadow:inset 4px 0 0 #e07a1f}
+.rq h3{font:700 15px var(--display);margin:0;display:flex;justify-content:space-between;gap:6px;cursor:pointer}
+.rq h3 span{color:var(--muted);font-weight:600;font-size:13px}
+.rq .pa{display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:14px;align-items:baseline}
+.rq .pa .k{color:var(--muted);font-weight:600}
+.rq .pa .v{font-weight:700;text-align:right}
+.rq .pa .m{grid-column:1/-1;font-size:13px;font-weight:600;display:flex;align-items:center;gap:4px}
+.rq .m .ic{width:16px;height:16px}
+.rq .m.y{color:var(--good)}.rq .m.n{color:var(--bad)}.rq .m.t{color:var(--muted)}
+.rq textarea{font:500 15px var(--body);min-height:54px;border:1px solid var(--line);border-radius:9px;padding:6px 8px;background:var(--bg);resize:vertical}
+.rq .btns{display:flex;gap:6px}
+.rq .btns button{flex:1;min-height:42px;border-radius:10px;border:1px solid var(--line);background:var(--card);display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.rq .btns .y{color:var(--good)}.rq .btns .n{color:var(--bad)}
+.rq .btns .y.on{background:var(--good);color:#fff;border-color:var(--good)}.rq .btns .n.on{background:var(--bad);color:#fff;border-color:var(--bad)}
+.rq .sent{font-size:13px;color:var(--muted);font-weight:600}
+
+</style>
+</head>
+<body>
+<div id="gate">
+  <form id="gateForm" autocomplete="off">
+    <h1 id="gTitle">Scitem Class</h1>
+    <label id="gNameL">Your name<input id="gName" maxlength="30"></label>
+    <label id="gCodeL" hidden>รหัสครู<input id="gCode" type="password"></label>
+    <div class="err" id="gErr" aria-live="polite"></div>
+    <button class="big" id="gGo">Start</button>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <div id="bar">
+    <h1 id="title"></h1><span id="who"></span>
+    <button type="button" id="coins" title="คะแนนของฉัน"><span class="coin"></span><span id="coinN">10</span><span class="fire" id="fire"><svg viewBox="0 0 24 24"><path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-4-1-6 1-9.5Z"/></svg><span id="fireN"></span></span></button>
+    <select id="stu" hidden aria-label="นักเรียน"></select>
+    <span class="sp"></span>
+    <button class="b i" id="tPen" aria-pressed="true" aria-label="Pen" title="Pen"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span class="sw" id="penSw"></span></button>
+    <span id="colors" role="group" aria-label="Pen colour"></span>
+    <span id="sizes" role="group" aria-label="Pen size"></span>
+    <button class="b i" id="tErase" aria-pressed="false" aria-label="Eraser" title="Eraser"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4.3-4.3a1 1 0 0 1 0-1.4l10-10a1 1 0 0 1 1.4 0l5.6 5.6a1 1 0 0 1 0 1.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg></button>
+    <button class="b i" id="tSel" aria-pressed="false" aria-label="Lasso" title="Lasso: circle ink, then drag it"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 22a5 5 0 0 1-2-4"/><path d="M3.3 14A6.8 6.8 0 0 1 2 10c0-4.4 4.5-8 10-8s10 3.6 10 8-4.5 8-10 8a12 12 0 0 1-5-1"/><circle cx="5" cy="16" r="2"/></svg></button>
+    <button class="b i" id="tHand" aria-pressed="false" aria-label="Scroll with finger" title="Finger scrolls the page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-5.9-2.4L3.4 16a2 2 0 0 1 3-2.8L8 15"/></svg></button>
+    <button class="b i" id="tUndo" aria-label="Undo" title="Undo"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+    <button class="b i" id="tClear" aria-label="Clear page" title="Clear page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+    <button class="b" id="tPull" hidden aria-pressed="false">งานน้อง</button>
+    <button class="b" id="tKey" hidden aria-pressed="false">เฉลย</button>
+    <button class="b" id="send">Send to teacher</button>
+    <button class="b i" id="saveBtn" aria-label="Save PDF" title="Save PDF"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+  </div>
+  <div id="nav">
+    <button class="arr" id="prev" aria-label="Previous page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+    <div id="dots"></div>
+    <button class="arr" id="next" aria-label="Next page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+    <span id="status" aria-live="polite"></span><span id="net"></span><span id="note"></span>
+  </div>
+  <div id="work"><div id="scroll"><div id="pages"><div id="page"><img id="img" alt=""><canvas id="cPull"></canvas><canvas id="cMine"></canvas><canvas id="cKey"></canvas><canvas id="cRed"></canvas><canvas id="cSel"></canvas><span id="keyTag" hidden>เฉลย</span></div></div></div>
+  <aside id="ans" hidden aria-label="Answers"></aside></div>
+</div>
+<div id="live" hidden>
+  <div class="lbar">
+    <h1><span id="lTitle"></span> · <span>จอครูดูสด (ซ่อน)</span></h1>
+    <span id="lCount"></span><span id="lNet" aria-live="polite"></span>
+    <span class="sp"></span>
+    <button class="b i" id="lClear" title="ลบที่ทดและคำตอบของทุกคน"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>ล้างห้อง</span></button>
+  </div>
+  <div id="grid"><div id="lEmpty">รอน้องเข้าห้อง… (น้องเปิดลิงก์ชีทแล้วใส่ชื่อ ที่ทดจะขึ้นตรงนี้ทันที)</div></div>
+</div>
+<div id="focus" hidden>
+  <div class="lbar">
+    <h1><span id="fTitle"></span> · <span>จอซ่อน</span></h1>
+    <span id="fWhere"></span><span id="fNet"></span>
+    <span class="sp"></span>
+    <button class="b i" id="fWait" title="ไปที่คำตอบที่รอตรวจ"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1Z"/></svg><span>รอตรวจ <b id="fWaitN">0</b></span></button>
+    <button class="b i" id="fBack" title="ดูทุกคน"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>ดูรวม</span></button>
+    <button class="b i" id="fPrev" aria-label="Previous page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+    <button class="b i" id="fNext" aria-label="Next page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+    <button class="b i" id="fFollow" aria-pressed="true" title="เปิดหน้าที่น้องอยู่ตลอด"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg><span>ตามน้อง</span></button>
+    <button class="b" id="fRevA" hidden title="ส่งผลชุด A ให้น้องเห็น">เปิดผลชุด A</button>
+    <button class="b" id="fAB" hidden>ตาราง A/B</button>
+  </div>
+  <div id="fNames"></div>
+  <div id="fDots"></div>
+  <div id="fWork"><div id="fScroll"><div id="fPage"><img id="fImg" alt=""><canvas id="fInk"></canvas></div></div>
+  <aside id="rev" aria-label="คำตอบของน้อง"></aside></div>
+</div>
+<div id="sumBox" hidden><div class="in" id="sumIn"></div></div>
+<div id="toast" hidden role="status"><span id="toastT"></span><button id="toastGo" type="button">ไปดู</button></div>
+<div id="hintBox" hidden><div class="hbIn"><div class="hbTop"><b id="hbT"></b><span id="hbTabs"></span><button id="hbX" type="button" aria-label="ปิด">✕</button></div><div id="hbBody"></div></div></div>
+
+<script>
+(function(){
+"use strict";
+const CFG={"id":"heat5","title":"ความร้อนทั้งบท · ก่อน/หลังเรียน","pages":78,"sheet":"https://script.google.com/macros/s/AKfycbzIaVMqROaTFaDN36SwCif7pWF_KEE7GroEUj2V5c9BM2gg4Y2v3wXbUOf-P4T0aBygnw/exec","fb":{"key":"AIzaSyClZhItG5C3aaz413ToeXPDKzh6Aw5y9CU","db":"https://scitem-live-default-rtdb.asia-southeast1.firebasedatabase.app"},"qs":{"p02":[{"id":"A1","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 1","sec":"A","skill":1,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p03":[{"id":"A2","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 2","sec":"A","skill":2,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p04":[{"id":"A3","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 3","sec":"A","skill":3,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p05":[{"id":"A4","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 4","sec":"A","skill":4,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p06":[{"id":"A5","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 5","sec":"A","skill":5,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p07":[{"id":"A6","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 6","sec":"A","skill":6,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p08":[{"id":"A7","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 7","sec":"A","skill":7,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p09":[{"id":"A8","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 8","sec":"A","skill":8,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p10":[{"id":"A9","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 9","sec":"A","skill":9,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p11":[{"id":"A10","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 10","sec":"A","skill":10,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p12":[{"id":"A11","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 11","sec":"A","skill":11,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p13":[{"id":"A12","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 12","sec":"A","skill":12,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p14":[{"id":"A13","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 13","sec":"A","skill":13,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p15":[{"id":"A14","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 14","sec":"A","skill":14,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p16":[{"id":"A15","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 15","sec":"A","skill":15,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p17":[{"id":"A16","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 16","sec":"A","skill":16,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p18":[{"id":"A17","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 17","sec":"A","skill":17,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p19":[{"id":"A18","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 18","sec":"A","skill":18,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p20":[{"id":"A19","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 19","sec":"A","skill":19,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p21":[{"id":"A20","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 20","sec":"A","skill":20,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p22":[{"id":"A21","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 21","sec":"A","skill":21,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p23":[{"id":"A22","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 22","sec":"A","skill":22,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p24":[{"id":"A23","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 23","sec":"A","skill":23,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p25":[{"id":"A24","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 24","sec":"A","skill":24,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p26":[{"id":"A25","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 25","sec":"A","skill":25,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p27":[{"id":"A26","name":"ข้อสอบก่อนเรียน · ชุด A · ข้อ 26","sec":"A","skill":26,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p29":[{"id":"D1","name":"ด่าน 1 · เมือง mcΔT · ข้อ 1","sec":"D","stage":1,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p30":[{"id":"D2","name":"ด่าน 1 · เมือง mcΔT · ข้อ 2","sec":"D","stage":1,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p31":[{"id":"D3","name":"ด่าน 1 · เมือง mcΔT · ข้อ 3","sec":"D","stage":1,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p32":[{"id":"D4","name":"ด่าน 1 · เมือง mcΔT · ข้อ 4","sec":"D","stage":1,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p33":[{"id":"D17","name":"บอส · เมือง mcΔT · ข้อ 5","sec":"D","stage":1,"boss":1,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p34":[{"id":"D5","name":"ด่าน 2 · ถ้ำเปลี่ยนสถานะ · ข้อ 6","sec":"D","stage":2,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p35":[{"id":"D6","name":"ด่าน 2 · ถ้ำเปลี่ยนสถานะ · ข้อ 7","sec":"D","stage":2,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p36":[{"id":"D7","name":"ด่าน 2 · ถ้ำเปลี่ยนสถานะ · ข้อ 8","sec":"D","stage":2,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p37":[{"id":"D8","name":"ด่าน 2 · ถ้ำเปลี่ยนสถานะ · ข้อ 9","sec":"D","stage":2,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p38":[{"id":"D18","name":"บอส · ถ้ำเปลี่ยนสถานะ · ข้อ 10","sec":"D","stage":2,"boss":1,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p39":[{"id":"D9","name":"ด่าน 3 · หมู่บ้านสมดุล · ข้อ 11","sec":"D","stage":3,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p40":[{"id":"D10","name":"ด่าน 3 · หมู่บ้านสมดุล · ข้อ 12","sec":"D","stage":3,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p41":[{"id":"D11","name":"ด่าน 3 · หมู่บ้านสมดุล · ข้อ 13","sec":"D","stage":3,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p42":[{"id":"D12","name":"ด่าน 3 · หมู่บ้านสมดุล · ข้อ 14","sec":"D","stage":3,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p43":[{"id":"D19","name":"บอส · หมู่บ้านสมดุล · ข้อ 15","sec":"D","stage":3,"boss":1,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p44":[{"id":"D13","name":"ด่าน 4 · ป่าแนวคิด · ข้อ 16","sec":"D","stage":4,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p45":[{"id":"D14","name":"ด่าน 4 · ป่าแนวคิด · ข้อ 17","sec":"D","stage":4,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p46":[{"id":"D15","name":"ด่าน 4 · ป่าแนวคิด · ข้อ 18","sec":"D","stage":4,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p47":[{"id":"D16","name":"ด่าน 4 · ป่าแนวคิด · ข้อ 19","sec":"D","stage":4,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p48":[{"id":"D21","name":"บอส · ป่าแนวคิด · ข้อ 20","sec":"D","stage":4,"boss":1,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p49":[{"id":"D20","name":"ด่าน 5 · ปราสาทบอสใหญ่ · ข้อ 21","sec":"D","stage":5,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p50":[{"id":"D22","name":"ด่าน 5 · ปราสาทบอสใหญ่ · ข้อ 22","sec":"D","stage":5,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p51":[{"id":"D23","name":"บอส · ปราสาทบอสใหญ่ · ข้อ 23","sec":"D","stage":5,"boss":1,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p53":[{"id":"B1","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 1","sec":"B","skill":1,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p54":[{"id":"B2","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 2","sec":"B","skill":2,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p55":[{"id":"B3","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 3","sec":"B","skill":3,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p56":[{"id":"B4","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 4","sec":"B","skill":4,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p57":[{"id":"B5","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 5","sec":"B","skill":5,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p58":[{"id":"B6","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 6","sec":"B","skill":6,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p59":[{"id":"B7","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 7","sec":"B","skill":7,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p60":[{"id":"B8","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 8","sec":"B","skill":8,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p61":[{"id":"B9","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 9","sec":"B","skill":9,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p62":[{"id":"B10","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 10","sec":"B","skill":10,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p63":[{"id":"B11","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 11","sec":"B","skill":11,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p64":[{"id":"B12","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 12","sec":"B","skill":12,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p65":[{"id":"B13","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 13","sec":"B","skill":13,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p66":[{"id":"B14","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 14","sec":"B","skill":14,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p67":[{"id":"B15","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 15","sec":"B","skill":15,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p68":[{"id":"B16","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 16","sec":"B","skill":16,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p69":[{"id":"B17","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 17","sec":"B","skill":17,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p70":[{"id":"B18","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 18","sec":"B","skill":18,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p71":[{"id":"B19","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 19","sec":"B","skill":19,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p72":[{"id":"B20","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 20","sec":"B","skill":20,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p73":[{"id":"B21","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 21","sec":"B","skill":21,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p74":[{"id":"B22","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 22","sec":"B","skill":22,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p75":[{"id":"B23","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 23","sec":"B","skill":23,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p76":[{"id":"B24","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 24","sec":"B","skill":24,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p77":[{"id":"B25","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 25","sec":"B","skill":25,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}],"p78":[{"id":"B26","name":"ข้อสอบหลังเรียน · ชุด B · ข้อ 26","sec":"B","skill":26,"parts":[{"l":"คำตอบ","c":["ก","ข","ค","ง"]}]}]},"game":{"skills":["ความร้อน vs อุณหภูมิ","หน่วยเคลวิน","เปรียบเทียบ c","Q = mcΔT หา Q","หา ΔT → อุณหภูมิสุดท้าย","หา c → ชนิดสาร","หา m","แปลง J ↔ kcal","อ่านกราฟเปลี่ยนสถานะ","ชื่อการเปลี่ยนสถานะ + รับ/คาย","Q = mL หลอมเหลว","Q = mL กลายเป็นไอ/ควบแน่น","Q หลายขั้น","สมดุล น้ำ + น้ำ","สมดุล โลหะ + น้ำ","สมดุล น้ำแข็ง + น้ำ","หา c จากการผสม","หลักสมดุลความร้อน","แผ่นโลหะคู่","การขยายตัวของของเหลว/แก๊ส","การนำความร้อน","การพาความร้อน","การแผ่รังสีความร้อน","ลมบก ลมทะเล","ฉนวน/กระติกน้ำร้อน","การระเหยทำให้เย็น"],"level":{"3":"ง่าย","11":"ง่าย","12":"ง่าย","14":"ง่าย","17":"ค่อนข้างยาก","18":"ค่อนข้างยาก","21":"ค่อนข้างยาก","22":"ง่าย","23":"ง่าย"}},"anims":23760334};
+const SHEET=CFG.sheet;                     // Google Apps Script URL (tools/check-sheet.gs); null = this browser only (try-out in two tabs)
+const CLASS=CFG.id,N=CFG.pages;
+const $=id=>document.getElementById(id);
+// the hidden #teacher screen is retired (the teacher marks by hand); old #teacher links open #show
+const SCREEN=location.hash==="#live"?"live":location.hash==="#show"||location.hash==="#teacher"?"show":"student";
+const TEACHER=SCREEN==="teacher",SHOW=SCREEN==="show",LIVE_SCREEN=SCREEN==="live",STAFF=TEACHER||SHOW||LIVE_SCREEN;
+document.body.classList.add(SCREEN);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const P=i=>"p"+String(i+1).padStart(2,"0");          // page id in the Sheet: p01, p02…
+const K={me:"scitem-sc:"+CLASS+":me",work:"scitem-sc:"+CLASS+":work",out:"scitem-sc:"+CLASS+":out",sent:"scitem-sc:"+CLASS+":sent",
+  red:"scitem-sc:"+CLASS+":red",show:"scitem-sc:"+CLASS+":show",seen:"scitem-sc:"+CLASS+":seen",ans:"scitem-sc:"+CLASS+":ans"};
+const load=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}};
+const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}};
+
+/* ---------- gate: the student types her name; both teacher screens need the teacher code (it opens the answer key) ---------- */
+const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+// key.json = the answer key pages, AES-GCM with the teacher code (tools/build-sheet-class.mjs); only the teacher screens fetch it
+let KEYBLOB=null;
+async function openKey(code){
+  if(!KEYBLOB)KEYBLOB=await (await fetch("key.json",{cache:"no-cache"})).json();
+  const B=KEYBLOB;
+  const base=await crypto.subtle.importKey("raw",new TextEncoder().encode(code),"PBKDF2",false,["deriveKey"]);
+  const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt:b64(B.salt),iterations:B.iter,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["decrypt"]);
+  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:b64(B.iv)},key,b64(B.ct))));
+}
+let ME=load(K.me,{}),PW="",KEYPAGES=null,KEYANS={},KEYMAP=null,KEYQ={},KEYH={},KEYHINT={};
+if(STAFF){$("gTitle").textContent=LIVE_SCREEN?"จอครูดูสด (ซ่อน)":TEACHER?"จอครู (ซ่อน)":"จอครู (แชร์ให้น้องดู)";$("gNameL").hidden=true;$("gCodeL").hidden=false;$("gGo").textContent="เข้า";}
+else{$("gTitle").textContent=CFG.title;if(ME.name)$("gName").value=ME.name;}
+$("gateForm").addEventListener("submit",async e=>{
+  e.preventDefault();$("gErr").textContent="";
+  if(STAFF){
+    const code=$("gCode").value.trim();$("gGo").disabled=true;
+    try{const k=await openKey(code);if(TEACHER||LIVE_SCREEN)KEYPAGES=k.pages;KEYANS=k.answers||{};KEYMAP=k.kmap||null;KEYQ=k.kq||{};KEYH=k.kh||{};KEYHINT=k.hints||{};}
+    catch(err){$("gErr").textContent="รหัสไม่ถูก";$("gGo").disabled=false;return;}
+    PW=sessionStorage.getItem("scitem-sheet-pw")||code;TPW=code;
+    if(LIVE_SCREEN){
+      if(!FB){$("gErr").textContent="ห้องนี้ยังไม่ได้ต่อ Firebase";$("gGo").disabled=false;return;}
+      // the Firebase password of teacher@scitem.net is meant to be the teacher code; if not, ask for it
+      try{await fbTeacher(code);}catch(err){
+        const p=prompt("รหัส Firebase ของ "+FB_TEACHER+" (ไม่ตรงกับรหัสครู):");
+        try{if(!p)throw err;await fbTeacher(p.trim());}
+        catch(err2){$("gErr").textContent="เข้า Firebase ไม่ได้ ("+err2.message+")";$("gGo").disabled=false;return;}
+      }
+      $("gate").hidden=true;$("live").hidden=false;startLive();return;
+    }
+  }else{
+    const n=$("gName").value.trim().slice(0,30);if(!n){$("gErr").textContent="Type your name.";return;}
+    ME.name=n;save(K.me,ME);
+  }
+  $("gate").hidden=true;$("app").hidden=false;start();
+});
+
+/* ---------- state ---------- */
+let idx=0,W={},SENT={},RED={},ALL={},STU="",SEEN={},SHOWINK={},pull=false,keyOn=false;
+// W[pid] = {ink:[...], sentAt, sentLen}: her own pages. ALL[name][pid] = what came from the Sheet. RED[key] = teacher's red ink.
+const mine=()=>W[P(idx)]||(W[P(idx)]={ink:[],sentAt:0,sentLen:-1});
+const redKey=(i=idx)=>TEACHER&&SHEET?STU+"|"+P(i):P(i);
+
+/* ---------- the Sheet: cput/cget = the student's pages, rput/rget = the teacher's red ink (tools/check-sheet.gs) ---------- */
+// d:5 = points in 1/5000 of the page (older ink: 1/1000)
+const packInk=ink=>ink.map(s=>({c:s.c,e:s.e?1:0,d:5,...(s.z&&s.z!==1?{z:s.z}:{}),p:s.p.map((v,j)=>j%3===2?Math.round(v*9):Math.round(v*5000))}));
+const arr=v=>Array.isArray(v)?v:v&&typeof v==="object"?Object.keys(v).sort((a,b)=>a-b).map(k=>v[k]):[];   // Firebase may hand an array back as {0:…,1:…}
+const unpackInk=ink=>arr(ink).filter(s=>s&&s.p).map(s=>{const d=s.d===5?5000:1000;return {c:s.c,e:!!s.e,...(s.z?{z:+s.z}:{}),p:arr(s.p).map((v,j)=>j%3===2?v/9:v/d)};});
+async function post(body){
+  let r,t;
+  const ab=new AbortController(),tm=setTimeout(()=>ab.abort(),25000);
+  try{r=await fetch(SHEET,{method:"POST",body:JSON.stringify(body),signal:ab.signal});t=await r.text();}
+  catch(e){throw new Error("fetch: "+e.message);}finally{clearTimeout(tm);}
+  let j;try{j=JSON.parse(t);}catch(e){throw new Error("HTTP "+r.status+": "+t.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,140));}
+  if(!j.ok)throw new Error(j.error||"sheet");return j;
+}
+const setNet=t=>{$("net").textContent=t;};
+let flashT;function flash(t){$("status").textContent=t;clearTimeout(flashT);flashT=setTimeout(()=>{$("status").textContent=""},3000);}
+/* a page of pencil can pass what the Sheet keeps (360 000 characters a page): drop every other point until it fits */
+const SHEET_MAX=340000;
+function fitRec(rec){
+  let s=JSON.stringify(rec),ink=rec.ink||[];
+  const thin=p=>{if(p.length<=6)return p;const o=[];for(let i=0;i<p.length;i+=3)if(i%6===0||i===p.length-3)o.push(p[i],p[i+1],p[i+2]);return o;};
+  while(s.length>SHEET_MAX&&ink.length){const next=ink.map(k=>Object.assign({},k,{p:thin(k.p)}));
+    ink=JSON.stringify(next).length<JSON.stringify(ink).length?next:[];s=JSON.stringify(Object.assign({},rec,{ink}));}
+  return s;
+}
+// pages waiting for the Sheet: kept in memory and copied to localStorage when it has room (a full iPad
+// storage made the copy fail silently, so a page could look sent and never leave)
+let flushing=false,OUTQ=null,lastErr="";
+const outq=()=>OUTQ||(OUTQ=load(K.out,{}));
+async function flush(){
+  if(!SHEET||STAFF||flushing)return;
+  const out=outq(),ids=Object.keys(out);if(!ids.length){setNet("");return;}
+  flushing=true;let failed=0;
+  for(const id of ids){
+    const rec=out[id];
+    try{await post({action:"cput",cls:CLASS,name:ME.name||"",id,data:fitRec(rec)});
+      if(out[id]===rec){delete out[id];save(K.out,out);}
+      if(W[id]&&W[id].sentAt===rec.at){W[id].okAt=rec.at;save(K.work,W);}}
+    catch(e){failed++;lastErr=e.message;}
+  }
+  flushing=false;
+  setNet(failed?"Not saved yet ("+lastErr+"). Trying again…":"");
+  render();
+}
+function sendPage(){
+  const w=mine(),rec={ink:packInk(w.ink),at:Date.now()};
+  w.sentAt=rec.at;w.sentLen=inkSig(w.ink);
+  if(!save(K.work,W))setNet("iPad storage is full: send each page, it still goes to the teacher");
+  if(SHEET){outq()[P(idx)]=rec;save(K.out,OUTQ);flush();}
+  else{const sent=load(K.sent,{});rec.name=ME.name||"";sent[P(idx)]=rec;save(K.sent,sent);}
+  render();
+}
+const inkSig=ink=>ink.reduce((a,s)=>a+s.p.length+(s.e?7:1),0);
+// View 2026-10-21: the teacher's ink is not shown on the student's screen; red stays on #teacher and in the saved PDF
+const RED_TO_STUDENT=false;
+async function pullRed(){
+  if(STAFF||!RED_TO_STUDENT)return;const id=P(idx);
+  if(!SHEET){RED=load(K.red,{});drawRed();return;}
+  try{const j=await post({action:"rget",cls:CLASS,name:ME.name||"",id});
+    const r=unpackInk(j.red?JSON.parse(j.red):[]);
+    if(JSON.stringify(r)!==JSON.stringify(RED[id]||[])){RED[id]=r;if(P(idx)===id)drawRed();}}catch(e){}
+}
+let lastAt=0;
+async function pullAll(){
+  if(!SHEET){
+    const sent=load(K.sent,{}),all={};
+    for(const [id,r] of Object.entries(sent))(all[r.name]||(all[r.name]={}))[id]=Object.assign({},r,{ink:unpackInk(r.ink)});
+    const s=JSON.stringify(all);if(s===JSON.stringify(ALL))return false;ALL=all;
+  }else{
+    try{
+      const j=await post({action:"cget",cls:CLASS,pw:PW,since:lastAt});setNet("");
+      if(!j.rows.length)return false;
+      for(const r of j.rows){
+        lastAt=Math.max(lastAt,r.at);
+        const d=JSON.parse(r.data);d.ink=unpackInk(d.ink);d.at=r.at;
+        (ALL[r.name]||(ALL[r.name]={}))[r.id]=d;
+        if(r.red!=null&&!RED[r.name+"|"+r.id])RED[r.name+"|"+r.id]=unpackInk(JSON.parse(r.red||"[]"));
+      }
+    }catch(e){
+      if(e.message==="pw"){
+        // the Sheet's password (tools/check-sheet.gs) is not the teacher code: ask once for this tab
+        const p=prompt("รหัสครูในชีท (Apps Script) ไม่ตรงกับรหัสนี้ ใส่รหัสของชีท:");
+        if(p){PW=p.trim();sessionStorage.setItem("scitem-sheet-pw",PW);}
+        setNet("โหลดไม่ได้: รหัสครูไม่ตรงกับในชีท");
+      }else setNet("โหลดไม่ได้ ("+e.message+")");
+      return false;
+    }
+  }
+  const names=Object.keys(ALL);
+  const latest=n=>Math.max(...Object.values(ALL[n]).map(x=>x.at||0));
+  if(names.length&&(!STU||!ALL[STU]))STU=names.sort((a,b)=>latest(b)-latest(a))[0];
+  const sel=$("stu");
+  if(TEACHER&&names.length){if(sel.options.length!==names.length)sel.innerHTML=names.map(n=>`<option>${esc(n)}</option>`).join("");sel.hidden=false;sel.value=STU;}
+  SENT=ALL[STU]||{};
+  return true;
+}
+let redT=null;
+function pushRed(){
+  if(!SHEET){save(K.red,RED);return;}
+  clearTimeout(redT);const key=redKey(),id=P(idx),name=STU;
+  redT=setTimeout(()=>{post({action:"rput",cls:CLASS,pw:PW,name,id,red:JSON.stringify(packInk(RED[key]||[]))}).catch(()=>setNet("ส่งหมึกครูไม่ได้"));},1200);
+}
+
+/* ---------- live ink on Firebase (Realtime Database over REST, no SDK): each finished stroke goes up, #live streams them ---------- */
+const FB=CFG.fb||null;                     // {key: web API key, db: database URL} from FIREBASE in src/data/catalog.ts; null = no live ink
+const FB_TEACHER="teacher@scitem.net";     // the only account that can read a class (rules: tools/firebase-rules.json)
+const FBK=SHOW?"scitem-fb-show":"scitem-fb-anon";   // #show signs in anonymously too (its own card, never a student's)
+// (the student's anonymous sign-in is kept so a reload stays the same card on #live)
+let FBA=null;                              // {uid, id = ID token, rt = refresh token, exp}
+async function fbPost(url,body,form){
+  const r=await fetch(url,{method:"POST",headers:{"Content-Type":form?"application/x-www-form-urlencoded":"application/json"},body:form?body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error((j.error&&j.error.message)||"HTTP "+r.status);
+  return j;
+}
+function fbSet(a,keep){
+  FBA={uid:a.localId||a.user_id,id:a.idToken||a.id_token,rt:a.refreshToken||a.refresh_token,exp:Date.now()+1000*(+(a.expiresIn||a.expires_in)||3600)};
+  if(keep)save(FBK,{uid:FBA.uid,rt:FBA.rt});
+}
+// one sign-in at a time: two at once (the ink and the answer stream both start on load) made two accounts, so one student showed up twice on #live
+let fbPending=null;
+function fbToken(){
+  if(FBA&&FBA.exp>Date.now()+120000)return Promise.resolve(FBA.id);
+  return fbPending||(fbPending=fbToken1().finally(()=>{fbPending=null;}));
+}
+async function fbToken1(){                 // ID tokens last an hour: refresh with the refresh token, or sign the student in anonymously
+  const keep=!STAFF||SHOW,old=FBA||(keep?load(FBK,null):null);
+  if(old&&old.rt){
+    try{fbSet(await fbPost("https://securetoken.googleapis.com/v1/token?key="+FB.key,"grant_type=refresh_token&refresh_token="+encodeURIComponent(old.rt),true),keep);return FBA.id;}
+    catch(e){if((STAFF&&!SHOW)||!/TOKEN|USER/.test(e.message))throw e;}   // offline: try later; a dead token: start a new card
+  }
+  if(STAFF&&!SHOW)throw new Error("sign in again");
+  fbSet(await fbPost("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="+FB.key,{returnSecureToken:true}),true);
+  return FBA.id;
+}
+/* game classes: #show also signs in as the teacher (a second token, the anonymous one stays for the hints) to show her work */
+let TFB=null,TPW="";
+async function tToken(){
+  if(TFB&&TFB.exp>Date.now()+120000)return TFB.id;
+  let a=null;
+  if(TFB&&TFB.rt)try{a=await fbPost("https://securetoken.googleapis.com/v1/token?key="+FB.key,"grant_type=refresh_token&refresh_token="+encodeURIComponent(TFB.rt),true);}catch(e){}
+  if(!a){const si=pw=>fbPost("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key="+FB.key,{email:FB_TEACHER,password:pw,returnSecureToken:true});
+    try{a=await si(TPW);}catch(e){const p=prompt("รหัส Firebase ของ "+FB_TEACHER+" (ไม่ตรงกับรหัสครู):");if(!p)throw e;TPW=p.trim();a=await si(TPW);}}
+  TFB={id:a.idToken||a.id_token,rt:a.refreshToken||a.refresh_token,exp:Date.now()+1000*(+(a.expiresIn||a.expires_in)||3600)};
+  return TFB.id;
+}
+let STREE={},SBACK={},showOn=false,showRaf=false;
+function showConnect(){
+  fbStream("","live",(path,data)=>{STREE=pathSet(STREE,path,data);showDirty();},t=>setNet(t),tToken);
+  fbStream("","back",(path,data)=>{SBACK=pathSet(SBACK,path,data);showDirty();},()=>{},tToken);
+}
+function showDirty(){if(showRaf)return;showRaf=true;requestAnimationFrame(()=>{showRaf=false;showPick();});}
+// the student shown = the one picked, else the one who did something last; her ink goes on the see-through layer
+function showPick(){
+  const us=Object.keys(STREE).filter(u=>STREE[u]&&!STREE[u].show&&STREE[u].n).sort((a,b)=>(+STREE[b].at||0)-(+STREE[a].at||0));
+  const sel=$("stu");
+  const sig=us.map(u=>u+STREE[u].n).join();if(sel.dataset.sig!==sig){sel.dataset.sig=sig;sel.innerHTML=us.map(u=>`<option value="${u}">${esc(STREE[u].n)}</option>`).join("");}
+  if(!STU||!STREE[STU])STU=us[0]||"";sel.value=STU;sel.hidden=!pull||us.length<2;
+  const d=STREE[STU]||{},ink=d.ink||{};SENT={};
+  for(const pid of Object.keys(ink))SENT[pid]={ink:unpackInk(ink[pid]),at:1};
+  $("coinN").textContent=d.sc??10;
+  render();ansStatus();
+}
+function showStatus(card){
+  const id=card.dataset.q,st=card.querySelector(".st"),d=STREE[STU],an=pull&&d&&d.ans&&d.ans[id],b=SBACK[STU]&&SBACK[STU][id];
+  const v=(an&&an.v)||[];
+  card.querySelectorAll(".ch4").forEach(el=>{const c=(v[+el.dataset.k]||{}).c;el.querySelectorAll("button").forEach(x=>{x.classList.toggle("on",!!c&&x.dataset.c===c);x.disabled=true;});});
+  const fresh=!!an&&!!b&&b.for===an.k;
+  card.classList.toggle("ok",fresh&&b.ok===true);card.classList.toggle("no",fresh&&b.ok===false);
+  if(!st)return;
+  st.innerHTML=!pull?"":!an?"น้องยังไม่ส่ง":(an.bet?`ลง ${an.bet} <span class="coin"></span> · `:"")+(fresh?(b.ok?"ถูก":"ไม่ถูก"):secOf(id)==="A"?"ส่งแล้ว":"ส่งแล้ว รอตรวจ");
+}
+async function fbTeacher(pw){fbSet(await fbPost("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key="+FB.key,{email:FB_TEACHER,password:pw,returnSecureToken:true}),false);}
+const fbUrl=(path,tok,root)=>FB.db.replace(/\/+$/,"")+"/"+(root||"live")+"/"+CLASS+path+".json?auth="+encodeURIComponent(tok);
+// one Firebase stream (server-sent events): put/patch events land in tree via set(path, data); reconnects with a fresh token
+function fbStream(path,root,set,onNet,tf){
+  let es=null,dead=false;
+  const go=async()=>{
+    if(es)es.close();
+    let tok;try{tok=await (tf||fbToken)();}catch(e){onNet("ต่อไม่ได้ ("+e.message+") ลองใหม่…");setTimeout(go,5000);return;}
+    const me=es=new EventSource(fbUrl(path,tok,root));
+    const on=(t,fn)=>me.addEventListener(t,ev=>{if(me===es)fn(ev.data?JSON.parse(ev.data):null);});
+    on("put",d=>set(d.path,d.data));
+    on("patch",d=>{const base=d.path.replace(/\/+$/,"");for(const [k,v] of Object.entries(d.data||{}))set(base+"/"+k,v);});
+    on("auth_revoked",()=>{if(tf)TFB.exp=0;else FBA.exp=0;go();});   // the hour is up: new token, new stream
+    on("cancel",()=>{me.close();onNet("อ่านไม่ได้: เช็ค Rules ใน Firebase");});
+    me.onopen=()=>onNet("");
+    me.onerror=()=>onNet("หลุด กำลังต่อใหม่…");
+  };
+  go();
+}
+function pathSet(tree,path,data){           // returns the tree (a new one when the whole thing is replaced)
+  const ks=path.split("/").filter(Boolean);
+  if(!ks.length)return data&&typeof data==="object"?data:{};
+  let o=tree;
+  for(const k of ks.slice(0,-1)){if(!o[k]||typeof o[k]!=="object")o[k]={};o=o[k];}
+  const last=ks[ks.length-1];if(data==null)delete o[last];else o[last]=data;
+  return tree;
+}
+
+/* ---------- answer boxes (CFG.qs): a number and a unit per part; #live sees them checked against the key, the teacher's
+   right/wrong and hint come back (back/<class>/<uid>/<qid>) ---------- */
+const QS=CFG.qs||{};                        // pid -> [{id, name, parts: [{l: label, c?: choices}]}]; the key is in key.json
+const QINFO={},QORDER=[];
+for(const [pid,list] of Object.entries(QS))for(const q of list){QINFO[q.id]=Object.assign({pg:+pid.slice(1)-1},q);QORDER.push(q.id);}
+/* a game class (CFG.game = {skills, level}; heat5): each question has sec A (pre-test: marked on #live, shown when the teacher opens set A),
+   D (the drill: bet 1–3 coins, boss ×2, first try counts) or B (post-test: marked at once); answers are final once sent in A and B */
+const GAME=CFG.game||null;if(GAME)document.body.classList.add("game");
+const secOf=q=>GAME&&QINFO[q]?QINFO[q].sec||"":"";
+const allChoice=q=>QINFO[q].parts.every(p=>p.c);
+const ICONS={"pen": "<path d=\"M12 20h9\"/><path d=\"M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z\"/>", "eraser": "<path d=\"m7 21-4.3-4.3a1 1 0 0 1 0-1.4l10-10a1 1 0 0 1 1.4 0l5.6 5.6a1 1 0 0 1 0 1.4L13 21\"/><path d=\"M22 21H7\"/><path d=\"m5 11 9 9\"/>", "lasso": "<path d=\"M7 22a5 5 0 0 1-2-4\"/><path d=\"M3.3 14A6.8 6.8 0 0 1 2 10c0-4.4 4.5-8 10-8s10 3.6 10 8-4.5 8-10 8a12 12 0 0 1-5-1\"/><circle cx=\"5\" cy=\"16\" r=\"2\"/>", "hand": "<path d=\"M18 11V6a2 2 0 0 0-4 0v5\"/><path d=\"M14 10V4a2 2 0 0 0-4 0v6\"/><path d=\"M10 10.5V6a2 2 0 0 0-4 0v8\"/><path d=\"M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-5.9-2.4L3.4 16a2 2 0 0 1 3-2.8L8 15\"/>", "undo": "<path d=\"M9 14 4 9l5-5\"/><path d=\"M4 9h10.5a5.5 5.5 0 0 1 0 11H11\"/>", "trash": "<path d=\"M3 6h18\"/><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\"/><path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"/>", "left": "<path d=\"m15 18-6-6 6-6\"/>", "right": "<path d=\"m9 18 6-6-6-6\"/>", "grid": "<rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/>", "follow": "<circle cx=\"12\" cy=\"12\" r=\"3\"/><circle cx=\"12\" cy=\"12\" r=\"8\"/><path d=\"M12 2v2M12 20v2M2 12h2M20 12h2\"/>", "inbox": "<path d=\"M22 12h-6l-2 3h-4l-2-3H2\"/><path d=\"M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1Z\"/>", "print": "<path d=\"M6 9V2h12v7\"/><path d=\"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2\"/><rect x=\"6\" y=\"14\" width=\"12\" height=\"8\"/>", "check": "<path d=\"M20 6 9 17l-5-5\"/>", "x": "<path d=\"M18 6 6 18M6 6l12 12\"/>", "clock": "<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 6v6l4 2\"/>", "send": "<path d=\"m22 2-7 20-4-9-9-4Z\"/><path d=\"M22 2 11 13\"/>", "help": "<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3\"/><path d=\"M12 17h.01\"/>"};
+const icon=k=>'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+ICONS[k]+'</svg>';
+const prettyU=u=>String(u||"").replace(/\^2/g,"²").replace(/\^3/g,"³");
+// what students type: "6", "20,000", "2x10^4", "0.5", "3/2", "2√10", "20π²", "√(3)" (from src/pages/teacher.astro); NaN if it can't
+function evalAns(raw){
+  let t=String(raw||"").replace(/[,\s]/g,"").replace(/[−–]/g,"-").replace(/[×xX]/g,"*").replace(/²/g,"^2").replace(/³/g,"^3");
+  t=((t.match(/^[0-9.+\-*/^()√π]+/)||[""])[0]).replace(/[+\-*/^(√]+$/,"");
+  let i=0;const peek=()=>t[i];
+  const num=()=>{const m=t.slice(i).match(/^\d*\.?\d+/);if(!m)return NaN;i+=m[0].length;return Number(m[0]);};
+  const primary=()=>{const c=peek();if(c==="π"){i++;return Math.PI;}if(c==="√"){i++;return Math.sqrt(power());}
+    if(c==="("){i++;const v=expr();if(peek()===")")i++;return v;}return num();};
+  const power=()=>{const b=primary();if(peek()==="^"){i++;return b**unary();}return b;};
+  const unary=()=>peek()==="-"?(i++,-unary()):power();
+  const term=()=>{let v=unary();for(;;){const c=peek();
+    if(c==="*"){i++;v*=unary();}else if(c==="/"){i++;v/=unary();}else if(c&&/[\dπ√(.]/.test(c))v*=power();else return v;}};
+  const expr=()=>{let v=term();while(peek()==="+"||peek()==="-")v=t[i++]==="+"?v+term():v-term();return v;};
+  if(!t)return NaN;const v=expr();return i===t.length?v:NaN;
+}
+function normU(u){                          // "m/s2", "m/s²", "เมตร/วินาที" … to one spelling
+  let t=String(u||"").toLowerCase().replace(/\s+/g,"").replace(/²/g,"^2").replace(/³/g,"^3").replace(/\*\*/g,"^").replace(/[·∙]/g,"");
+  for(const [a,b] of [["เซนติเมตร","cm"],["มิลลิเมตร","mm"],["มิลลิลิตร","ml"],["ลิตร","l"],["กิโลกรัม","kg"],["กรัม","g"],["เมตร","m"],
+    ["นิวตัน","n"],["วินาที","s"],["เรเดียน","rad"],["องศา","°"],["degrees","°"],["degree","°"],["deg","°"],["ร้อยละ","%"],["เปอร์เซ็นต์","%"],["เท่า",""],["ส่วน",""]])t=t.split(a).join(b);
+  return t.replace(/([a-z])(\d)/g,"$1^$2").replace(/\(([a-z°%]+(\^\d)?)\)/g,"$1").replace(/\/s\/s$/,"/s^2");   // "m/(s^2)" = "m/s^2"
+}
+const UNITS={m:["L",1],cm:["L",.01],mm:["L",.001],km:["L",1000],"m^3":["V",1],"cm^3":["V",1e-6],"dm^3":["V",1e-3],l:["V",1e-3],ml:["V",1e-6],
+  kg:["M",1],g:["M",1e-3],"kg/m^3":["D",1],"g/cm^3":["D",1000],"g/ml":["D",1000]};
+function checkPart(key,a){                  // -> {ok: true/false/null (teacher decides), num, unit}
+  if(!key)return {ok:null};
+  if(key.c)return {ok:!!a&&a.c===key.a};
+  if(key.t||!a)return {ok:a?null:false};
+  const x=evalAns(a.n),y=evalAns(key.v),ua=normU(a.u),ub=normU(key.u);
+  let fa=1,fb=1,unit=ua===ub;
+  if(!unit&&UNITS[ua]&&UNITS[ub]&&UNITS[ua][0]===UNITS[ub][0]){fa=UNITS[ua][1];fb=UNITS[ub][1];unit=true;}
+  const num=Number.isFinite(x)&&Math.abs(x*fa-y*fb)<=(key.tol||0.005)*Math.max(Math.abs(y*fb),1e-12);
+  return {ok:num&&unit,num,unit};
+}
+const showA=a=>!a?"–":a.c!=null?a.c||"–":((a.n||"–")+(a.u?" "+prettyU(a.u):""));
+const showK=k=>!k?"":k.c?k.a:k.t?"":(k.v+(k.u?" "+prettyU(k.u):""));
+
+/* the student's side */
+let MYANS=load(K.ans,{}),BACK={},lastNum=null;
+function ansDraft(q){return MYANS[q]||(MYANS[q]={v:[],k:0,sent:""});}
+function drawAns(){
+  const box=$("ans"),qs=QS[P(idx)]||[];
+  box.hidden=!qs.length||!(FB||SHOW);
+  if(box.hidden){box.innerHTML="";return;}
+  const SYM=["√","π","²","×10^","/","(",")"];
+  box.innerHTML='<div class="sym">'+SYM.map(t=>`<button type="button" data-ins="${t}">${t==="×10^"?"×10ⁿ":t}</button>`).join("")+"</div>"+qs.map(q=>{
+    const d=SHOW?{v:[]}:ansDraft(q.id);
+    const g=secOf(q.id);
+    return `<div class="qa" data-q="${esc(q.id)}"><h3>${esc(q.name)}</h3>`+(g==="D"&&q.boss?'<span class="boss">บอส · เหรียญ ×2</span>':"")+q.parts.map((p,k)=>{const v=d.v[k]||{};
+      if(g&&p.c)return `<div class="pt"><div class="ch4" data-k="${k}">${p.c.map(c=>`<button type="button" data-c="${esc(c)}"${v.c===c?' class="on"':""}>${esc(c)}</button>`).join("")}</div></div>`;
+      return p.c?`<div class="pt">${esc(p.l)}<select data-k="${k}"><option value="">เลือก…</option>${p.c.map(c=>`<option${v.c===c?" selected":""}>${esc(c)}</option>`).join("")}</select></div>`
+        :`<div class="pt">${esc(p.l)}<div class="row"><input class="num" data-k="${k}" inputmode="decimal" autocomplete="off" placeholder="คำตอบ" value="${esc(v.n||"")}"><input class="unit" data-k="${k}" autocomplete="off" autocapitalize="off" placeholder="หน่วย" value="${esc(v.u||"")}"></div></div>`;}).join("")
+      +(g==="D"&&!SHOW?`<div class="bets">ลง${[1,2,3].map(n=>`<button type="button" data-bet="${n}"${d.bet===n?' class="on"':""}>${n}<span class="coin"></span></button>`).join("")}</div>`:"")
+      +(SHOW?(g?'<div class="st"></div>':""):`<button class="go" type="button"></button><div class="st"></div>`)+"</div>";}).join("");
+  ansStatus();
+}
+function readCard(card){
+  const q=QINFO[card.dataset.q],v=q.parts.map(()=>({}));
+  for(const el of card.querySelectorAll("[data-k]")){const o=v[+el.dataset.k];
+    if(el.classList.contains("ch4")){const b=el.querySelector("button.on");o.c=b?b.dataset.c:"";}
+    else if(el.tagName==="SELECT")o.c=el.value;else if(el.classList.contains("num"))o.n=el.value.trim().slice(0,40);else o.u=el.value.trim().slice(0,20);}
+  return v;
+}
+function ansStatus(){
+  for(const card of $("ans").querySelectorAll(".qa")){
+    const id=card.dataset.q,d=MYANS[id],b=BACK[id],st=card.querySelector(".st"),go=card.querySelector(".go");
+    const hs=hintOf(id);let hb=card.querySelector(".hb");             // the hints the teacher opened (#show too)
+    if(hs.length){if(!hb){hb=document.createElement("div");hb.className="hb";card.insertBefore(hb,st||null);}
+      const sig=String(hs.length);if(hb.dataset.sig!==sig){hb.dataset.sig=sig;hb.innerHTML=hs.map((_,j)=>`<button type="button" data-hint="${j}">${icon("help")}Hint ${j+1}</button>`).join("");}}
+    else if(hb)hb.remove();
+    if(SHOW){if(GAME)showStatus(card);continue;}
+    if(!st)continue;
+    if(secOf(id)){gameStatus(card,d,b);continue;}
+    const cur=JSON.stringify(readCard(card)),fresh=!!d&&d.k&&b&&b.for===d.k,changed=!d||!d.k||cur!==d.sent;
+    card.classList.toggle("ok",fresh&&!changed&&b.ok===true);card.classList.toggle("no",fresh&&!changed&&b.ok===false);
+    go.innerHTML=icon("send")+(!changed?"ส่งแล้ว":d&&d.k?"ส่งใหม่":"ส่งคำตอบ");go.disabled=!changed;
+    if(!d||!d.k)st.innerHTML="";
+    else if(changed)st.innerHTML="แก้แล้ว ยังไม่ได้ส่ง";
+    else if(fresh)st.innerHTML=(b.ok?icon("check")+"<span>ถูกแล้ว</span>":icon("x")+"<span>ยังไม่ถูก ลองดูอีกครั้ง</span>");
+    else st.innerHTML=icon("clock")+"<span>ส่งแล้ว รอครูตรวจ</span>";
+    let h=card.querySelector(".hint");
+    if(fresh&&b.hint){if(!h){h=document.createElement("div");h.className="hint";card.appendChild(h);}h.textContent=b.hint;}else if(h)h.remove();
+  }
+}
+async function sendAns(card){
+  const id=card.dataset.q,v=readCard(card),d=ansDraft(id),g=secOf(id);
+  if(!v.some(o=>o.n||o.c)){flash(g?"เลือกคำตอบก่อน":"Fill in an answer first");return;}
+  if(g&&v.some(o=>!o.c)){flash("เลือกคำตอบให้ครบก่อน");return;}
+  if(g==="D"&&!d.first&&!d.bet){flash("ลงเหรียญก่อน 1, 2 หรือ 3");return;}
+  if((g==="A"||g==="B")&&d.k)return;               // the exams: one answer, final
+  d.v=v;d.k=Date.now();d.sent=JSON.stringify(v);if(g==="D"&&!d.first)d.sbet=d.bet;save(K.ans,MYANS);ansStatus();
+  try{
+    const tok=await fbToken();
+    const r=await fetch(fbUrl("/"+FBA.uid,tok),{method:"PATCH",body:JSON.stringify({n:ME.name||"",pg:idx,at:{".sv":"timestamp"},["ans/"+id]:{v,k:d.k,...(g==="D"?{bet:d.first?0:d.sbet}:{})}})});
+    if(!r.ok)throw new Error("HTTP "+r.status);
+  }catch(e){d.k=0;save(K.ans,MYANS);ansStatus();setNet("ส่งคำตอบไม่ได้ ลองกดส่งใหม่");}
+}
+function startAns(){
+  const box=$("ans");
+  box.addEventListener("focusin",e=>{if(e.target.matches&&e.target.matches("input.num,input.unit"))lastNum=e.target;});
+  box.addEventListener("pointerdown",e=>{if(e.target.closest(".sym button"))e.preventDefault();});   // keep the keyboard and the caret
+  box.addEventListener("click",e=>{
+    const sb=e.target.closest(".sym button");
+    if(sb){const el=lastNum&&box.contains(lastNum)?lastNum:box.querySelector("input.num");if(!el)return;
+      const t=sb.dataset.ins,a=el.selectionStart??el.value.length,b=el.selectionEnd??a;
+      el.value=el.value.slice(0,a)+t+el.value.slice(b);el.focus();el.setSelectionRange(a+t.length,a+t.length);
+      el.dispatchEvent(new Event("input",{bubbles:true}));return;}
+    const go=e.target.closest(".go");if(go)sendAns(go.closest(".qa"));
+    const cb=e.target.closest(".ch4 button"),bt=e.target.closest(".bets button");
+    if((cb||bt)&&!SHOW&&!e.target.closest("button").disabled){const card=e.target.closest(".qa"),d=ansDraft(card.dataset.q);
+      if(cb){[...cb.parentNode.children].forEach(x=>x.classList.toggle("on",x===cb));d.v=readCard(card);}
+      else{d.bet=+bt.dataset.bet;[...bt.parentNode.children].forEach(x=>x.classList.toggle("on",x===bt));}
+      save(K.ans,MYANS);ansStatus();}
+  });
+  const keep=e=>{const card=e.target.closest&&e.target.closest(".qa");if(!card||SHOW)return;ansDraft(card.dataset.q).v=readCard(card);save(K.ans,MYANS);ansStatus();};
+  box.addEventListener("input",keep);box.addEventListener("change",keep);
+  box.addEventListener("click",e=>{const hb=e.target.closest(".hb button");if(hb)openHint(hb.closest(".qa").dataset.q,hintOf(hb.closest(".qa").dataset.q),+hb.dataset.hint);});
+  if(!FB||!QORDER.length)return;
+  // the teacher's answers (and opened hints) come back on a stream of back/<class>/<uid>;
+  // #show signs in too, as a "show" entry the hidden screen leaves out, so the hints the teacher opens reach it like a student
+  (async()=>{try{await fbToken();}catch(e){setTimeout(startAns,8000);return;}
+    if(SHOW){const reg=()=>fbToken().then(tok=>fetch(fbUrl("/"+FBA.uid,tok),{method:"PATCH",body:JSON.stringify({show:1,n:"",at:{".sv":"timestamp"}})})).catch(()=>{});
+      reg();setInterval(reg,120000);}
+    fbStream("/"+FBA.uid,"back",(path,data)=>{BACK=pathSet(BACK,path,data);ansStatus();newHints();if(GAME&&!SHOW)score(path==="/");},t=>{});})();
+  if(GAME&&!SHOW){$("coins").onclick=()=>openSum();score(true);}
+}
+/* game: the card's state, the coins (first try of each drill question), the end-of-lesson summary */
+function gameStatus(card,d,b){
+  const id=card.dataset.q,g=secOf(id),st=card.querySelector(".st"),go=card.querySelector(".go");
+  const sent=!!d&&!!d.k,fresh=sent&&b&&b.for===d.k,cur=JSON.stringify(readCard(card)),changed=!sent||cur!==d.sent;
+  const lock=(g==="A"||g==="B")&&sent||g==="D"&&fresh&&b.ok===true&&!changed;
+  card.querySelectorAll(".ch4 button").forEach(x=>x.disabled=lock);
+  const first=d&&d.first;
+  const bets=card.querySelector(".bets");
+  if(bets&&first)bets.innerHTML=`<span>ลงไว้ ${first.bet} เหรียญ · ${first.gain>0?"ได้ +"+first.gain:"เสีย "+(-first.gain)}</span>`;
+  else if(bets)bets.querySelectorAll("button").forEach(x=>{x.disabled=lock||sent&&!changed;});
+  card.classList.toggle("ok",fresh&&!changed&&b.ok===true);card.classList.toggle("no",fresh&&!changed&&b.ok===false);
+  go.innerHTML=icon("send")+(lock||sent&&!changed?"ส่งแล้ว":sent?"ส่งใหม่ (ไม่คิดเหรียญ)":"ส่งคำตอบ");
+  go.disabled=lock||!changed||!readCard(card).every(o=>o.c)||g==="D"&&!first&&!d.bet&&!sent;
+  if(!sent)st.innerHTML=g==="D"&&!first?"เลือกคำตอบ ลงเหรียญ แล้วกดส่ง":"";
+  else if(changed)st.innerHTML="แก้แล้ว ยังไม่ได้ส่ง";
+  else if(fresh)st.innerHTML=b.ok?icon("check")+"<span>ถูก</span>":icon("x")+"<span>"+(g==="D"?"ยังไม่ถูก ลองใหม่ได้ (ไม่คิดเหรียญ)":"ผิด")+"</span>";
+  else st.innerHTML=icon("clock")+"<span>"+(g==="A"?"ส่งแล้ว รอครูเปิดผล":"ส่งแล้ว กำลังตรวจ…")+"</span>";
+}
+const BOSSX=q=>QINFO[q]&&QINFO[q].boss?2:1;
+let COINS=10,STREAK=0,lastRevA=-1;
+function score(quiet){
+  // the first marked answer of each drill question, in the order she sent them
+  let fresh=null;
+  for(const id of QORDER){if(secOf(id)!=="D")continue;const d=MYANS[id],b=BACK[id];
+    if(d&&d.k&&!d.first&&d.sbet&&b&&b.for===d.k){d.first={ok:!!b.ok,bet:d.sbet,k:d.k};fresh=id;}}
+  const list=QORDER.filter(id=>MYANS[id]&&MYANS[id].first).map(id=>[id,MYANS[id].first]).sort((a,b)=>a[1].k-b[1].k);
+  let c=10,s=0;
+  for(const [id,f] of list){const x=f.bet*BOSSX(id);if(f.ok){s++;f.gain=x+(s>=3?1:0);}else{s=0;f.gain=-x;}c=Math.max(0,c+f.gain);}
+  const was=COINS;COINS=c;STREAK=s;if(fresh)save(K.ans,MYANS);
+  $("coinN").textContent=c;$("fire").classList.toggle("on",s>=3);$("fireN").textContent=s>=3?s:"";
+  if(fresh&&!quiet){const f=MYANS[fresh].first;popCoins(f.gain,f.ok);ansStatus();}
+  if(fresh||was!==c)livePatch({sc:c});
+  // set A opened by the teacher, or set B all marked: the summary comes up once
+  const nA=QORDER.filter(id=>secOf(id)==="A"&&BACK[id]&&BACK[id].for).length;
+  if(lastRevA===0&&nA>0&&!quiet)setTimeout(()=>openSum(),900);
+  lastRevA=nA;
+  const bAll=QORDER.filter(id=>secOf(id)==="B"),bDone=bAll.filter(id=>{const d=MYANS[id],b=BACK[id];return d&&d.k&&b&&b.for===d.k;}).length;
+  if(bAll.length&&bDone===bAll.length&&!ME.sumB){ME.sumB=1;save(K.me,ME);setTimeout(()=>openSum(),900);}
+}
+function popCoins(n,ok){
+  const r=$("coins").getBoundingClientRect(),el=document.createElement("div");
+  el.className="pop "+(ok?"y":"n");el.textContent=(n>0?"+":"")+n;el.style.left=(r.left+r.width/2)+"px";el.style.top=(r.bottom+4)+"px";
+  document.body.appendChild(el);setTimeout(()=>el.remove(),1400);
+  if(!ok){$("coins").classList.remove("shake");void $("coins").offsetWidth;$("coins").classList.add("shake");}
+}
+async function livePatch(o){
+  if(!FB||STAFF)return;
+  try{const tok=await fbToken();await fetch(fbUrl("/"+FBA.uid,tok),{method:"PATCH",body:JSON.stringify(o)});}catch(e){}
+}
+// how one student did on set A and set B, item by item (the same skill on the same number); res(id) -> true/false/null
+function abRows(res){
+  const A=QORDER.filter(id=>QINFO[id].sec==="A"),B=QORDER.filter(id=>QINFO[id].sec==="B");
+  return A.map((a,k)=>{const sk=QINFO[a].skill||k+1,b=B.find(x=>QINFO[x].skill===sk)||B[k];
+    return {n:sk,skill:(GAME.skills||[])[sk-1]||"",lv:(GAME.level||{})[sk]||"ปานกลาง",a:res(a),b:b?res(b):null};});
+}
+function sumHtml(rows,name,coins,drill){
+  const t=x=>x===true?'<td class="c y">✓</td>':x===false?'<td class="c n">✗</td>':'<td class="c">–</td>';
+  const nA=rows.filter(r=>r.a===true).length,nB=rows.filter(r=>r.b===true).length,openA=rows.some(r=>r.a!=null),anyB=rows.some(r=>r.b!=null);
+  return `<h2><span>${esc(name||"ผลของฉัน")}</span><button type="button" data-x="1" aria-label="ปิด">✕</button></h2>
+    <div class="big3"><div>ก่อนเรียน (A)<b>${openA?nA+"/"+rows.length:"รอผล"}</b></div><div>หลังเรียน (B)<b>${anyB?nB+"/"+rows.length:"–"}</b></div>
+    <div>เหรียญ<b><span class="coin"></span> ${coins}</b>${drill?drill:""}</div></div>
+    ${openA&&anyB?`<div style="font:700 17px var(--display);text-align:center">${nB>nA?"เก่งขึ้น +"+(nB-nA)+" ข้อ":nB===nA?"เท่าเดิม":"ลดลง "+(nA-nB)+" ข้อ"}</div>`:""}
+    <table><tr><th>#</th><th>ทักษะ</th><th>A</th><th>B</th></tr>${rows.map(r=>`<tr><td>${r.n}</td><td>${esc(r.skill)}</td>${t(r.a)}${t(r.b)}</tr>`).join("")}</table>`;
+}
+function openSum(){
+  if(!GAME)return;
+  const res=id=>{const d=MYANS[id],b=BACK[id];return d&&d.k&&b&&b.for===d.k?!!b.ok:null;};
+  const dr=QORDER.filter(id=>secOf(id)==="D"),ok=dr.filter(id=>MYANS[id]&&MYANS[id].first&&MYANS[id].first.ok).length;
+  $("sumIn").innerHTML=sumHtml(abRows(res),ME.name,COINS,`<span>ลุยโจทย์ถูกรอบแรก ${ok}/${dr.length}</span>`);
+  $("sumBox").hidden=false;
+}
+$("sumBox").onclick=e=>{if(e.target===$("sumBox")||e.target.closest("[data-x]"))$("sumBox").hidden=true;
+  const cp=e.target.closest("[data-copy]");if(cp&&window.AB_TEXT)navigator.clipboard.writeText(window.AB_TEXT).then(()=>{cp.textContent="คัดลอกแล้ว";},()=>{});};
+/* page animations (anims.js next to index.html, public: no answers in it): a play button on the sheet's figure opens the
+   animation full screen in the hint box; SC_ANIMS = {pages: {p02: [{id, x, y, t}]}, make: {id(el) -> stop()}} (x, y = 0..1 of the page) */
+let ANIMSTOP=null;
+/* homework hints (hint1.json, public: Hint 1 only, symbols, no numbers) are open to everyone from the answer box, no teacher step */
+var OPENH={};
+if(CFG.openHints)fetch("hint1.json?v="+CFG.openHints).then(r=>r.ok?r.json():{}).then(j=>{OPENH=j||{};try{ansStatus();}catch(e){}try{drawRev();}catch(e){}}).catch(()=>{});
+if(CFG.anims){const sc=document.createElement("script");sc.src="anims.js?v="+(CFG.anims===true?1:CFG.anims);sc.onload=()=>placePlays();document.head.appendChild(sc);}
+function placePlays(){
+  const pg=$("page");pg.querySelectorAll(".play").forEach(b=>b.remove());
+  const A=window.SC_ANIMS,list=A&&A.pages[P(idx)];if(!list)return;
+  for(const a of list){
+    const b=document.createElement("button");b.type="button";b.className="play";b.title=a.t||"";b.setAttribute("aria-label","เล่นอนิเมชั่น "+(a.t||""));
+    b.style.left=a.x*100+"%";b.style.top=a.y*100+"%";b.innerHTML='<svg viewBox="0 0 24 24"><path d="M6 3.5v17l14-8.5z"/></svg>';
+    b.addEventListener("touchstart",e=>e.stopPropagation(),{passive:true});b.addEventListener("pointerdown",e=>e.stopPropagation());
+    b.onclick=()=>openAnim(a);pg.appendChild(b);
+  }
+}
+function openAnim(a){
+  const A=window.SC_ANIMS;if(!A||!A.make[a.id])return;
+  if(ANIMSTOP){try{ANIMSTOP();}catch(e){}ANIMSTOP=null;}
+  HB=null;$("hbT").textContent=a.t||"";$("hbTabs").innerHTML="";$("hbBody").innerHTML="";
+  $("hintBox").hidden=false;document.body.classList.add("hbOpen");ANIMSTOP=A.make[a.id]($("hbBody"))||null;
+}
+const hintOf=q=>{const h=BACK._hint&&BACK._hint[q];if(h&&typeof h==="object")return [h.h1,h.h2].filter(Boolean);return OPENH[q]?[OPENH[q]]:[];};
+/* a hint: a drawn SVG (key.json "hints", tools/hints-*.py). Inside it, [data-go="s"] sets the picture's state (svg[data-s]),
+   [data-tog="x"] toggles class t-x on the svg, [data-smil="id"] starts that SMIL animation; the SVG's own <style> does the rest */
+let HB=null;
+function openHint(q,list,k){
+  if(!list[k])return;if(ANIMSTOP){try{ANIMSTOP();}catch(e){}ANIMSTOP=null;}HB={q,list,k};
+  $("hbT").textContent=(QINFO[q]?QINFO[q].name:"")+" · Hint "+(k+1);
+  $("hbTabs").innerHTML=list.length>1?list.map((_,j)=>`<button type="button" data-k="${j}" aria-current="${j===k}">Hint ${j+1}</button>`).join(""):"";
+  $("hbBody").innerHTML=String(list[k]).replace(/<script[\s\S]*?<\/script>/gi,"").replace(/\son\w+\s*=\s*("[^"]*"|'[^']*')/gi,"");
+  $("hintBox").hidden=false;document.body.classList.add("hbOpen");
+  startSims();
+}
+/* live physics in a hint: <g data-sim="name" data-…> is drawn and run by SC_ANIMS.sims[name](g, dataset) from anims.js (public code;
+   the numbers stay in the encrypted hint). Several sims in one hint stop together. */
+function startSims(){
+  const A=window.SC_ANIMS,els=$("hbBody").querySelectorAll("[data-sim]");if(!els.length)return;
+  if(!A||!A.sims){setTimeout(()=>{if($("hbBody").querySelector("[data-sim]")&&!ANIMSTOP&&window.SC_ANIMS)startSims();},400);return;}
+  const stops=[];for(const el of els){const f=A.sims[el.dataset.sim];if(f)try{const st=f(el,el.dataset);if(st)stops.push(st);}catch(e){console.error(e);}}
+  ANIMSTOP=()=>stops.forEach(f=>{try{f();}catch(e){}});
+}
+$("hbTabs").onclick=e=>{const b=e.target.closest("button");if(b&&HB)openHint(HB.q,HB.list,+b.dataset.k);};
+$("hbX").onclick=()=>{$("hintBox").hidden=true;document.body.classList.remove("hbOpen");if(ANIMSTOP){try{ANIMSTOP();}catch(e){}ANIMSTOP=null;}$("hbBody").innerHTML="";};
+$("hintBox").onclick=e=>{if(e.target===$("hintBox"))$("hbX").onclick();};
+$("hbBody").onclick=e=>{
+  const svg=$("hbBody").querySelector("svg");if(!svg)return;
+  const g=e.target.closest("[data-go]"),t=e.target.closest("[data-tog]"),m=e.target.closest("[data-smil]");
+  if(g){const s=g.dataset.go;if(svg.getAttribute("data-s")===s){svg.removeAttribute("data-s");void svg.getBoundingClientRect();}svg.setAttribute("data-s",s);}
+  if(t)svg.classList.toggle("t-"+t.dataset.tog);
+  if(m)for(const id of m.dataset.smil.split(" ")){const a=svg.querySelector("#"+CSS.escape(id));if(a&&a.beginElement)a.beginElement();}
+};
+// a solution the teacher just opened: say so, and take her to its page
+let seenHints=null,toastQ=null,toastT=null;
+function newHints(){
+  const now={};for(const q of Object.keys(BACK._hint||{}))now[q]=hintOf(q).length;
+  if(seenHints===null){seenHints=now;return;}                          // the first load is not news
+  const fresh=Object.keys(now).filter(q=>now[q]>(seenHints[q]||0));seenHints=now;
+  if(!fresh.length||!QINFO[fresh[0]])return;
+  toastQ=fresh[0];const k=now[toastQ]-1;$("toastGo").textContent="ไปดู";$("toastT").textContent="ครูเปิด Hint "+(k+1)+" · "+QINFO[toastQ].name;$("toast").hidden=false;
+  clearTimeout(toastT);toastT=setTimeout(()=>{$("toast").hidden=true;},12000);
+  $("toastGo").onclick=()=>{$("toast").hidden=true;go(QINFO[toastQ].pg);openHint(toastQ,hintOf(toastQ),k);};
+}
+
+/* the student: live/<class>/<uid> = {n: name, pg: page index, at, ink: {p01: [stroke, …]}}; strokes only added go up one by one,
+   anything else (undo, clear, a move) sends the whole page again */
+const LIVE={};                             // pid -> what Firebase has for that page (a signature per stroke)
+const sigOf=s=>s.p.length+":"+s.p[0]+":"+s.p[1]+(s.e?"e":"");
+let liveT=null,liveBusy=false,liveAgain=false,livePg=-1;
+function liveTouch(){if(!FB||STAFF)return;clearTimeout(liveT);liveT=setTimeout(livePush,120);}
+async function livePush(){
+  if(liveBusy){liveAgain=true;return;}
+  const i=idx,pid=P(i),ink=mine().ink.filter(s=>!curS||s!==curS.s),sig=ink.map(sigOf),had=LIVE[pid];
+  const add=!!had&&had.length<=sig.length&&had.every((v,k)=>v===sig[k]);
+  if(add&&had.length===sig.length&&livePg===i)return;
+  const patch={n:ME.name||"",pg:i,at:{".sv":"timestamp"}};
+  if(add)for(let k=had.length;k<ink.length;k++)patch["ink/"+pid+"/"+k]=packInk([ink[k]])[0];
+  else patch["ink/"+pid]=ink.length?packInk(ink):null;
+  liveBusy=true;
+  try{
+    const tok=await fbToken();
+    const r=await fetch(fbUrl("/"+FBA.uid,tok),{method:"PATCH",body:JSON.stringify(patch)});
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    LIVE[pid]=sig;livePg=i;
+  }catch(e){LIVE[pid]=null;clearTimeout(liveT);liveT=setTimeout(livePush,5000);}
+  finally{liveBusy=false;if(liveAgain){liveAgain=false;liveTouch();}}
+}
+
+/* the teacher's hidden #live screen: one stream of the whole class, a card per student */
+let TREE={},cw=240,FOC=null;       // FOC = {u, i, follow}
+const CARDS={},DIRTY=new Set();let rafOn=false,RATIO=1.414;
+const lNet=t=>{$("lNet").textContent=t;$("fNet").textContent=t;};
+function treeSet(path,data){
+  const ks=path.split("/").filter(Boolean);
+  if(!ks.length){TREE=data&&typeof data==="object"?data:{};return;}
+  let o=TREE;
+  for(const k of ks.slice(0,-1)){if(!o[k]||typeof o[k]!=="object")o[k]={};o=o[k];}
+  const last=ks[ks.length-1];if(data==null)delete o[last];else o[last]=data;
+}
+function dirty(path){
+  const u=path.split("/").filter(Boolean)[0];
+  if(u)DIRTY.add(u);else for(const k of Object.keys(CARDS).concat(Object.keys(TREE)))DIRTY.add(k);
+  if(!rafOn){rafOn=true;requestAnimationFrame(drawLive);}
+}
+const inkOf=(u,i)=>{const o=TREE[u]&&TREE[u].ink&&TREE[u].ink[P(i)];if(!o)return [];
+  return unpackInk(o);};
+let BTREE={},cuT=null;                              // back/<class>: what the teacher sent each student
+function liveConnect(){
+  fbStream("","live",(path,data)=>{treeSet(path,data);dirty(path);autoMark();},lNet);
+  fbStream("","back",(path,data)=>{BTREE=pathSet(BTREE,path,data);dirty(path);BLOADED=true;autoMark();if(/^\/?_pub/.test(path)||path==="/"){drawRev();clearTimeout(cuT);cuT=setTimeout(catchUpHints,1500);}},()=>{});
+}
+// answers waiting for the teacher: sent (k) and not yet answered for that k
+const waiting=u=>{const a=(TREE[u]&&TREE[u].ans)||{},b=BTREE[u]||{};return Object.keys(a).filter(q=>a[q]&&secOf(q)!=="A"&&(!b[q]||b[q].for!==a[q].k));};
+/* game: the drill and set B are marked here by themselves (choices only: the key decides), the teacher can still change a mark;
+   set A waits for "เปิดผลชุด A" */
+const AUTO=new Set();let markT=null,BLOADED=false;
+function autoMark(){if(!GAME)return;clearTimeout(markT);markT=setTimeout(autoMark1,250);}
+async function autoMark1(){
+  if(!GAME||!BLOADED)return;const body={};
+  for(const u of Object.keys(TREE)){if(!TREE[u]||TREE[u].show)continue;
+    for(const q of waiting(u)){const g=secOf(q),an=TREE[u].ans[q];if(!(g==="D"||g==="B")||!allChoice(q)||!KEYANS[q])continue;
+      const tag=u+"|"+q+"|"+an.k;if(AUTO.has(tag))continue;AUTO.add(tag);
+      body[u+"/"+q]={ok:markOf(q,an),hint:"",for:an.k,at:{".sv":"timestamp"},auto:1};}}
+  if(!Object.keys(body).length)return;
+  try{const r=await fetch(fbUrl("",await fbToken(),"back"),{method:"PATCH",body:JSON.stringify(body)});if(!r.ok)throw new Error("HTTP "+r.status);}
+  catch(e){for(const k of Object.keys(body)){const [u,q]=k.split("/");AUTO.delete(u+"|"+q+"|"+body[k].for);}lNet("ตรวจอัตโนมัติไม่ได้ ("+e.message+")");}
+}
+const markOf=(q,an)=>{const key=KEYANS[q]||[];return QINFO[q].parts.every((p,k)=>checkPart(key[k],(an.v||[])[k]).ok===true);};
+async function revealA(){
+  const ids=QORDER.filter(q=>secOf(q)==="A"),body={};let n=0;
+  for(const u of Object.keys(TREE)){if(!TREE[u]||TREE[u].show)continue;const a=TREE[u].ans||{};
+    for(const q of ids){const an=a[q];if(!an)continue;const bk=BTREE[u]&&BTREE[u][q];if(bk&&bk.for===an.k)continue;
+      body[u+"/"+q]={ok:markOf(q,an),hint:"",for:an.k,at:{".sv":"timestamp"}};n++;}}
+  if(!n){lNet("ชุด A ไม่มีข้อที่ต้องส่งผล");return;}
+  if(!confirm("ส่งผลชุด A ("+n+" ข้อ) ให้น้องเห็นตอนนี้?"))return;
+  try{const r=await fetch(fbUrl("",await fbToken(),"back"),{method:"PATCH",body:JSON.stringify(body)});if(!r.ok)throw new Error("HTTP "+r.status);lNet("เปิดผลชุด A แล้ว");}
+  catch(e){lNet("เปิดผลไม่ได้ ("+e.message+")");}
+}
+// the A/B table of the student on screen (for the pre/post report): the key decides, a mark the teacher changed wins
+function openAB(){
+  const u=FOC&&FOC.u!==KEYU?FOC.u:Object.keys(CARDS).find(x=>!dupOf(x));if(!u){lNet("ยังไม่มีน้องในห้อง");return;}
+  const a=(TREE[u]&&TREE[u].ans)||{},b=BTREE[u]||{};
+  const res=q=>{const an=a[q];if(!an)return null;const bk=b[q];return bk&&bk.for===an.k&&!bk.auto?!!bk.ok:markOf(q,an);};
+  const rows=abRows(res),dr=QORDER.filter(q=>secOf(q)==="D"),drOk=dr.filter(q=>a[q]&&res(q)===true).length;
+  const nA=rows.filter(r=>r.a===true).length,nB=rows.filter(r=>r.b===true).length,name=(TREE[u]&&TREE[u].n)||"";
+  window.AB_TEXT=["ข้อ\tทักษะ\tระดับ\tก่อนเรียน (A)\tหลังเรียน (B)"].concat(rows.map(r=>[r.n,r.skill,r.lv,r.a===true?1:0,r.b===true?1:0].join("\t")),
+    ["\tรวม\t\t"+nA+"/"+rows.length+"\t"+nB+"/"+rows.length]).join("\n");
+  $("sumIn").innerHTML=sumHtml(rows,name+" · ก่อน/หลังเรียน",(TREE[u]&&TREE[u].sc)??10,`<span>ลุยโจทย์ถูก (คำตอบล่าสุด) ${drOk}/${dr.length}</span>`)
+    +'<div class="row"><button type="button" data-copy="1">คัดลอกเป็นตาราง (วางใน Sheets/Docs)</button></div>';
+  // the level of each item, for the report
+  $("sumIn").querySelectorAll("tr").forEach((tr,k)=>{if(!k){tr.insertAdjacentHTML("beforeend","<th>ระดับ</th>");return;}tr.insertAdjacentHTML("beforeend",`<td>${esc(rows[k-1].lv)}</td>`);});
+  $("sumBox").hidden=false;
+}
+function makeCard(u){
+  const el=document.createElement("div");el.className="card";
+  el.innerHTML='<div class="ch"><span></span><span></span></div><div class="pg"><img alt=""><canvas></canvas></div>';
+  const c={u,el,name:el.querySelector(".ch span"),where:el.querySelector(".ch span:last-child"),img:el.querySelector("img"),cv:el.querySelector("canvas"),seen:0};
+  c.img.onload=()=>{RATIO=c.img.naturalHeight/c.img.naturalWidth||RATIO;DIRTY.add(u);if(!rafOn){rafOn=true;requestAnimationFrame(drawLive);}};
+  el.onclick=()=>openFocus(u);
+  return c;
+}
+function paintInk(cv,w,h,list){
+  const d=Math.min(devicePixelRatio||1,2);cv.width=Math.round(w*d);cv.height=Math.round(h*d);
+  paint(cv.getContext("2d"),cv,list);
+}
+function drawLive(){
+  rafOn=false;
+  for(const u of DIRTY){
+    const d=TREE[u];let c=CARDS[u];
+    if(!d||typeof d!=="object"||d.show){if(c){c.el.remove();delete CARDS[u];}continue;}
+    if(!c){c=CARDS[u]=makeCard(u);clearTimeout(cuT);cuT=setTimeout(catchUpHints,1500);}
+    const i=Math.min(Math.max(+d.pg||0,0),N-1),src="p/"+P(i)+".jpg";
+    c.name.textContent=d.n||"(ไม่มีชื่อ)";const nw=waiting(u).length;c.where.innerHTML="หน้า "+(i+1)+(nw?`<span class="wait">${nw}</span>`:"");
+    if(c.img.getAttribute("src")!==src)c.img.src=src;
+    const w=c.el.clientWidth-12||cw;paintInk(c.cv,w,w*RATIO,inkOf(u,i));
+    if(c.sig!==JSON.stringify([d.at,i])){c.sig=JSON.stringify([d.at,i]);c.seen=Date.now();c.el.classList.add("fresh");}
+    if(FOC&&FOC.u===u){drawFocus();drawRev();}
+  }
+  const all=Object.keys(CARDS).reduce((n,u)=>n+waiting(u).length,0);
+  $("fWaitN").textContent=all;$("fWait").classList.toggle("has",all>0);
+  if(!FOC&&!GRID){const first=Object.keys(CARDS)[0];if(first)openFocus(first);}
+  DIRTY.clear();
+  // cards sorted by name, so each student stays in the same spot
+  for(const c of Object.values(CARDS))c.el.hidden=dupOf(c.u);
+  const g=$("grid"),list=Object.values(CARDS).sort((a,b)=>(a.name.textContent).localeCompare(b.name.textContent,"th"));
+  list.forEach((c,k)=>{if(g.children[k+1]!==c.el)g.insertBefore(c.el,g.children[k+1]||null);});
+  const shown=list.filter(c=>!c.el.hidden).length;$("lEmpty").hidden=shown>0;$("lCount").textContent=shown?shown+" คน":"";
+  names();
+}
+// the same name twice (an older sign-in of the same student): show only the newest
+const nm=u=>String((TREE[u]&&TREE[u].n)||"").trim().toLowerCase();
+const dupOf=u=>!!nm(u)&&Object.keys(TREE).some(v=>v!==u&&nm(v)===nm(u)&&((+TREE[v].at||0)>(+TREE[u].at||0)));
+function names(){                          // a chip per student on the hidden screen; tap = see her sheet
+  const box=$("fNames"),list=Object.values(CARDS).filter(c=>!dupOf(c.u)).sort((a,b)=>(a.name.textContent).localeCompare(b.name.textContent,"th"));
+  // View 2026-10-26: the tutor sheet is "student 0" (เฉลย), always first
+  if(HASKEY)list.unshift({u:KEYU,name:{textContent:"เฉลย"},seen:0,key:1});
+  if(box.children.length!==list.length||list.some((c,k)=>box.children[k].dataset.u!==c.u)){
+    box.innerHTML="";for(const c of list){const b=document.createElement("button");b.dataset.u=c.u;if(c.key)b.className="keychip";b.onclick=()=>openFocus(c.u);box.appendChild(b);}
+  }
+  const t=Date.now();
+  [...box.children].forEach((b,k)=>{const c=list[k];if(c.key){b.innerHTML=icon("check")+"เฉลย";b.setAttribute("aria-current",!!FOC&&FOC.u===KEYU);return;}const nw=waiting(c.u).length;b.innerHTML=esc(c.name.textContent)+(nw?`<span class="wait">${nw}</span>`:"");b.setAttribute("aria-current",!!FOC&&FOC.u===c.u);
+    b.classList.toggle("fresh",t-c.seen<8000);b.classList.toggle("quiet",t-c.seen>120000);});
+}
+function quietTick(){                      // fresh = wrote in the last 8 s, quiet = nothing for 2 minutes
+  const t=Date.now();
+  for(const c of Object.values(CARDS)){c.el.classList.toggle("fresh",t-c.seen<8000);c.el.classList.toggle("quiet",t-c.seen>120000);}
+  names();
+}
+let GRID=false;                            // the hidden screen opens on one student's sheet; "ดูรวม" = every student as cards
+const KEYU="__key";let HASKEY=false;
+const NP=()=>FOC&&FOC.u===KEYU?KEYPAGES.length:N;
+function openFocus(u){
+  if(u===KEYU){                            // open the tutor page that solves what is on the page being looked at
+    const from=FOC&&FOC.u!==KEYU?FOC.i:FOC?FOC.i:0;
+    GRID=false;FOC={u,i:FOC&&FOC.u===KEYU?from:(KEYMAP?KEYMAP[from]||0:Math.min(from,KEYPAGES.length-1)),follow:false};
+    $("fFollow").hidden=true;$("focus").hidden=false;names();drawFocus();drawRev(true);return;
+  }
+  $("fFollow").hidden=false;
+  GRID=false;FOC={u,i:+(TREE[u]&&TREE[u].pg)||0,follow:true};$("fFollow").setAttribute("aria-pressed","true");$("focus").hidden=false;names();drawFocus();drawRev(true);}
+let fZoom=1;
+function drawKeyPage(){                   // "student 0": the tutor sheet, no ink
+  const n=KEYPAGES.length,i=FOC.i=Math.min(Math.max(FOC.i,0),n-1),img=$("fImg"),src="data:image/jpeg;base64,"+KEYPAGES[i];
+  $("fWhere").textContent="เฉลย · หน้า "+(i+1)+"/"+n;
+  const dots=$("fDots");
+  if(dots.children.length!==n){dots.innerHTML="";for(let k=0;k<n;k++){const b=document.createElement("button");b.textContent=k+1;b.onclick=()=>{FOC.i=k;drawFocus();drawRev(true);};dots.appendChild(b);}}
+  [...dots.children].forEach((b,k)=>{b.setAttribute("aria-current",k===i);b.classList.remove("ink","here");});
+  if(img.src!==src){img.onload=drawKeyPage;img.src=src;return;}
+  const pg=$("fPage");pg.style.width=Math.round(Math.min($("fScroll").clientWidth-16,1100)*fZoom)+"px";
+  const w=pg.clientWidth;paintInk($("fInk"),w,w*(img.naturalHeight/img.naturalWidth||RATIO),[]);
+}
+function drawFocus(){
+  if(!FOC)return;
+  if(FOC.u===KEYU)return drawKeyPage();
+  const d=TREE[FOC.u];if(!d){$("focus").hidden=true;FOC=null;return;}
+  const here=Math.min(Math.max(+d.pg||0,0),N-1);
+  if(FOC.follow)FOC.i=here;
+  const i=FOC.i,img=$("fImg"),src="p/"+P(i)+".jpg";
+  $("fWhere").textContent=(d.n||"")+" · หน้า "+(i+1)+"/"+N+(here===i?" · น้องอยู่หน้านี้":" · น้องอยู่หน้า "+(here+1))+(GAME?" · เหรียญ "+(d.sc??10):"");
+  const dots=$("fDots");
+  if(dots.children.length!==N)dots.innerHTML="";
+  if(dots.children.length!==N)for(let k=0;k<N;k++){const b=document.createElement("button");b.textContent=k+1;
+    b.onclick=()=>{FOC.i=k;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);};dots.appendChild(b);}
+  const ink=d.ink||{},wp=new Set(waiting(FOC.u).map(q=>QINFO[q]&&QINFO[q].pg));
+  [...dots.children].forEach((b,k)=>{b.classList.toggle("wait",wp.has(k));b.setAttribute("aria-current",k===i);b.classList.toggle("ink",!!ink[P(k)]);b.classList.toggle("here",k===here);});
+  if(img.getAttribute("src")!==src){img.onload=drawFocus;img.src=src;return;}
+  const pg=$("fPage");pg.style.width=Math.round(Math.min($("fScroll").clientWidth-16,1100)*fZoom)+"px";
+  const w=pg.clientWidth,h=w*(img.naturalHeight/img.naturalWidth||RATIO);
+  paintInk($("fInk"),w,h,inkOf(FOC.u,i));
+}
+/* the student's answers, checked against the key; the teacher sends right/wrong + a hint */
+const HINTS={};let revLater=false;
+function drawRev(force){
+  const box=$("rev");if(!FOC)return;
+  if(!force&&box.contains(document.activeElement)&&document.activeElement.tagName==="TEXTAREA"){revLater=true;return;}  // not while she types
+  revLater=false;
+  if(FOC.u===KEYU){
+    const ids=QORDER.filter(q=>KEYQ[q]===FOC.i);box.hidden=!QORDER.length;
+    box.innerHTML=ids.length?ids.map(q=>`<div class="rq" data-k="${q}"><h3>${esc(QINFO[q].name)}<span>ชีทน้องหน้า ${QINFO[q].pg+1}</span></h3><div class="pa">`+
+      QINFO[q].parts.map((p,k)=>`<span class="k">${esc(p.l)}</span><span class="v">${esc(showK((KEYANS[q]||[])[k]))}</span>`).join("")+"</div>"+pubBtn(q)+"</div>").join(""):'<div class="none">หน้านี้ไม่มีช่องคำตอบ</div>';
+    return;
+  }
+  const u=FOC.u,a=(TREE[u]&&TREE[u].ans)||{},b=BTREE[u]||{},ids=QORDER.filter(q=>QINFO[q].pg===FOC.i);  // View 2026-10-27: only the page she has open
+  box.hidden=!QORDER.length;
+  if(!ids.length){box.innerHTML='<div class="none">หน้านี้ไม่มีช่องคำตอบ</div>';return;}
+  const top=box.scrollTop;
+  box.innerHTML=ids.map(q=>{
+    const info=QINFO[q],an=a[q],bk=b[q];
+    if(!an)return `<div class="rq"><h3>${esc(info.name)}<span>ยังไม่ส่งคำตอบ</span></h3>${pubBtn(q)}</div>`;   // the hints still open from here
+    const wait=!bk||bk.for!==an.k,key=KEYANS[q]||[],g=secOf(q);
+    const parts=info.parts.map((p,k)=>{const v=(an.v||[])[k],r=checkPart(key[k],v);
+      const m=r.ok===true?`<span class="m y">${icon("check")}ตรงเฉลย</span>`:r.ok===false?`<span class="m n">${icon("x")}ไม่ตรง${r.num&&!r.unit?" (หน่วย)":""} · เฉลย ${esc(showK(key[k]))}</span>`:`<span class="m t">${icon("help")}ครูตรวจเอง</span>`;
+      return `<span class="k">${esc(p.l)}</span><span class="v">${esc(showA(v))}</span>${m}`;}).join("");
+    const h=HINTS[u+"|"+q]??(bk&&!wait?bk.hint||"":"");
+    if(g==="A")return `<div class="rq" data-q="${q}"><h3>${esc(info.name)}<span>หน้า ${info.pg+1}</span></h3><div class="pa">${parts}</div>
+      <div class="sent">${wait?"ชุด A: น้องยังไม่เห็นผล (กด เปิดผลชุด A)":"ส่งผลแล้ว: "+(bk.ok?"ถูก":"ผิด")}</div></div>`;
+    const bet=g==="D"&&an.bet?`<span class="m a">ลง ${an.bet} เหรียญ${info.boss?" · บอส ×2":""}</span>`:"";
+    return `<div class="rq${wait?" waiting":""}" data-q="${q}"><h3>${esc(info.name)}<span>หน้า ${info.pg+1}</span></h3><div class="pa">${parts}${bet}</div>
+      <textarea placeholder="คำใบ้ (ถ้ามี)">${esc(h)}</textarea>
+      <div class="btns"><button class="y${!wait&&bk.ok?" on":""}" type="button">${icon("check")}ถูก</button><button class="n${!wait&&!bk.ok?" on":""}" type="button">${icon("x")}ยังไม่ถูก</button></div>
+      <div class="sent">${wait?"รอครูตรวจ":"ส่งกลับแล้ว"+(bk.auto?" (ตรวจอัตโนมัติ)":"")+": "+(bk.ok?"ถูก":"ยังไม่ถูก")}</div>${pubBtn(q)}</div>`;}).join("");
+  box.scrollTop=top;
+}
+/* the worked-solution box of a question, cut from the key page, opened to every student (back/<class>/<uid>/_hint/<qid>;
+   _pub/<qid> remembers what is open, so a student who joins later gets it too) */
+const pubLv=q=>{const p=BTREE._pub&&BTREE._pub[q];return p&&p.lv||0;};
+const pubBtn=q=>{const H=KEYHINT[q];if(!H||!H.length)return OPENH[q]?`<div class="hl"><button class="hv" type="button" data-prev="${q}" data-k="0">ดู Hint 1</button> เปิดให้น้องดูเองได้ (การบ้าน)</div>`:"";const lv=pubLv(q);
+  return `<div class="hl">${H.map((_,j)=>`<button class="hv" type="button" data-prev="${q}" data-k="${j}">ดู Hint ${j+1}</button>`).join("")}</div>
+    <div class="hl">ให้น้องเห็น: ${["ปิด"].concat(H.map((_,j)=>"Hint "+(j===0?"1":"1–"+(j+1)))).map((t,j)=>`<button class="pub${lv===j?" on":""}" type="button" data-pub="${q}" data-lv="${j}">${t}</button>`).join("")}</div>`;};
+const hintVal=(q,lv)=>{const H=KEYHINT[q]||[];if(!lv)return null;const o={lv};for(let j=0;j<lv&&j<H.length;j++)o["h"+(j+1)]=H[j];return o;};
+async function publish(q,lv){
+  try{
+    const tok=await fbToken(),body={},v=hintVal(q,lv);
+    body["_pub/"+q]=lv?{lv,at:{".sv":"timestamp"}}:null;
+    for(const u of Object.keys(TREE))body[u+"/_hint/"+q]=v;
+    const r=await fetch(fbUrl("",tok,"back"),{method:"PATCH",body:JSON.stringify(body)});if(!r.ok)throw new Error("HTTP "+r.status);
+  }catch(e){lNet("เปิด Hint ไม่ได้ ("+e.message+")");}
+}
+let hintBusy=false;
+async function catchUpHints(){             // students (and #show) who came in after a hint was opened
+  if(hintBusy||!BTREE._pub)return;hintBusy=true;
+  try{const body={};
+    for(const q of Object.keys(BTREE._pub)){const lv=pubLv(q);if(!lv||!KEYHINT[q])continue;
+      for(const u of Object.keys(TREE)){const h=BTREE[u]&&BTREE[u]._hint&&BTREE[u]._hint[q];if(!h||h.lv!==lv)body[u+"/_hint/"+q]=hintVal(q,lv);}}
+    if(Object.keys(body).length){const r=await fetch(fbUrl("",await fbToken(),"back"),{method:"PATCH",body:JSON.stringify(body)});if(!r.ok)throw new Error("HTTP "+r.status);}}
+  catch(e){}finally{hintBusy=false;}
+}
+async function sendBack(card,ok){
+  const u=FOC.u,q=card.dataset.q,an=TREE[u]&&TREE[u].ans&&TREE[u].ans[q];if(!an)return;
+  const hint=card.querySelector("textarea").value.trim().slice(0,500);
+  try{const r=await fetch(fbUrl("/"+u+"/"+q,await fbToken(),"back"),{method:"PUT",body:JSON.stringify({ok,hint,for:an.k,at:{".sv":"timestamp"}})});
+    if(!r.ok)throw new Error("HTTP "+r.status);delete HINTS[u+"|"+q];}
+  catch(e){lNet("ส่งกลับไม่ได้ ("+e.message+")");}
+}
+function nextWaiting(){                    // the student (and answer) that has waited longest
+  let best=null;
+  for(const u of Object.keys(CARDS))for(const q of waiting(u)){const k=TREE[u].ans[q].k;if(!best||k<best.k)best={u,q,k};}
+  if(!best)return;
+  if(!FOC||FOC.u!==best.u)openFocus(best.u);
+  FOC.i=QINFO[best.q].pg;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);
+  const el=$("rev").querySelector(`[data-q="${best.q}"]`);if(el)el.scrollIntoView({block:"nearest"});
+}
+function startLive(){
+  $("lTitle").textContent=CFG.title;
+  cw=+load("scitem-live-cw",240)||240;$("grid").style.setProperty("--cw",cw+"px");
+  // pinch on the trackpad (= ctrl + wheel): bigger / smaller cards, or zoom the student's page
+  $("grid").addEventListener("wheel",e=>{if(!e.ctrlKey)return;e.preventDefault();
+    cw=Math.min(700,Math.max(140,cw*Math.exp(-e.deltaY/150)));save("scitem-live-cw",cw);$("grid").style.setProperty("--cw",cw+"px");dirty("");},{passive:false});
+  $("fScroll").addEventListener("wheel",e=>{if(!e.ctrlKey)return;e.preventDefault();fZoom=Math.min(3,Math.max(0.4,fZoom*Math.exp(-e.deltaY/150)));drawFocus();},{passive:false});
+  $("lClear").onclick=async()=>{
+    if(!confirm("ลบที่ทดและคำตอบของทุกคนในห้องนี้ออกจากจอสด? (งานที่เซฟเข้าชีทยังอยู่)"))return;
+    try{const tok=await fbToken();
+      for(const root of ["live","back"]){const r=await fetch(fbUrl("",tok,root),{method:"DELETE"});if(!r.ok)throw new Error("HTTP "+r.status);}}
+    catch(e){lNet("ล้างไม่ได้ ("+e.message+")");}
+  };
+  $("fWait").onclick=nextWaiting;
+  if(GAME){$("fRevA").hidden=false;$("fAB").hidden=false;$("fRevA").onclick=revealA;$("fAB").onclick=openAB;}
+  $("rev").addEventListener("input",e=>{const c=e.target.closest(".rq");if(c&&FOC)HINTS[FOC.u+"|"+c.dataset.q]=e.target.value;});
+  $("rev").addEventListener("focusout",()=>setTimeout(()=>{if(revLater)drawRev();},0));
+  $("rev").addEventListener("click",e=>{
+    const pb=e.target.closest(".pub");if(pb){publish(pb.dataset.pub,+pb.dataset.lv);return;}
+    const pv=e.target.closest(".hv");if(pv){openHint(pv.dataset.prev,KEYHINT[pv.dataset.prev]||[OPENH[pv.dataset.prev]],+pv.dataset.k);return;}
+    const c=e.target.closest(".rq");if(!c||!c.dataset.q)return;
+    if(e.target.closest(".y"))sendBack(c,true);else if(e.target.closest(".n"))sendBack(c,false);
+    else if(e.target.closest("h3")){FOC.i=QINFO[c.dataset.q].pg;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);}
+  });
+  $("fBack").onclick=()=>{$("focus").hidden=true;FOC=null;GRID=true;};
+  $("fTitle").textContent=CFG.title;
+  $("fPrev").onclick=()=>{if(FOC&&FOC.i>0){FOC.i--;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);}};
+  $("fNext").onclick=()=>{if(FOC&&FOC.i<NP()-1){FOC.i++;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);}};
+  $("fFollow").onclick=()=>{if(!FOC)return;FOC.follow=!FOC.follow;$("fFollow").setAttribute("aria-pressed",FOC.follow);drawFocus();drawRev(true);};
+  addEventListener("keydown",e=>{if(!FOC||/INPUT|TEXTAREA/.test(e.target.tagName))return;if(e.key==="ArrowLeft")$("fPrev").click();if(e.key==="ArrowRight")$("fNext").click();});
+  addEventListener("resize",()=>{dirty("");});
+  setInterval(quietTick,2000);
+  HASKEY=!!(KEYPAGES&&KEYPAGES.length);
+  if(HASKEY)openFocus(KEYU);else{names();}
+  liveConnect();
+}
+
+/* ---------- screens ---------- */
+function start(){
+  $("title").textContent=CFG.title;
+  if(STAFF){
+    $("send").hidden=true;
+    if(TEACHER){
+      $("tKey").hidden=false;$("tPull").hidden=false;$("tErase").hidden=true;$("penSw").style.background="var(--red)";
+      $("tUndo").textContent="ย้อน";$("tClear").textContent="ลบหมึกครู";$("saveBtn").textContent="เซฟ PDF งานน้อง";
+      SEEN=load(K.seen,{});if(!SHEET)RED=load(K.red,{});
+      $("stu").onchange=()=>{STU=$("stu").value;SENT=ALL[STU]||{};render();};
+    }else{
+      $("saveBtn").hidden=true;   // View 2026-10-26: #show shows no student work (that is #live)
+      SHOWINK=load(K.show,{});
+      // game classes (View 2026-10-27): #show can lay the student's ink and answers over the page (no key), on/off
+      if(GAME&&FB){$("tPull").hidden=false;$("stu").onchange=()=>{STU=$("stu").value;showPick();};}
+    }
+    let busy=false;
+    const refresh=async()=>{if(busy||(SHOW&&!pull)||(SHOW&&GAME))return;busy=true;try{if(await pullAll())render();}finally{busy=false;}};
+    setInterval(()=>{if(!document.hidden)refresh();},5000);
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh();});
+    $("tPull").onclick=()=>{pull=!pull;$("tPull").setAttribute("aria-pressed",pull);document.body.classList.toggle("pulling",pull);
+      if(SHOW&&GAME){if(pull&&!showOn){showOn=true;showConnect();}showPick();return;}
+      if(pull)refresh();render();};
+    $("tKey").onclick=()=>{keyOn=!keyOn;$("tKey").setAttribute("aria-pressed",keyOn);render();};
+    if(TEACHER)refresh();
+    idx=0;
+  }else{
+    $("who").textContent=ME.name||"";W=load(K.work,{});
+    idx=Math.min(ME.idx||0,N-1);
+    if(SHEET){setInterval(()=>{if(!document.hidden)flush();},6000);addEventListener("online",flush);flush();}
+    setInterval(()=>{if(!document.hidden)pullRed();},8000);
+    document.addEventListener("visibilitychange",()=>{if(document.hidden)autoSave(true);else{flush();pullRed();}});
+    if(!SHEET)addEventListener("storage",e=>{if(e.key===K.red)pullRed();});
+    // View 2026-10-26: no Send button; the ink goes live to #live, and each page saves to the Sheet by itself as a backup
+    $("send").hidden=true;
+    liveTouch();
+  }
+  startAns();
+  for(let i=0;i<N;i++){const b=document.createElement("button");b.textContent=i+1;b.onclick=()=>go(i);$("dots").appendChild(b);}
+  addEventListener("resize",fit);
+  render();pullRed();
+}
+let autoT=null;
+function autoSave(now){                    // a page goes to the Sheet 3 s after the pen stops, or when she turns the page
+  clearTimeout(autoT);
+  const w=W[P(idx)];if(!w||w.sentLen===inkSig(w.ink)||(!w.ink.length&&!w.sentAt))return;
+  if(now)sendPage();else autoT=setTimeout(()=>{if(!curS){sendPage();prepPrint();}else autoSave();},3000);
+}
+function go(i){if(i<0||i>=N||i===idx)return;if(!STAFF)autoSave(true);idx=i;SEL=null;lasso=null;drag=null;if(!STAFF){ME.idx=i;save(K.me,ME);liveTouch();}render();$("scroll").scrollTop=0;pullRed();}
+$("prev").onclick=()=>go(idx-1);$("next").onclick=()=>go(idx+1);
+addEventListener("keydown",e=>{if(e.target.tagName==="INPUT")return;if(e.key==="ArrowLeft")go(idx-1);if(e.key==="ArrowRight")go(idx+1);});
+
+let ansPg=-1;
+function render(){
+  if(ansPg!==idx){ansPg=idx;drawAns();}
+  placePlays();
+  if(TEACHER&&SENT[P(idx)]){SEEN[STU+"|"+P(idx)]=SENT[P(idx)].at;save(K.seen,SEEN);}
+  const img=$("img"),src="p/"+P(idx)+".jpg";
+  $("keyTag").hidden=!(TEACHER&&keyOn);
+  if(img.getAttribute("src")!==src){img.onload=fit;img.src=src;}else fit();
+  [...$("dots").children].forEach((b,i)=>{
+    b.setAttribute("aria-current",i===idx);if(i===idx&&b.scrollIntoView)b.scrollIntoView({block:"nearest",inline:"nearest"});
+    const s=TEACHER||SHOW?SENT[P(i)]:null,w=W[P(i)];
+    b.classList.toggle("sent",STAFF?!!s:!!(w&&w.sentAt));
+    b.classList.toggle("new",TEACHER&&!!s&&(SEEN[STU+"|"+P(i)]||0)<s.at);
+  });
+  if(!STAFF){
+    const w=mine(),same=w.sentAt&&w.sentLen===inkSig(w.ink),sent=same&&(!SHEET||w.okAt===w.sentAt||(w.okAt==null&&!outq()[P(idx)]));
+    $("send").textContent=sent?"Sent ✓":same?"Sending…":w.sentAt?"Send again":"Send to teacher";$("send").classList.toggle("done",!!sent);
+  }
+  const s=SENT[P(idx)];
+  $("note").className="";
+  if(TEACHER)$("note").textContent=s?`${STU} ส่งหน้านี้ ${new Date(s.at).toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"})}`:"หน้านี้น้องยังไม่ส่ง";
+  else if(SHOW)$("note").textContent=pull?(s?`งานของ ${SHOW&&GAME?(STREE[STU]&&STREE[STU].n)||"":STU}`:"หน้านี้น้องยังไม่เขียน"):"";
+}
+
+/* ---------- ink (vector strokes, 0..1 of the page) ---------- */
+let zoom=1;
+let penOnly=(()=>{try{return localStorage.getItem("scitem-pen")==="1"}catch(e){return false}})(); // after the first Apple Pencil touch, fingers scroll instead of writing
+let erase=false,hand=false,sel=false;
+const cPull=$("cPull"),cMine=$("cMine"),cKey=$("cKey"),cRed=$("cRed"),cSel=$("cSel"),x={pull:cPull.getContext("2d"),mine:cMine.getContext("2d"),red:cRed.getContext("2d"),sel:cSel.getContext("2d")};
+// only the layers this screen draws on get a full-size canvas (a zoomed-in tall page is heavy on iPad memory)
+const LAYERS=[cMine,cSel].concat(TEACHER?[cKey,cRed]:[],SHOW?[cPull]:[],!STAFF&&RED_TO_STUDENT?[cRed]:[]);
+const target=TEACHER?cRed:cMine;
+target.classList.add("ink");
+function setScrolly(){document.body.classList.toggle("scrolly",penOnly||hand);}
+const ZMIN=0.5,ZMAX=3;
+function size(){                           // the page box at this zoom (CSS only: cheap enough for every pinch frame)
+  const sc=$("scroll"),pg=$("page"),img=$("img");
+  const r=img.naturalWidth?img.naturalHeight/img.naturalWidth:1.414;
+  const w=Math.floor(Math.min(sc.clientWidth-32,1100)*zoom),h=Math.round(w*r);
+  pg.style.width=w+"px";pg.style.height=h+"px";
+  return [w,h];
+}
+function fit(){
+  const [w,h]=size();
+  const dpr=Math.min(devicePixelRatio||1,1.5,2600/w); // keep iPad memory low, also when zoomed in
+  for(const c of LAYERS){c.width=Math.floor(w*dpr);c.height=Math.floor(h*dpr);}
+  drawAll();
+}
+// View 2026-10-26: ink like the Light p5 slides: a bit bolder, smooth curves through the midpoints, width follows the pressure
+function drawStroke(ctx,c,s){
+  const w=c.width,h=c.height,pts=s.p,n=pts.length/3;
+  ctx.globalCompositeOperation=s.e?"destination-out":"source-over";
+  ctx.strokeStyle=ctx.fillStyle=s.c;ctx.lineCap=ctx.lineJoin="round";
+  const base=w/200*(s.e?4:1)*(s.z||1),X=k=>pts[3*k]*w,Y=k=>pts[3*k+1]*h,W=k=>s.e?base:base*(0.6+0.8*pts[3*k+2]);
+  if(n<2){ctx.beginPath();ctx.arc(X(0),Y(0),W(0)/2,0,7);ctx.fill();return;}
+  if(n===2){ctx.lineWidth=W(1);ctx.beginPath();ctx.moveTo(X(0),Y(0));ctx.lineTo(X(1),Y(1));ctx.stroke();return;}
+  let mx=X(0),my=Y(0);
+  for(let k=1;k<n-1;k++){
+    const nx=(X(k)+X(k+1))/2,ny=(Y(k)+Y(k+1))/2;
+    ctx.lineWidth=W(k);ctx.beginPath();ctx.moveTo(mx,my);ctx.quadraticCurveTo(X(k),Y(k),nx,ny);ctx.stroke();
+    mx=nx;my=ny;
+  }
+  ctx.lineWidth=W(n-1);ctx.beginPath();ctx.moveTo(mx,my);ctx.lineTo(X(n-1),Y(n-1));ctx.stroke();
+}
+function paint(ctx,c,list){ctx.globalCompositeOperation="source-over";ctx.clearRect(0,0,c.width,c.height);for(const s of list)drawStroke(ctx,c,s);}
+const sentInk=()=>(SENT[P(idx)]&&SENT[P(idx)].ink)||[];
+function myStrokes(){                      // the layer this screen writes on
+  if(TEACHER){const k=redKey();return RED[k]||(RED[k]=[]);}
+  if(SHOW){const k=P(idx);return SHOWINK[k]||(SHOWINK[k]=[]);}
+  return mine().ink;
+}
+/* answers only, on top of her ink: the key page minus the student page (what is the same turns see-through) */
+const ANS={};
+function answers(i){
+  if(ANS[i])return Promise.resolve(ANS[i]);
+  const get=src=>new Promise(r=>{const m=new Image();m.onload=()=>r(m);m.src=src;});
+  return Promise.all([get("p/"+P(i)+".jpg"),get("data:image/jpeg;base64,"+KEYPAGES[i])]).then(([a,b])=>{
+    const c=document.createElement("canvas");c.width=b.naturalWidth;c.height=b.naturalHeight;const g=c.getContext("2d");
+    g.drawImage(a,0,0,c.width,c.height);const A=g.getImageData(0,0,c.width,c.height).data;
+    g.drawImage(b,0,0);const D=g.getImageData(0,0,c.width,c.height),B=D.data;
+    for(let k=0;k<B.length;k+=4){if(Math.abs(B[k]-A[k])+Math.abs(B[k+1]-A[k+1])+Math.abs(B[k+2]-A[k+2])<90)B[k+3]=0;}
+    g.putImageData(D,0,0);return ANS[i]=c;});
+}
+function drawKey(){
+  const g=cKey.getContext("2d");g.clearRect(0,0,cKey.width,cKey.height);
+  if(!(TEACHER&&keyOn&&KEYPAGES))return;
+  const i=idx;answers(i).then(c=>{if(i!==idx||!keyOn)return;g.clearRect(0,0,cKey.width,cKey.height);g.drawImage(c,0,0,cKey.width,cKey.height);});
+}
+function drawAll(){
+  drawKey();
+  paint(x.pull,cPull,SHOW&&pull?sentInk():[]);
+  paint(x.mine,cMine,TEACHER?(pull?sentInk():[]):SHOW?SHOWINK[P(idx)]||[]:mine().ink);
+  drawRed();drawSel();
+}
+function drawRed(){
+  if(SHOW){paint(x.red,cRed,[]);return;}
+  const r=RED[redKey()]||[];paint(x.red,cRed,r);
+  if(!STAFF){$("note").className=r.length?"red":"";$("note").textContent=r.length?"Red = your teacher's notes":"";}
+}
+// View 2026-10-26: pick the pen colour (the Light p5 set); each screen remembers its own
+const COLORS=["#1f2836","#dc2626","#2563eb","#16a34a","#f59e0b","#9333ea"];
+let INK=TEACHER?"#d62828":load("scitem-sc-ink-"+SCREEN,SHOW?"#2563eb":"#1f2836");
+(function(){
+  const box=$("colors");if(TEACHER){box.hidden=true;return;}
+  const set=c=>{INK=c;save("scitem-sc-ink-"+SCREEN,c);$("penSw").style.background=c;
+    [...box.children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.c===c));};
+  for(const c of COLORS){const b=document.createElement("button");b.dataset.c=c;b.style.background=c;b.setAttribute("aria-label","Colour "+c);
+    b.onclick=()=>{set(c);$("tPen").click();};box.appendChild(b);}
+  set(INK);
+})();
+// View 2026-10-27: pen size, small / medium / large (a width multiplier kept on each stroke as z); each screen remembers its own
+const SIZES=[0.6,1,1.8];
+let SIZE=+load("scitem-sc-size-"+SCREEN,1)||1;
+(function(){
+  const box=$("sizes");
+  const set=z=>{SIZE=z;save("scitem-sc-size-"+SCREEN,z);[...box.children].forEach(b=>b.setAttribute("aria-pressed",+b.dataset.z===z));};
+  SIZES.forEach((z,k)=>{const b=document.createElement("button");b.dataset.z=z;b.setAttribute("aria-label",["Fine","Medium","Bold"][k]+" pen");
+    b.innerHTML=`<i style="width:${4+k*4}px;height:${4+k*4}px"></i>`;b.onclick=()=>{set(z);if(sel||hand)$("tPen").click();};box.appendChild(b);});
+  set(SIZES.includes(SIZE)?SIZE:1);
+})();
+function changed(){
+  if(TEACHER)pushRed();else if(SHOW)save(K.show,SHOWINK);else{save(K.work,W);render();liveTouch();autoSave();}
+}
+let curS=null,lasso=null,drag=null,pinch=null,SEL=null;
+const fingersDown=new Set();               // touch pointers on the sheet: a second finger means pinch, not ink
+const paintMine=()=>paint(TEACHER?x.red:x.mine,target,myStrokes());
+function ptOf(e){const r=target.getBoundingClientRect();const q=v=>Math.round(v*5000)/5000;
+  return [q((e.clientX-r.left)/r.width),q((e.clientY-r.top)/r.height),e.pointerType==="pen"?q(e.pressure||0.5):0.5];}
+target.addEventListener("pointerdown",e=>{
+  if(e.pointerType==="pen"&&!penOnly){penOnly=true;try{localStorage.setItem("scitem-pen","1")}catch(err){}setScrolly();}
+  const touch=e.pointerType==="touch";
+  if(touch){fingersDown.add(e.pointerId);if(fingersDown.size>1||pinch)return;}
+  // in pencil / ✋ mode a finger scrolls, except on a selection, where it drags the ink
+  if(touch&&(penOnly||hand)&&!(sel&&inSel(ptOf(e))))return;
+  if(curS||lasso||drag||(TEACHER&&!SENT[P(idx)]))return;
+  e.preventDefault();try{target.setPointerCapture(e.pointerId)}catch(err){}
+  if(sel){
+    const p=ptOf(e);
+    if(inSel(p))drag={id:e.pointerId,touch,p0:p,orig:SEL.ss.map(s=>s.p.slice()),dx:0,dy:0};
+    else{SEL=null;lasso={id:e.pointerId,touch,p:[p[0],p[1]]};}
+    drawSel();return;
+  }
+  curS={id:e.pointerId,touch,s:{c:INK,e:!TEACHER&&erase,...(SIZE!==1?{z:SIZE}:{}),p:ptOf(e)}};
+  myStrokes().push(curS.s);
+  drawStroke(TEACHER?x.red:x.mine,target,curS.s);
+});
+target.addEventListener("pointermove",e=>{
+  if(pinch&&e.pointerType==="touch")return;
+  if(lasso&&e.pointerId===lasso.id){e.preventDefault();const p=ptOf(e);lasso.p.push(p[0],p[1]);drawSel();return;}
+  if(drag&&e.pointerId===drag.id){
+    e.preventDefault();const p=ptOf(e);drag.dx=p[0]-drag.p0[0];drag.dy=p[1]-drag.p0[1];
+    SEL.ss.forEach((s,k)=>{const o=drag.orig[k];for(let j=0;j<o.length;j+=3){s.p[j]=o[j]+drag.dx;s.p[j+1]=o[j+1]+drag.dy;}});
+    paintMine();drawSel();return;
+  }
+  if(!curS||e.pointerId!==curS.id)return;e.preventDefault();
+  const evs=e.getCoalescedEvents?e.getCoalescedEvents():[],s=curS.s,before=s.p.length;
+  for(const ce of (evs.length?evs:[e])){const p=ptOf(ce),n=s.p.length;
+    if(Math.abs(p[0]-s.p[n-3])+Math.abs(p[1]-s.p[n-2])<0.0005)continue; // keep the rows small
+    s.p.push(...p);}
+  if(s.p.length>before)drawStroke(TEACHER?x.red:x.mine,target,{c:s.c,e:s.e,z:s.z,p:s.p.slice(Math.max(0,before-6))});
+});
+const MOVES=[];                            // moves to undo: {list, ss, dx, dy, n = strokes on the page right after}
+function endStroke(e){
+  fingersDown.delete(e.pointerId);
+  if(lasso&&e.pointerId===lasso.id){pick(lasso.p);lasso=null;drawSel();return;}
+  if(drag&&e.pointerId===drag.id){
+    const d=drag;drag=null;
+    if(d.dx||d.dy){
+      const q=v=>Math.round(v*5000)/5000;
+      for(const s of SEL.ss)for(let j=0;j<s.p.length;j+=3){s.p[j]=q(s.p[j]);s.p[j+1]=q(s.p[j+1]);}
+      MOVES.push({list:SEL.list,ss:SEL.ss,dx:d.dx,dy:d.dy,n:SEL.list.length});changed();
+    }
+    drawSel();return;
+  }
+  if(!curS||e.pointerId!==curS.id)return;curS=null;paintMine();changed();   // repaint: the live pieces joined into one smooth line
+}
+target.addEventListener("pointerup",endStroke);target.addEventListener("pointercancel",endStroke);
+
+/* ---------- Select: circle ink with the pen (or finger), drag inside the box to move it, tap outside to let go ---------- */
+function inPoly(px,py,poly){
+  let ins=false;
+  for(let i=0,j=poly.length-2;i<poly.length;j=i,i+=2){
+    const xi=poly[i],yi=poly[i+1],xj=poly[j],yj=poly[j+1];
+    if((yi>py)!==(yj>py)&&px<(xj-xi)*(py-yi)/(yj-yi)+xi)ins=!ins;
+  }
+  return ins;
+}
+function pick(poly){                       // a stroke is picked when most of it is inside the loop
+  SEL=null;if(poly.length<8)return;        // a tap: nothing picked (= deselect)
+  const list=myStrokes(),ss=list.filter(s=>{let n=0,k=0;for(let j=0;j<s.p.length;j+=3,k++)if(inPoly(s.p[j],s.p[j+1],poly))n++;return n*2>=k;});
+  if(ss.length)SEL={list,ss};
+}
+function selBox(){
+  if(!SEL||SEL.list!==myStrokes())return SEL=null;
+  let a=1e9,b=1e9,c=-1e9,d=-1e9;
+  for(const s of SEL.ss)for(let j=0;j<s.p.length;j+=3){a=Math.min(a,s.p[j]);b=Math.min(b,s.p[j+1]);c=Math.max(c,s.p[j]);d=Math.max(d,s.p[j+1]);}
+  const m=0.012;return [a-m,b-m*0.7,c+m,d+m*0.7];
+}
+function inSel(p){const r=selBox();return !!r&&p[0]>=r[0]&&p[0]<=r[2]&&p[1]>=r[1]&&p[1]<=r[3];}
+function drawSel(){
+  const g=x.sel,w=cSel.width,h=cSel.height;g.clearRect(0,0,w,h);
+  g.lineWidth=Math.max(1.5,w/500);g.setLineDash([g.lineWidth*4,g.lineWidth*3]);g.strokeStyle="#1f5fa8";
+  if(lasso&&lasso.p.length>2){
+    g.beginPath();g.moveTo(lasso.p[0]*w,lasso.p[1]*h);
+    for(let j=2;j<lasso.p.length;j+=2)g.lineTo(lasso.p[j]*w,lasso.p[j+1]*h);
+    g.stroke();
+  }
+  const r=selBox();
+  if(r){g.fillStyle="rgba(31,95,168,.08)";g.fillRect(r[0]*w,r[1]*h,(r[2]-r[0])*w,(r[3]-r[1])*h);g.strokeRect(r[0]*w,r[1]*h,(r[2]-r[0])*w,(r[3]-r[1])*h);}
+  g.setLineDash([]);
+}
+function unselect(){SEL=null;lasso=null;drawSel();}
+function undoMove(){                       // Undo after a move puts the ink back (strokes drawn since come off first)
+  const l=myStrokes();
+  while(MOVES.length&&(MOVES[MOVES.length-1].list!==l||MOVES[MOVES.length-1].n>l.length))MOVES.pop();
+  const m=MOVES[MOVES.length-1];if(!m||m.n!==l.length)return false;
+  MOVES.pop();
+  const q=v=>Math.round(v*5000)/5000;
+  for(const s of m.ss)for(let j=0;j<s.p.length;j+=3){s.p[j]=q(s.p[j]-m.dx);s.p[j+1]=q(s.p[j+1]-m.dy);}
+  return true;
+}
+
+/* ---------- two fingers: pinch to zoom the sheet (and pan), the pencil keeps writing ---------- */
+const scr=$("scroll"),fingers=e=>[...e.touches].filter(t=>t.touchType!=="stylus");
+function dropFingerInk(){                  // the first finger may have started ink before the second one landed
+  if(curS&&curS.touch){const l=myStrokes(),i=l.lastIndexOf(curS.s);if(i>=0)l.splice(i,1);curS=null;paintMine();}
+  if(lasso&&lasso.touch)lasso=null;
+  if(drag&&drag.touch){SEL.ss.forEach((s,k)=>{s.p=drag.orig[k];});drag=null;paintMine();}
+  drawSel();
+}
+scr.addEventListener("touchstart",e=>{
+  const f=fingers(e);if(f.length<2||pinch)return;
+  e.preventDefault();dropFingerInk();
+  const [a,b]=f,mx=(a.clientX+b.clientX)/2,my=(a.clientY+b.clientY)/2;
+  const sr=scr.getBoundingClientRect(),pr=$("page").getBoundingClientRect();
+  pinch={d:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)||1,z:zoom,
+    fx:(mx-pr.left)/pr.width,fy:(my-pr.top)/pr.height,             // the spot of the sheet under the fingers stays under them
+    ox:pr.left-sr.left+scr.scrollLeft,oy:pr.top-sr.top+scr.scrollTop};
+},{passive:false});
+scr.addEventListener("touchmove",e=>{
+  if(!pinch)return;const f=fingers(e);if(f.length<2)return;
+  if(e.cancelable)e.preventDefault();
+  const [a,b]=f,mx=(a.clientX+b.clientX)/2,my=(a.clientY+b.clientY)/2;
+  zoom=Math.min(ZMAX,Math.max(ZMIN,pinch.z*Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)/pinch.d));
+  const [w,h]=size(),sr=scr.getBoundingClientRect();
+  scr.scrollLeft=pinch.ox+pinch.fx*w-(mx-sr.left);scr.scrollTop=pinch.oy+pinch.fy*h-(my-sr.top);
+},{passive:false});
+function endPinch(e){if(pinch&&fingers(e).length<2){pinch=null;fit();}}
+scr.addEventListener("touchend",endPinch);scr.addEventListener("touchcancel",endPinch);
+// Safari's own page zoom
+for(const t of ["gesturestart","gesturechange"])document.addEventListener(t,e=>e.preventDefault(),{passive:false});
+// stop iPad Safari turning a pencil stroke into a scroll (see tools/light-p5-shell.html); fingers still scroll in ✋ / pencil mode
+$("page").addEventListener("touchstart",e=>{
+  const stylus=[...e.changedTouches].some(t=>t.touchType==="stylus");
+  if(stylus&&!penOnly){penOnly=true;try{localStorage.setItem("scitem-pen","1")}catch(err){}setScrolly();}
+  const onSel=sel&&e.touches.length===1&&inSel(ptOf(e.touches[0]));   // a finger on a selection drags it instead of scrolling
+  if(stylus||onSel||!(penOnly||hand))e.preventDefault();},{passive:false});
+$("page").addEventListener("touchmove",e=>{if([...e.touches].some(t=>t.touchType==="stylus")||drag||!(penOnly||hand))e.preventDefault();},{passive:false});
+setScrolly();
+
+const press=(on,off)=>{on.setAttribute("aria-pressed","true");for(const b of off)b.setAttribute("aria-pressed","false");};
+$("tPen").onclick=()=>{erase=false;sel=false;hand=false;unselect();press($("tPen"),[$("tErase"),$("tSel"),$("tHand")]);setScrolly();};
+$("tErase").onclick=()=>{erase=true;sel=false;hand=false;unselect();press($("tErase"),[$("tPen"),$("tSel"),$("tHand")]);setScrolly();};
+$("tSel").onclick=()=>{sel=true;erase=false;hand=false;press($("tSel"),[$("tPen"),$("tErase"),$("tHand")]);setScrolly();};
+$("tHand").onclick=()=>{hand=!hand;$("tHand").setAttribute("aria-pressed",hand);setScrolly();};
+$("tUndo").onclick=()=>{const l=myStrokes();if(!undoMove()){if(!l.length)return;l.pop();}SEL=null;changed();drawAll();};
+$("tClear").onclick=()=>{const l=myStrokes();if(!l.length||!confirm(TEACHER?"ลบหมึกครูในหน้านี้?":SHOW?"ลบหมึกในหน้านี้?":"Clear this page?"))return;l.length=0;SEL=null;changed();drawAll();};
+// View 2026-10-26: zoom with fingers only (no +/− buttons); a trackpad pinch (ctrl + wheel) on a computer
+let wheelT=null;
+scr.addEventListener("wheel",e=>{if(!e.ctrlKey)return;e.preventDefault();zoom=Math.min(ZMAX,Math.max(ZMIN,zoom*Math.exp(-e.deltaY/150)));size();clearTimeout(wheelT);wheelT=setTimeout(fit,120);},{passive:false});
+
+/* ---------- Save PDF: every page with ink, one A4 each ---------- */
+function pageImage(i,lists){
+  return new Promise(res=>{
+    const im=new Image();
+    im.onload=()=>{
+      const c=document.createElement("canvas");c.width=im.naturalWidth;c.height=im.naturalHeight;const g=c.getContext("2d");g.drawImage(im,0,0);
+      const l=document.createElement("canvas");l.width=c.width;l.height=c.height;const lx=l.getContext("2d");
+      for(const list of lists){lx.clearRect(0,0,l.width,l.height);for(const s of list)drawStroke(lx,l,s);g.drawImage(l,0,0);}
+      res(c.toDataURL("image/jpeg",0.8));
+    };
+    im.src="p/"+P(i)+".jpg";
+  });
+}
+// Save PDF makes the PDF file itself (every page of the sheet with her ink, one A4 each) and hands it to the share sheet / a download:
+// window.print() does nothing in some iPad browsers (in-app ones like LINE's). Sharing only works from the tap itself
+// (not after an await), so the pages are drawn ahead: 3 s after the pen stops, and on the tap if anything changed (then tap again).
+let printSig=null,printBusy=null,PRINTJ=[];
+const printWork=i=>TEACHER?(SENT[P(i)]&&SENT[P(i)].ink)||[]:(W[P(i)]&&W[P(i)].ink)||[];
+const printNow=()=>JSON.stringify([...Array(N).keys()].map(i=>[printWork(i),RED[redKey(i)]||[]]));
+let printProg=null;                       // shows "PDF 12/48" while she waits for it
+function prepPrint(){
+  if(printBusy)return printBusy;
+  const sig=printNow();if(sig===printSig)return Promise.resolve();
+  return printBusy=(async()=>{
+    const out=[];
+    for(let i=0;i<N;i++){const ink=printWork(i),red=RED[redKey(i)]||[];   // View 2026-10-27: the whole sheet, every page
+      const url=await pageImage(i,[ink,red]),im=new Image();im.src=url;await im.decode().catch(()=>{});
+      const bin=atob(url.split(",")[1]),b=new Uint8Array(bin.length);for(let k=0;k<bin.length;k++)b[k]=bin.charCodeAt(k);
+      out.push({b,w:im.naturalWidth,h:im.naturalHeight});if(printProg)printProg(i+1);}
+    PRINTJ=out;printSig=sig;
+  })().finally(()=>{printBusy=null;});
+}
+function makePdf(pages){                   // a plain PDF 1.4: each page one JPEG (DCTDecode), fitted to A4
+  const enc=new TextEncoder(),parts=[],off=[];let len=0;
+  const put=x=>{const b=typeof x==="string"?enc.encode(x):x;parts.push(b);len+=b.length;};
+  const n=pages.length,size=3+3*n;
+  put("%PDF-1.4\n");
+  off[1]=len;put("1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n");
+  off[2]=len;put(`2 0 obj<</Type/Pages/Count ${n}/Kids[${pages.map((_,k)=>(3+3*k)+" 0 R").join(" ")}]>>endobj\n`);
+  pages.forEach((p,k)=>{
+    const o=3+3*k,W=595.28,H=841.89,sc=Math.min(W/p.w,H/p.h),dw=(p.w*sc).toFixed(2),dh=(p.h*sc).toFixed(2),x=((W-p.w*sc)/2).toFixed(2),y=((H-p.h*sc)/2).toFixed(2);
+    const cs=`q ${dw} 0 0 ${dh} ${x} ${y} cm /I Do Q`;
+    off[o]=len;put(`${o} 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${W} ${H}]/Resources<</XObject<</I ${o+2} 0 R>>>>/Contents ${o+1} 0 R>>endobj\n`);
+    off[o+1]=len;put(`${o+1} 0 obj<</Length ${cs.length}>>stream\n${cs}\nendstream endobj\n`);
+    off[o+2]=len;put(`${o+2} 0 obj<</Type/XObject/Subtype/Image/Width ${p.w}/Height ${p.h}/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length ${p.b.length}>>stream\n`);put(p.b);put("\nendstream endobj\n");
+  });
+  const xref=len;put(`xref\n0 ${size}\n0000000000 65535 f \n`+off.slice(1).map(v=>String(v).padStart(10,"0")+" 00000 n \n").join("")+`trailer<</Size ${size}/Root 1 0 R>>\nstartxref\n${xref}\n%%EOF\n`);
+  return new Blob(parts,{type:"application/pdf"});
+}
+function sharePdf(){
+  if(!PRINTJ.length){flash(TEACHER?"ยังไม่มีงาน":"Nothing written yet");return;}
+  const name=(CFG.title+" - "+(TEACHER?STU:ME.name||"")).replace(/[\\/:*?"<>|]+/g," ").trim()+".pdf";
+  const file=new File([makePdf(PRINTJ)],name,{type:"application/pdf"});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:name}).catch(e=>{if(e&&e.name!=="AbortError")dl(file);});return;}
+  dl(file);
+}
+function dl(file){const u=URL.createObjectURL(file),a=document.createElement("a");a.href=u;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);}
+$("saveBtn").onclick=()=>{
+  if(printSig===printNow()&&!printBusy){sharePdf();return;}
+  printProg=k=>{$("status").textContent="PDF "+k+"/"+N;};printProg(0);
+  prepPrint().then(()=>{printProg=null;$("status").textContent="";
+    if(!PRINTJ.length){flash(TEACHER?"ยังไม่มีงาน":"Nothing written yet");return;}
+    $("toastT").textContent="PDF ready";$("toastGo").textContent="Save PDF";$("toast").hidden=false;   // a fresh tap for the share sheet
+    clearTimeout(toastT);toastT=setTimeout(()=>{$("toast").hidden=true;},15000);
+    $("toastGo").onclick=()=>{$("toast").hidden=true;sharePdf();};
+  });
+};
+if(!STAFF)setTimeout(prepPrint,4000);
+})();
+</script>
+</body>
+</html>
