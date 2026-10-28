@@ -333,7 +333,20 @@ const P=i=>"p"+String(i+1).padStart(2,"0");          // page id in the Sheet: p0
 const K={me:"scitem-sc:"+CLASS+":me",work:"scitem-sc:"+CLASS+":work",out:"scitem-sc:"+CLASS+":out",sent:"scitem-sc:"+CLASS+":sent",
   red:"scitem-sc:"+CLASS+":red",show:"scitem-sc:"+CLASS+":show",seen:"scitem-sc:"+CLASS+":seen",ans:"scitem-sc:"+CLASS+":ans"};
 const load=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}};
-const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}};
+// View 2026-10-28: "iPad storage is full" while writing: the site's storage (about 5 MB for all of scitem.net) was full of
+// earlier classes' pages. Ink is stored at 4 decimals (1/10000 of the page: finer than the screen), and when it is full the other
+// classes' saved pages go first (they are on Firebase and the Sheet already), then this class's sent queue
+const round4=(k,x)=>typeof x==="number"&&!Number.isInteger(x)?Math.round(x*1e4)/1e4:x;
+function freeRoom(){
+  const mine="scitem-sc:"+CLASS+":";let n=0;
+  try{for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);
+    if(k&&k.startsWith("scitem-sc:")&&!k.startsWith(mine)&&!/:me$/.test(k)){localStorage.removeItem(k);n++;}}}catch(e){}
+  return n;
+}
+const save=(k,v)=>{const t=JSON.stringify(v,round4);
+  try{localStorage.setItem(k,t);return true}catch(e){}
+  if(freeRoom())try{localStorage.setItem(k,t);return true}catch(e){}
+  try{for(const x of [K.sent,K.show,K.red])if(x!==k)localStorage.removeItem(x);localStorage.setItem(k,t);return true}catch(e){return false}};
 
 /* ---------- gate: the student types her name; both teacher screens need the teacher code (it opens the answer key) ---------- */
 const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
@@ -425,7 +438,7 @@ async function flush(){
 function sendPage(){
   const w=mine(),rec={ink:packInk(w.ink),at:Date.now()};
   w.sentAt=rec.at;w.sentLen=inkSig(w.ink);
-  if(!save(K.work,W))setNet("iPad storage is full: send each page, it still goes to the teacher");
+  if(!save(K.work,W))setNet("เก็บสำรองในเครื่องไม่ได้ แต่ที่เขียนยังส่งถึงครูอยู่");
   if(SHEET){outq()[P(idx)]=rec;save(K.out,OUTQ);flush();}
   else{const sent=load(K.sent,{});rec.name=ME.name||"";sent[P(idx)]=rec;save(K.sent,sent);}
   render();
