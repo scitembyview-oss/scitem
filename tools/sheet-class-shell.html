@@ -213,6 +213,20 @@ body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:v
 .wait{display:inline-block;min-width:20px;height:20px;border-radius:999px;background:#e07a1f;color:#fff;font:700 12px/20px var(--display);text-align:center;padding:0 5px;margin-left:5px}
 /* the teacher's review of a student's answers */
 #rev{width:min(380px,36vw);overflow:auto;display:flex;flex-direction:column;gap:8px;-webkit-user-select:text;user-select:text}
+/* View 2026-10-28: #live in half a screen (a window beside the video call): the page gets the whole width, the answers sit above it,
+   the bars get small (icons only) */
+@media (max-width:1000px){
+  #focus{gap:5px;padding:6px 8px}
+  #focus h1{font-size:.9rem}#fWhere{font-size:13px}
+  #focus .lbar .b{min-height:36px;padding:0 8px}#focus .lbar .b.i span{display:none}#focus .lbar .b.i #fWaitN{display:inline}
+  #focus .lbar .b.i span:has(#fWaitN){display:inline}
+  #fNames button{min-height:34px;padding:0 10px}
+  #fDots button{min-width:32px;min-height:30px}
+  #fWork{flex-direction:column;gap:5px}
+  #rev{width:auto;max-height:24vh;order:-1;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:auto}
+  #rev .rq{flex:1 0 min(320px,100%);padding:7px}
+  #fScroll{padding:4px}
+}
 #rev .none{color:var(--muted);font-weight:600;padding:12px}
 .rq{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}
 .rq.waiting{border-color:#e07a1f;box-shadow:inset 4px 0 0 #e07a1f}
