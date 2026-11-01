@@ -542,17 +542,24 @@ function showConnect(){
   fbStream("","live",(path,data)=>{STREE=pathSet(STREE,path,data);showDirty();},t=>setNet(t),tToken);
   fbStream("","back",(path,data)=>{SBACK=pathSet(SBACK,path,data);showDirty();},()=>{},tToken);
 }
-function showDirty(){if(showRaf)return;showRaf=true;requestAnimationFrame(()=>{showRaf=false;showPick();});}
+// View 2026-11-01 "จอแอบแล็ค": every stroke used to re-render the whole page; now at most 4 times a second, and only her ink layer
+let showLast=0,showPage=-1,showSel="";
+function showDirty(){if(showRaf)return;showRaf=true;setTimeout(()=>requestAnimationFrame(()=>{showRaf=false;showPick();}),Math.max(0,250-(Date.now()-showLast)));}
 // the student shown = the one picked, else the one who did something last; her ink goes on the see-through layer
 function showPick(){
   const us=Object.keys(STREE).filter(u=>STREE[u]&&!STREE[u].show&&STREE[u].n).sort((a,b)=>(+STREE[b].at||0)-(+STREE[a].at||0));
   const sel=$("stu");
   const sig=us.map(u=>u+STREE[u].n).join();if(sel.dataset.sig!==sig){sel.dataset.sig=sig;sel.innerHTML=us.map(u=>`<option value="${u}">${esc(STREE[u].n)}</option>`).join("");}
   if(!STU||!STREE[STU])STU=us[0]||"";sel.value=STU;sel.hidden=!pull||us.length<2;
+  showLast=Date.now();
   const d=STREE[STU]||{},ink=d.ink||{};SENT={};
-  for(const pid of Object.keys(ink))SENT[pid]={ink:unpackInk(ink[pid]),at:1};
+  for(const pid of Object.keys(ink))SENT[pid]={raw:ink[pid],at:1,get ink(){return this._i||(this._i=unpackInk(this.raw));}};
   $("coinN").textContent=d.sc??10;
-  render();ansStatus();
+  if(showPage!==idx||showSel!==STU+pull){showPage=idx;showSel=STU+pull;render();}   // a new page or student: the full render
+  else{paint(x.pull,cPull,pull?sentInk():[]);
+    [...$("dots").children].forEach((b,i)=>b.classList.toggle("sent",!!SENT[P(i)]));
+    $("note").textContent=pull?(SENT[P(idx)]?`งานของ ${d.n||""}`:"หน้านี้น้องยังไม่เขียน"):"";}
+  ansStatus();
 }
 function showStatus(card){
   const id=card.dataset.q,st=card.querySelector(".st"),d=STREE[STU],an=pull&&d&&d.ans&&d.ans[id],b=SBACK[STU]&&SBACK[STU][id];
@@ -905,8 +912,9 @@ function treeSet(path,data){
 function dirty(path){
   const u=path.split("/").filter(Boolean)[0];
   if(u)DIRTY.add(u);else for(const k of Object.keys(CARDS).concat(Object.keys(TREE)))DIRTY.add(k);
-  if(!rafOn){rafOn=true;requestAnimationFrame(drawLive);}
+  if(!rafOn){rafOn=true;setTimeout(()=>requestAnimationFrame(drawLive),Math.max(0,150-(Date.now()-liveLast)));}
 }
+let liveLast=0;
 const inkOf=(u,i)=>{const o=TREE[u]&&TREE[u].ink&&TREE[u].ink[P(i)];if(!o)return [];
   return unpackInk(o);};
 let BTREE={},cuT=null;                              // back/<class>: what the teacher sent each student
@@ -964,12 +972,13 @@ function makeCard(u){
   el.onclick=()=>openFocus(u);
   return c;
 }
+let REVSIG="";
 function paintInk(cv,w,h,list){
-  const d=Math.min(devicePixelRatio||1,2);cv.width=Math.round(w*d);cv.height=Math.round(h*d);
+  const d=Math.min(devicePixelRatio||1,2),W=Math.round(w*d),H=Math.round(h*d);if(cv.width!==W)cv.width=W;if(cv.height!==H)cv.height=H;
   paint(cv.getContext("2d"),cv,list);
 }
 function drawLive(){
-  rafOn=false;
+  rafOn=false;liveLast=Date.now();
   for(const u of DIRTY){
     const d=TREE[u];let c=CARDS[u];
     if(!d||typeof d!=="object"||d.show){if(c){c.el.remove();delete CARDS[u];}continue;}
@@ -977,9 +986,10 @@ function drawLive(){
     const i=Math.min(Math.max(+d.pg||0,0),N-1),src="p/"+P(i)+".jpg";
     c.name.textContent=d.n||"(ไม่มีชื่อ)";const nw=waiting(u).length;c.where.innerHTML="หน้า "+(i+1)+(nw?`<span class="wait">${nw}</span>`:"");
     if(c.img.getAttribute("src")!==src)c.img.src=src;
-    const w=c.el.clientWidth-12||cw;paintInk(c.cv,w,w*RATIO,inkOf(u,i));
+    // View 2026-11-01 (#live beside Google Meet lagged): the cards are painted only while "ดูรวม" shows them
+    if(!FOC){const w=c.el.clientWidth-12||cw;paintInk(c.cv,w,w*RATIO,inkOf(u,i));c.stale=false;}else c.stale=true;
     if(c.sig!==JSON.stringify([d.at,i])){c.sig=JSON.stringify([d.at,i]);c.seen=Date.now();c.el.classList.add("fresh");}
-    if(FOC&&FOC.u===u){drawFocus();drawRev();}
+    if(FOC&&FOC.u===u){drawFocus();const rs=JSON.stringify([d.ans||null,BTREE[u]||null,FOC.i]);if(rs!==REVSIG){REVSIG=rs;drawRev();}}
   }
   const all=Object.keys(CARDS).reduce((n,u)=>n+waiting(u).length,0);
   $("fWaitN").textContent=all;$("fWait").classList.toggle("has",all>0);
@@ -1148,7 +1158,7 @@ function startLive(){
     if(e.target.closest(".y"))sendBack(c,true);else if(e.target.closest(".n"))sendBack(c,false);
     else if(e.target.closest("h3")){FOC.i=QINFO[c.dataset.q].pg;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);}
   });
-  $("fBack").onclick=()=>{$("focus").hidden=true;FOC=null;GRID=true;};
+  $("fBack").onclick=()=>{$("focus").hidden=true;FOC=null;GRID=true;dirty("");};
   $("fTitle").textContent=CFG.title;
   $("fPrev").onclick=()=>{if(FOC&&FOC.i>0){FOC.i--;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);}};
   $("fNext").onclick=()=>{if(FOC&&FOC.i<NP()-1){FOC.i++;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);}};
