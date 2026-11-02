@@ -668,7 +668,7 @@ function drawAns(){
       if(g&&p.c)return `<div class="pt"><div class="ch4" data-k="${k}">${p.c.map(c=>`<button type="button" data-c="${esc(c)}"${v.c===c?' class="on"':""}>${esc(c)}</button>`).join("")}</div></div>`;
       return p.c?`<div class="pt">${esc(p.l)}<select data-k="${k}"><option value="">เลือก…</option>${p.c.map(c=>`<option${v.c===c?" selected":""}>${esc(c)}</option>`).join("")}</select></div>`
         :`<div class="pt">${esc(p.l)}<div class="row"><input class="num" data-k="${k}" inputmode="decimal" autocomplete="off" placeholder="คำตอบ" value="${esc(v.n||"")}"><input class="unit" data-k="${k}" autocomplete="off" autocapitalize="off" placeholder="หน่วย" value="${esc(v.u||"")}"></div></div>`;}).join("")
-      +(g==="D"&&!SHOW?`<div class="bets">ลง${[1,2,3].map(n=>`<button type="button" data-bet="${n}"${d.bet===n?' class="on"':""}>${n}<span class="coin"></span></button>`).join("")}</div>`:"")
+      +(g==="D"&&!SHOW?`<div class="bets">ลง${(q.bets||[1,2,3]).map(n=>`<button type="button" data-bet="${n}"${d.bet===n?' class="on"':""}>${n}<span class="coin"></span></button>`).join("")}</div>`:"")
       +(SHOW?(g?'<div class="st"></div>':""):`<button class="go" type="button"></button><div class="st"></div>`)+"</div>";}).join("");
   ansStatus();
 }
@@ -751,7 +751,7 @@ function gameStatus(card,d,b){
   const first=d&&d.first;
   const bets=card.querySelector(".bets");
   if(bets&&first)bets.innerHTML=`<span>ลงไว้ ${first.bet} เหรียญ · ${first.gain>0?"ได้ +"+first.gain:"เสีย "+(-first.gain)}</span>`;
-  else if(bets)bets.querySelectorAll("button").forEach(x=>{x.disabled=lock||sent&&!changed;});
+  else if(bets)bets.querySelectorAll("button").forEach(x=>{x.disabled=lock||sent&&!changed||+x.dataset.bet>1&&+x.dataset.bet>+($("coinN").textContent||10);});
   card.classList.toggle("ok",fresh&&!changed&&b.ok===true);card.classList.toggle("no",fresh&&!changed&&b.ok===false);
   go.innerHTML=icon("send")+(lock||sent&&!changed?"ส่งแล้ว":sent?"ส่งใหม่ (ไม่คิดเหรียญ)":"ส่งคำตอบ");
   go.disabled=lock||!changed||!readCard(card).every(o=>o.c||o.n)||g==="D"&&!first&&!d.bet&&!sent;

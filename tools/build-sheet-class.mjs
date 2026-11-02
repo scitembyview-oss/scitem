@@ -93,7 +93,7 @@ for (const q of ansQ) {
   if (!(q.page >= 1 && q.page <= sp.length)) throw new Error(`${q.id}: page ${q.page} is not in the sheet`);
   const pid = 'p' + String(q.page).padStart(2, '0');
   // sec/stage/boss/skill: a game class (the answers file has "skills"); public, no answers in them
-  const meta = Object.fromEntries(['sec', 'stage', 'boss', 'skill'].filter((k) => q[k] != null).map((k) => [k, q[k]]));
+  const meta = Object.fromEntries(['sec', 'stage', 'boss', 'skill', 'bets'].filter((k) => q[k] != null).map((k) => [k, q[k]]));
   (qs[pid] ||= []).push({ id: q.id, name: q.name, ...meta, parts: q.parts.map((p) => (p.c ? { l: p.l, c: p.c } : { l: p.l })) });
   if (q.kpage) kq[q.id] = q.kpage - 1;
   if (q.hint) kh[q.id] = q.hint;                    // [top, bottom] of its worked-solution box on the key page, 0..1
