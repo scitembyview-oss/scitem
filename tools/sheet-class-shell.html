@@ -133,6 +133,12 @@ body.game #coins{display:inline-flex}body.game.show:not(.pulling) #coins{display
 @keyframes shake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
 .pop{position:fixed;z-index:60;font:800 34px var(--display);pointer-events:none;animation:pop 1.3s ease-out forwards;text-shadow:0 2px 0 #fff,0 0 12px #fff}
 .pop.y{color:#16a34a}.pop.n{color:#dc2626}
+.confetti{position:fixed;inset:0;z-index:70;pointer-events:none;overflow:hidden}
+.confetti i{position:absolute;top:-4vh;width:10px;height:14px;animation:fall 2s cubic-bezier(.25,.6,.5,1) forwards}
+@keyframes fall{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(var(--dx),108vh) rotate(var(--r))}}
+.confetti .yay{position:absolute;left:50%;top:38%;font:800 44px var(--display);color:#16a34a;text-shadow:0 3px 0 #fff,0 0 18px #fff;animation:yay 2.2s ease-out forwards}
+.confetti .yay.boss{color:#c2410c;font-size:58px}
+@keyframes yay{0%{transform:translate(-50%,-50%) scale(.4);opacity:0}15%{transform:translate(-50%,-50%) scale(1.15);opacity:1}25%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{transform:translate(-50%,-60%);opacity:0}}
 @keyframes pop{0%{transform:translate(-50%,10px) scale(.6);opacity:0}15%{transform:translate(-50%,0) scale(1.25);opacity:1}70%{opacity:1}100%{transform:translate(-50%,-70px) scale(1);opacity:0}}
 #sumBox{position:fixed;inset:0;z-index:70;background:rgba(20,28,45,.45);display:flex;align-items:center;justify-content:center;padding:16px}
 #sumBox[hidden]{display:none}
@@ -697,7 +703,7 @@ function ansStatus(){
 async function sendAns(card){
   const id=card.dataset.q,v=readCard(card),d=ansDraft(id),g=secOf(id);
   if(!v.some(o=>o.n||o.c)){flash(g?"เลือกคำตอบก่อน":"Fill in an answer first");return;}
-  if(g&&v.some(o=>!o.c)){flash("เลือกคำตอบให้ครบก่อน");return;}
+  if(g&&v.some(o=>!o.c&&!o.n)){flash("ตอบให้ครบทุกช่องก่อน");return;}
   if(g==="D"&&!d.first&&!d.bet){flash("ลงเหรียญก่อน 1, 2 หรือ 3");return;}
   if((g==="A"||g==="B")&&d.k)return;               // the exams: one answer, final
   d.v=v;d.k=Date.now();d.sent=JSON.stringify(v);if(g==="D"&&!d.first)d.sbet=d.bet;save(K.ans,MYANS);ansStatus();
@@ -741,15 +747,15 @@ function gameStatus(card,d,b){
   const id=card.dataset.q,g=secOf(id),st=card.querySelector(".st"),go=card.querySelector(".go");
   const sent=!!d&&!!d.k,fresh=sent&&b&&b.for===d.k,cur=JSON.stringify(readCard(card)),changed=!sent||cur!==d.sent;
   const lock=(g==="A"||g==="B")&&sent||g==="D"&&fresh&&b.ok===true&&!changed;
-  card.querySelectorAll(".ch4 button").forEach(x=>x.disabled=lock);
+  card.querySelectorAll(".ch4 button,input").forEach(x=>x.disabled=lock);
   const first=d&&d.first;
   const bets=card.querySelector(".bets");
   if(bets&&first)bets.innerHTML=`<span>ลงไว้ ${first.bet} เหรียญ · ${first.gain>0?"ได้ +"+first.gain:"เสีย "+(-first.gain)}</span>`;
   else if(bets)bets.querySelectorAll("button").forEach(x=>{x.disabled=lock||sent&&!changed;});
   card.classList.toggle("ok",fresh&&!changed&&b.ok===true);card.classList.toggle("no",fresh&&!changed&&b.ok===false);
   go.innerHTML=icon("send")+(lock||sent&&!changed?"ส่งแล้ว":sent?"ส่งใหม่ (ไม่คิดเหรียญ)":"ส่งคำตอบ");
-  go.disabled=lock||!changed||!readCard(card).every(o=>o.c)||g==="D"&&!first&&!d.bet&&!sent;
-  if(!sent)st.innerHTML=g==="D"&&!first?"เลือกคำตอบ ลงเหรียญ แล้วกดส่ง":"";
+  go.disabled=lock||!changed||!readCard(card).every(o=>o.c||o.n)||g==="D"&&!first&&!d.bet&&!sent;
+  if(!sent)st.innerHTML=g==="D"&&!first?(allChoice(id)?"เลือกคำตอบ":"ใส่คำตอบ")+" ลงเหรียญ แล้วกดส่ง":"";
   else if(changed)st.innerHTML="แก้แล้ว ยังไม่ได้ส่ง";
   else if(fresh)st.innerHTML=b.ok?icon("check")+"<span>ถูก</span>":icon("x")+"<span>"+(g==="D"?"ยังไม่ถูก ลองใหม่ได้ (ไม่คิดเหรียญ)":"ผิด")+"</span>";
   else st.innerHTML=icon("clock")+"<span>"+(g==="A"?"ส่งแล้ว รอครูเปิดผล":"ส่งแล้ว กำลังตรวจ…")+"</span>";
@@ -766,7 +772,7 @@ function score(quiet){
   for(const [id,f] of list){const x=f.bet*BOSSX(id);if(f.ok){s++;f.gain=x+(s>=3?1:0);}else{s=0;f.gain=-x;}c=Math.max(0,c+f.gain);}
   const was=COINS;COINS=c;STREAK=s;if(fresh)save(K.ans,MYANS);
   $("coinN").textContent=c;$("fire").classList.toggle("on",s>=3);$("fireN").textContent=s>=3?s:"";
-  if(fresh&&!quiet){const f=MYANS[fresh].first;popCoins(f.gain,f.ok);ansStatus();}
+  if(fresh&&!quiet){const f=MYANS[fresh].first;popCoins(f.gain,f.ok);if(f.ok)confetti(BOSSX(fresh)>1);ansStatus();}
   if(fresh||was!==c)livePatch({sc:c});
   // set A opened by the teacher, or set B all marked: the summary comes up once
   const nA=QORDER.filter(id=>secOf(id)==="A"&&BACK[id]&&BACK[id].for).length;
@@ -781,6 +787,17 @@ function popCoins(n,ok){
   document.body.appendChild(el);setTimeout(()=>el.remove(),1400);
   if(!ok){$("coins").classList.remove("shake");void $("coins").offsetWidth;$("coins").classList.add("shake");}
 }
+// View 2026-11-02: a party when the teacher marks her first try right; a boss gets a bigger one and a banner
+function confetti(big){
+  const calm=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const n=calm?16:big?140:70,cols=["#f5b301","#16a34a","#2563eb","#dc2626","#9333ea","#ea580c","#06b6d4"],box=document.createElement("div");
+  box.className="confetti";
+  for(let i=0;i<n;i++){const c=document.createElement("i"),x=Math.random()*100,dx=(Math.random()-.5)*40,d=1.6+Math.random()*1.6;
+    c.style.cssText=`left:${x}vw;background:${cols[i%cols.length]};--dx:${dx}vw;--r:${Math.round(Math.random()*720-360)}deg;animation-duration:${d}s;animation-delay:${Math.random()*.35}s;`+(i%3?"":"border-radius:50%;");
+    box.appendChild(c);}
+  const t=document.createElement("div");t.className="yay"+(big?" boss":"");t.textContent=big?"ชนะบอส!":"ถูกต้อง!";box.appendChild(t);
+  document.body.appendChild(box);setTimeout(()=>box.remove(),3800);
+}
 async function livePatch(o){
   if(!FB||STAFF)return;
   try{const tok=await fbToken();await fetch(fbUrl("/"+FBA.uid,tok),{method:"PATCH",body:JSON.stringify(o)});}catch(e){}
@@ -794,6 +811,8 @@ function abRows(res){
 function sumHtml(rows,name,coins,drill){
   const t=x=>x===true?'<td class="c y">✓</td>':x===false?'<td class="c n">✗</td>':'<td class="c">–</td>';
   const nA=rows.filter(r=>r.a===true).length,nB=rows.filter(r=>r.b===true).length,openA=rows.some(r=>r.a!=null),anyB=rows.some(r=>r.b!=null);
+  if(!rows.length)return `<h2><span>${esc(name||"ผลของฉัน")}</span><button type="button" data-x="1" aria-label="ปิด">✕</button></h2>
+    <div class="big3"><div>เหรียญ<b><span class="coin"></span> ${coins}</b>${drill?drill:""}</div></div>`;
   return `<h2><span>${esc(name||"ผลของฉัน")}</span><button type="button" data-x="1" aria-label="ปิด">✕</button></h2>
     <div class="big3"><div>ก่อนเรียน (A)<b>${openA?nA+"/"+rows.length:"รอผล"}</b></div><div>หลังเรียน (B)<b>${anyB?nB+"/"+rows.length:"–"}</b></div>
     <div>เหรียญ<b><span class="coin"></span> ${coins}</b>${drill?drill:""}</div></div>
@@ -1148,7 +1167,7 @@ function startLive(){
     catch(e){lNet("ล้างไม่ได้ ("+e.message+")");}
   };
   $("fWait").onclick=nextWaiting;
-  if(GAME){$("fRevA").hidden=false;$("fAB").hidden=false;$("fRevA").onclick=revealA;$("fAB").onclick=openAB;}
+  if(GAME&&QORDER.some(q=>secOf(q)==="A")){$("fRevA").hidden=false;$("fAB").hidden=false;$("fRevA").onclick=revealA;$("fAB").onclick=openAB;}
   $("rev").addEventListener("input",e=>{const c=e.target.closest(".rq");if(c&&FOC)HINTS[FOC.u+"|"+c.dataset.q]=e.target.value;});
   $("rev").addEventListener("focusout",()=>setTimeout(()=>{if(revLater)drawRev();},0));
   $("rev").addEventListener("click",e=>{

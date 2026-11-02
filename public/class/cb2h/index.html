@@ -133,6 +133,12 @@ body.game #coins{display:inline-flex}body.game.show:not(.pulling) #coins{display
 @keyframes shake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
 .pop{position:fixed;z-index:60;font:800 34px var(--display);pointer-events:none;animation:pop 1.3s ease-out forwards;text-shadow:0 2px 0 #fff,0 0 12px #fff}
 .pop.y{color:#16a34a}.pop.n{color:#dc2626}
+.confetti{position:fixed;inset:0;z-index:70;pointer-events:none;overflow:hidden}
+.confetti i{position:absolute;top:-4vh;width:10px;height:14px;animation:fall 2s cubic-bezier(.25,.6,.5,1) forwards}
+@keyframes fall{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(var(--dx),108vh) rotate(var(--r))}}
+.confetti .yay{position:absolute;left:50%;top:38%;font:800 44px var(--display);color:#16a34a;text-shadow:0 3px 0 #fff,0 0 18px #fff;animation:yay 2.2s ease-out forwards}
+.confetti .yay.boss{color:#c2410c;font-size:58px}
+@keyframes yay{0%{transform:translate(-50%,-50%) scale(.4);opacity:0}15%{transform:translate(-50%,-50%) scale(1.15);opacity:1}25%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{transform:translate(-50%,-60%);opacity:0}}
 @keyframes pop{0%{transform:translate(-50%,10px) scale(.6);opacity:0}15%{transform:translate(-50%,0) scale(1.25);opacity:1}70%{opacity:1}100%{transform:translate(-50%,-70px) scale(1);opacity:0}}
 #sumBox{position:fixed;inset:0;z-index:70;background:rgba(20,28,45,.45);display:flex;align-items:center;justify-content:center;padding:16px}
 #sumBox[hidden]{display:none}
@@ -320,7 +326,7 @@ body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:v
 <script>
 (function(){
 "use strict";
-const CFG={"id":"cb2h","title":"วงกลม + แรงลอยตัว","pages":48,"sheet":"https://script.google.com/macros/s/AKfycbzIaVMqROaTFaDN36SwCif7pWF_KEE7GroEUj2V5c9BM2gg4Y2v3wXbUOf-P4T0aBygnw/exec","fb":{"key":"AIzaSyClZhItG5C3aaz413ToeXPDKzh6Aw5y9CU","db":"https://scitem-live-default-rtdb.asia-southeast1.firebasedatabase.app"},"qs":{"p04":[{"id":"c3","name":"วงกลม ข้อ 3","parts":[{"l":"ความเร่งสู่ศูนย์กลาง"},{"l":"แรงตึงเชือก"}]},{"id":"c4","name":"วงกลม ข้อ 4","parts":[{"l":"แรงลัพธ์"},{"l":"เป็นแรงชนิดใด","c":["แรงเสียดทานสถิต","แรงเสียดทานจลน์","แรงหนีศูนย์กลาง","แรงปฏิกิริยาตั้งฉาก"]}]}],"p05":[{"id":"c5","name":"วงกลม ข้อ 5","parts":[{"l":"อัตราเร็วสูงสุด"}]},{"id":"c6","name":"วงกลม ข้อ 6","parts":[{"l":"(ก) ω สูงสุด"},{"l":"(ข) ω เมื่อห่าง 0.2 m"}]}],"p08":[{"id":"c8","name":"วงกลม ข้อ 8","parts":[{"l":"แรงตึงเชือก"}]},{"id":"c9","name":"วงกลม ข้อ 9","parts":[{"l":"แรงที่ถนนดันรถ"}]}],"p09":[{"id":"c10","name":"วงกลม ข้อ 10","parts":[{"l":"(ก) อัตราเร็วต่ำสุด"},{"l":"(ข) แรงที่ก้นถังดันน้ำ"}]},{"id":"c11","name":"วงกลม ข้อ 11","parts":[{"l":"(ก) อัตราเร็ว"},{"l":"(ข) หนักกี่เท่า"}]}],"p12":[{"id":"c12","name":"วงกลม ข้อ 12","parts":[{"l":"มุมกับแนวดิ่ง"},{"l":"แรงตึงเชือก"}]},{"id":"c13","name":"วงกลม ข้อ 13","parts":[{"l":"แรงตึงเชือก"},{"l":"คาบ"}]}],"p13":[{"id":"c14","name":"วงกลม ข้อ 14","parts":[{"l":"อัตราเร็ว"}]}],"p16":[{"id":"c15","name":"วงกลม ข้อ 15","parts":[{"l":"อัตราเร็วที่ก้นราง"},{"l":"แรงที่รางดัน"}]},{"id":"c16","name":"วงกลม ข้อ 16","parts":[{"l":"อัตราเร็วต่ำสุด"},{"l":"แรงตึงเชือก"}]}],"p17":[{"id":"c17","name":"วงกลม ข้อ 17","parts":[{"l":"อัตราเร็วต่ำสุด"},{"l":"แรงตึงเชือก"}]}],"p20":[{"id":"b1","name":"ลอยตัว ข้อ 1","parts":[{"l":"แรงลอยตัวในน้ำ"},{"l":"แรงลอยตัวในน้ำมัน"}]},{"id":"b2","name":"ลอยตัว ข้อ 2","parts":[{"l":"ก้อนเหล็ก"},{"l":"ก้อนอะลูมิเนียม"}]}],"p21":[{"id":"b3","name":"ลอยตัว ข้อ 3","parts":[{"l":"แรงลอยตัว"},{"l":"ปริมาตร"},{"l":"ความหนาแน่น"}]},{"id":"b4","name":"ลอยตัว ข้อ 4","parts":[{"l":"ความหนาแน่นของ X"}]}],"p23":[{"id":"b7","name":"ลอยตัว ข้อ 7","parts":[{"l":"ส่วนที่จม (ร้อยละ)"}]},{"id":"b8","name":"ลอยตัว ข้อ 8","parts":[{"l":"ปริมาตรทั้งก้อน"}]}],"p24":[{"id":"b9","name":"ลอยตัว ข้อ 9","parts":[{"l":"(ก) ความหนาแน่นไม้"},{"l":"(ข) มวลที่วาง"}]},{"id":"b10","name":"ลอยตัว ข้อ 10","parts":[{"l":"มวลคนมากที่สุด"}]}],"p26":[{"id":"b13","name":"ลอยตัว ข้อ 13","parts":[{"l":"(ก) แรงตึงเชือก"},{"l":"(ข) ความเร่ง"},{"l":"(ค) จมกี่ส่วน"}]},{"id":"b14","name":"ลอยตัว ข้อ 14","parts":[{"l":"(ก) ในน้ำ"},{"l":"(ข) ในน้ำมัน"}]}],"p27":[{"id":"b15","name":"ลอยตัว ข้อ 15","parts":[{"l":"เครื่องชั่งสปริง"},{"l":"ตาชั่ง"}]},{"id":"b16","name":"ลอยตัว ข้อ 16","parts":[{"l":"ปริมาตรโลหะ"},{"l":"แรงตึงเชือก"}]}],"p29":[{"id":"b17","name":"ลอยตัว ข้อ 17","parts":[{"l":"(ก) ไม้จมลึก"},{"l":"(ข) น้ำสูงขึ้น"}]},{"id":"b18","name":"ลอยตัว ข้อ 18","parts":[{"l":"(ก) ใส่หิน"},{"l":"(ข) ใส่ไม้"}]}],"p30":[{"id":"b19","name":"ลอยตัว ข้อ 19","parts":[{"l":"(ก) ระดับน้ำ","c":["สูงขึ้น","ลดลง","เท่าเดิม"]},{"l":"(ข) ระดับน้ำ","c":["สูงขึ้น","ลดลง","เท่าเดิม"]},{"l":"(ข) เปลี่ยนไป"}]},{"id":"b20","name":"ลอยตัว ข้อ 20","parts":[{"l":"ระดับน้ำ","c":["สูงขึ้น","ลดลง","เท่าเดิม"]},{"l":"เปลี่ยนไป"}]}],"p33":[{"id":"c7","name":"วงกลม ข้อ 7 (การบ้าน)","parts":[{"l":"อัตราเร็วน้อยที่สุด"},{"l":"คาบมากที่สุด"}]}],"p34":[{"id":"b5","name":"ลอยตัว ข้อ 5 (การบ้าน)","parts":[{"l":"น้ำหนัก"},{"l":"ความหนาแน่น"}]},{"id":"b6","name":"ลอยตัว ข้อ 6 (การบ้าน)","parts":[{"l":"มวลทอง"}]}],"p35":[{"id":"b11","name":"ลอยตัว ข้อ 11 (การบ้าน)","parts":[{"l":"จมในชั้นน้ำกี่ส่วน"}]},{"id":"b12","name":"ลอยตัว ข้อ 12 (การบ้าน)","parts":[{"l":"ปริมาตรโพรง"}]}],"p37":[{"id":"b21","name":"ลอยตัว ข้อ 21 (การบ้าน)","parts":[{"l":"(ก) ไม้จม","c":["มากขึ้น","น้อยลง","เท่าเดิม"]},{"l":"(ข) แรงลอยตัว"}]},{"id":"b22","name":"ลอยตัว ข้อ 22 (การบ้าน)","parts":[{"l":"(ก) เชือกเอียง","c":["เข้าหาแกน","ออกจากแกน","ตั้งตรง"]},{"l":"(ข) มุมกับแนวดิ่ง"},{"l":"(ค) แรงตึงเชือก"}]}],"p39":[{"id":"c18","name":"วงกลม ข้อ 18 (ฝึกเพิ่ม)","parts":[{"l":"(ก) อัตราเร็ว"},{"l":"(ข) ขนาด Δv"},{"l":"(ค) ความเร่งเฉลี่ย"}]},{"id":"c19","name":"วงกลม ข้อ 19 (ฝึกเพิ่ม)","parts":[{"l":"แรงตึงเชือก 1"},{"l":"แรงตึงเชือก 2"}]}],"p40":[{"id":"c20","name":"วงกลม ข้อ 20 (ฝึกเพิ่ม)","parts":[{"l":"(ก) ω ไม่เกิน"},{"l":"(ข) แรงตึงเชือก"},{"l":"(ค) ω สูงสุด"}]},{"id":"c21","name":"วงกลม ข้อ 21 (ฝึกเพิ่ม)","parts":[{"l":"(ก) หนักที่สุดที่","c":["จุดบนสุด","จุดล่างสุด","ข้างวง"]},{"l":"(ข) รัศมีน้อยสุด"},{"l":"(ค) บนสุดหนักกี่เท่า"}]}],"p41":[{"id":"c22","name":"วงกลม ข้อ 22 (ฝึกเพิ่ม)","parts":[{"l":"(ก) อัตราเร็วต่ำสุด"},{"l":"(ข) แรงตึง"},{"l":"(ค) อัตราเร็วสูงสุด"}]},{"id":"c23","name":"วงกลม ข้อ 23 (ฝึกเพิ่ม)","parts":[{"l":"(ก) คาบ"},{"l":"(ข) ล่างสุดกี่เท่า"},{"l":"(ค) แรงจากที่นั่งกี่เท่า"}]}],"p42":[{"id":"c24","name":"วงกลม ข้อ 24 (ฝึกเพิ่ม)","parts":[{"l":"อัตราเร็วสูงสุด"}]},{"id":"c25","name":"วงกลม ข้อ 25 (ฝึกเพิ่ม)","parts":[{"l":"θ"}]}],"p43":[{"id":"c26","name":"วงกลม ข้อ 26 (ฝึกเพิ่ม)","parts":[{"l":"(ก) อัตราเร็วต่ำสุด"},{"l":"(ข) ผลต่างแรงตึง"}]},{"id":"c27","name":"วงกลม ข้อ 27 (ฝึกเพิ่ม)","parts":[{"l":"(ก) h น้อยที่สุด"},{"l":"(ข) กี่เท่าของน้ำหนัก"}]}],"p44":[{"id":"c28","name":"วงกลม ข้อ 28 (ฝึกเพิ่ม)","parts":[{"l":"d น้อยที่สุด"}]},{"id":"c29","name":"วงกลม ข้อ 29 (ฝึกเพิ่ม)","parts":[{"l":"ความสูงที่หลุด"},{"l":"อัตราเร็วขณะหลุด"}]}]},"anims":99554812,"openHints":99554812};
+const CFG={"id":"cb2h","title":"วงกลม + แรงลอยตัว","pages":48,"sheet":"https://script.google.com/macros/s/AKfycbzIaVMqROaTFaDN36SwCif7pWF_KEE7GroEUj2V5c9BM2gg4Y2v3wXbUOf-P4T0aBygnw/exec","fb":{"key":"AIzaSyClZhItG5C3aaz413ToeXPDKzh6Aw5y9CU","db":"https://scitem-live-default-rtdb.asia-southeast1.firebasedatabase.app"},"qs":{"p04":[{"id":"c3","name":"วงกลม ข้อ 3","parts":[{"l":"ความเร่งสู่ศูนย์กลาง"},{"l":"แรงตึงเชือก"}]},{"id":"c4","name":"วงกลม ข้อ 4","parts":[{"l":"แรงลัพธ์"},{"l":"เป็นแรงชนิดใด","c":["แรงเสียดทานสถิต","แรงเสียดทานจลน์","แรงหนีศูนย์กลาง","แรงปฏิกิริยาตั้งฉาก"]}]}],"p05":[{"id":"c5","name":"วงกลม ข้อ 5","parts":[{"l":"อัตราเร็วสูงสุด"}]},{"id":"c6","name":"วงกลม ข้อ 6","parts":[{"l":"(ก) ω สูงสุด"},{"l":"(ข) ω เมื่อห่าง 0.2 m"}]}],"p08":[{"id":"c8","name":"วงกลม ข้อ 8","parts":[{"l":"แรงตึงเชือก"}]},{"id":"c9","name":"วงกลม ข้อ 9","parts":[{"l":"แรงที่ถนนดันรถ"}]}],"p09":[{"id":"c10","name":"วงกลม ข้อ 10","parts":[{"l":"(ก) อัตราเร็วต่ำสุด"},{"l":"(ข) แรงที่ก้นถังดันน้ำ"}]},{"id":"c11","name":"วงกลม ข้อ 11","parts":[{"l":"(ก) อัตราเร็ว"},{"l":"(ข) หนักกี่เท่า"}]}],"p12":[{"id":"c12","name":"วงกลม ข้อ 12","parts":[{"l":"มุมกับแนวดิ่ง"},{"l":"แรงตึงเชือก"}]},{"id":"c13","name":"วงกลม ข้อ 13","parts":[{"l":"แรงตึงเชือก"},{"l":"คาบ"}]}],"p13":[{"id":"c14","name":"วงกลม ข้อ 14","parts":[{"l":"อัตราเร็ว"}]}],"p16":[{"id":"c15","name":"วงกลม ข้อ 15","parts":[{"l":"อัตราเร็วที่ก้นราง"},{"l":"แรงที่รางดัน"}]},{"id":"c16","name":"วงกลม ข้อ 16","parts":[{"l":"อัตราเร็วต่ำสุด"},{"l":"แรงตึงเชือก"}]}],"p17":[{"id":"c17","name":"วงกลม ข้อ 17","parts":[{"l":"อัตราเร็วต่ำสุด"},{"l":"แรงตึงเชือก"}]}],"p20":[{"id":"b1","name":"ด่าน 1 วัตถุจมมิด · ลอยตัว ข้อ 1","parts":[{"l":"แรงลอยตัวในน้ำ"},{"l":"แรงลอยตัวในน้ำมัน"}],"sec":"D","stage":1},{"id":"b2","name":"ลอยตัว ข้อ 2","parts":[{"l":"ก้อนเหล็ก"},{"l":"ก้อนอะลูมิเนียม"}]}],"p21":[{"id":"b3","name":"ด่าน 1 วัตถุจมมิด · ลอยตัว ข้อ 3","parts":[{"l":"แรงลอยตัว"},{"l":"ปริมาตร"},{"l":"ความหนาแน่น"}],"sec":"D","stage":1},{"id":"b4","name":"บอส · ด่าน 1 วัตถุจมมิด · ลอยตัว ข้อ 4","parts":[{"l":"ความหนาแน่นของ X"}],"sec":"D","stage":1,"boss":1}],"p23":[{"id":"b7","name":"ด่าน 2 วัตถุลอย · ลอยตัว ข้อ 7","parts":[{"l":"ส่วนที่จม (ร้อยละ)"}],"sec":"D","stage":2},{"id":"b8","name":"ด่าน 2 วัตถุลอย · ลอยตัว ข้อ 8","parts":[{"l":"ปริมาตรทั้งก้อน"}],"sec":"D","stage":2}],"p24":[{"id":"b9","name":"ด่าน 2 วัตถุลอย · ลอยตัว ข้อ 9","parts":[{"l":"(ก) ความหนาแน่นไม้"},{"l":"(ข) มวลที่วาง"}],"sec":"D","stage":2},{"id":"b10","name":"บอส · ด่าน 2 วัตถุลอย · ลอยตัว ข้อ 10","parts":[{"l":"มวลคนมากที่สุด"}],"sec":"D","stage":2,"boss":1}],"p26":[{"id":"b13","name":"ด่าน 3 หลายแรง · ลอยตัว ข้อ 13","parts":[{"l":"(ก) แรงตึงเชือก"},{"l":"(ข) ความเร่ง"},{"l":"(ค) จมกี่ส่วน"}],"sec":"D","stage":3},{"id":"b14","name":"ด่าน 3 หลายแรง · ลอยตัว ข้อ 14","parts":[{"l":"(ก) ในน้ำ"},{"l":"(ข) ในน้ำมัน"}],"sec":"D","stage":3}],"p27":[{"id":"b15","name":"บอส · ด่าน 3 หลายแรง · ลอยตัว ข้อ 15","parts":[{"l":"เครื่องชั่งสปริง"},{"l":"ตาชั่ง"}],"sec":"D","stage":3,"boss":1},{"id":"b16","name":"ลอยตัว ข้อ 16","parts":[{"l":"ปริมาตรโลหะ"},{"l":"แรงตึงเชือก"}]}],"p29":[{"id":"b17","name":"ด่าน 4 ระดับน้ำเปลี่ยน · ลอยตัว ข้อ 17","parts":[{"l":"(ก) ไม้จมลึก"},{"l":"(ข) น้ำสูงขึ้น"}],"sec":"D","stage":4},{"id":"b18","name":"ด่าน 4 ระดับน้ำเปลี่ยน · ลอยตัว ข้อ 18","parts":[{"l":"(ก) ใส่หิน"},{"l":"(ข) ใส่ไม้"}],"sec":"D","stage":4}],"p30":[{"id":"b19","name":"บอส · ด่าน 4 ระดับน้ำเปลี่ยน · ลอยตัว ข้อ 19","parts":[{"l":"(ก) ระดับน้ำ","c":["สูงขึ้น","ลดลง","เท่าเดิม"]},{"l":"(ข) ระดับน้ำ","c":["สูงขึ้น","ลดลง","เท่าเดิม"]},{"l":"(ข) เปลี่ยนไป"}],"sec":"D","stage":4,"boss":1},{"id":"b20","name":"ลอยตัว ข้อ 20","parts":[{"l":"ระดับน้ำ","c":["สูงขึ้น","ลดลง","เท่าเดิม"]},{"l":"เปลี่ยนไป"}]}],"p33":[{"id":"c7","name":"วงกลม ข้อ 7 (การบ้าน)","parts":[{"l":"อัตราเร็วน้อยที่สุด"},{"l":"คาบมากที่สุด"}]}],"p34":[{"id":"b5","name":"ลอยตัว ข้อ 5 (การบ้าน)","parts":[{"l":"น้ำหนัก"},{"l":"ความหนาแน่น"}]},{"id":"b6","name":"ลอยตัว ข้อ 6 (การบ้าน)","parts":[{"l":"มวลทอง"}]}],"p35":[{"id":"b11","name":"ลอยตัว ข้อ 11 (การบ้าน)","parts":[{"l":"จมในชั้นน้ำกี่ส่วน"}]},{"id":"b12","name":"ลอยตัว ข้อ 12 (การบ้าน)","parts":[{"l":"ปริมาตรโพรง"}]}],"p37":[{"id":"b21","name":"ลอยตัว ข้อ 21 (การบ้าน)","parts":[{"l":"(ก) ไม้จม","c":["มากขึ้น","น้อยลง","เท่าเดิม"]},{"l":"(ข) แรงลอยตัว"}]},{"id":"b22","name":"ลอยตัว ข้อ 22 (การบ้าน)","parts":[{"l":"(ก) เชือกเอียง","c":["เข้าหาแกน","ออกจากแกน","ตั้งตรง"]},{"l":"(ข) มุมกับแนวดิ่ง"},{"l":"(ค) แรงตึงเชือก"}]}],"p39":[{"id":"c18","name":"วงกลม ข้อ 18 (ฝึกเพิ่ม)","parts":[{"l":"(ก) อัตราเร็ว"},{"l":"(ข) ขนาด Δv"},{"l":"(ค) ความเร่งเฉลี่ย"}]},{"id":"c19","name":"วงกลม ข้อ 19 (ฝึกเพิ่ม)","parts":[{"l":"แรงตึงเชือก 1"},{"l":"แรงตึงเชือก 2"}]}],"p40":[{"id":"c20","name":"วงกลม ข้อ 20 (ฝึกเพิ่ม)","parts":[{"l":"(ก) ω ไม่เกิน"},{"l":"(ข) แรงตึงเชือก"},{"l":"(ค) ω สูงสุด"}]},{"id":"c21","name":"วงกลม ข้อ 21 (ฝึกเพิ่ม)","parts":[{"l":"(ก) หนักที่สุดที่","c":["จุดบนสุด","จุดล่างสุด","ข้างวง"]},{"l":"(ข) รัศมีน้อยสุด"},{"l":"(ค) บนสุดหนักกี่เท่า"}]}],"p41":[{"id":"c22","name":"วงกลม ข้อ 22 (ฝึกเพิ่ม)","parts":[{"l":"(ก) อัตราเร็วต่ำสุด"},{"l":"(ข) แรงตึง"},{"l":"(ค) อัตราเร็วสูงสุด"}]},{"id":"c23","name":"วงกลม ข้อ 23 (ฝึกเพิ่ม)","parts":[{"l":"(ก) คาบ"},{"l":"(ข) ล่างสุดกี่เท่า"},{"l":"(ค) แรงจากที่นั่งกี่เท่า"}]}],"p42":[{"id":"c24","name":"วงกลม ข้อ 24 (ฝึกเพิ่ม)","parts":[{"l":"อัตราเร็วสูงสุด"}]},{"id":"c25","name":"วงกลม ข้อ 25 (ฝึกเพิ่ม)","parts":[{"l":"θ"}]}],"p43":[{"id":"c26","name":"วงกลม ข้อ 26 (ฝึกเพิ่ม)","parts":[{"l":"(ก) อัตราเร็วต่ำสุด"},{"l":"(ข) ผลต่างแรงตึง"}]},{"id":"c27","name":"วงกลม ข้อ 27 (ฝึกเพิ่ม)","parts":[{"l":"(ก) h น้อยที่สุด"},{"l":"(ข) กี่เท่าของน้ำหนัก"}]}],"p44":[{"id":"c28","name":"วงกลม ข้อ 28 (ฝึกเพิ่ม)","parts":[{"l":"d น้อยที่สุด"}]},{"id":"c29","name":"วงกลม ข้อ 29 (ฝึกเพิ่ม)","parts":[{"l":"ความสูงที่หลุด"},{"l":"อัตราเร็วขณะหลุด"}]}]},"anims":14968425,"openHints":14968425,"game":{"skills":[],"level":{}}};
 const SHEET=CFG.sheet;                     // Google Apps Script URL (tools/check-sheet.gs); null = this browser only (try-out in two tabs)
 const CLASS=CFG.id,N=CFG.pages;
 const $=id=>document.getElementById(id);
@@ -542,17 +548,24 @@ function showConnect(){
   fbStream("","live",(path,data)=>{STREE=pathSet(STREE,path,data);showDirty();},t=>setNet(t),tToken);
   fbStream("","back",(path,data)=>{SBACK=pathSet(SBACK,path,data);showDirty();},()=>{},tToken);
 }
-function showDirty(){if(showRaf)return;showRaf=true;requestAnimationFrame(()=>{showRaf=false;showPick();});}
+// View 2026-11-01 "จอแอบแล็ค": every stroke used to re-render the whole page; now at most 4 times a second, and only her ink layer
+let showLast=0,showPage=-1,showSel="";
+function showDirty(){if(showRaf)return;showRaf=true;setTimeout(()=>requestAnimationFrame(()=>{showRaf=false;showPick();}),Math.max(0,250-(Date.now()-showLast)));}
 // the student shown = the one picked, else the one who did something last; her ink goes on the see-through layer
 function showPick(){
   const us=Object.keys(STREE).filter(u=>STREE[u]&&!STREE[u].show&&STREE[u].n).sort((a,b)=>(+STREE[b].at||0)-(+STREE[a].at||0));
   const sel=$("stu");
   const sig=us.map(u=>u+STREE[u].n).join();if(sel.dataset.sig!==sig){sel.dataset.sig=sig;sel.innerHTML=us.map(u=>`<option value="${u}">${esc(STREE[u].n)}</option>`).join("");}
   if(!STU||!STREE[STU])STU=us[0]||"";sel.value=STU;sel.hidden=!pull||us.length<2;
+  showLast=Date.now();
   const d=STREE[STU]||{},ink=d.ink||{};SENT={};
-  for(const pid of Object.keys(ink))SENT[pid]={ink:unpackInk(ink[pid]),at:1};
+  for(const pid of Object.keys(ink))SENT[pid]={raw:ink[pid],at:1,get ink(){return this._i||(this._i=unpackInk(this.raw));}};
   $("coinN").textContent=d.sc??10;
-  render();ansStatus();
+  if(showPage!==idx||showSel!==STU+pull){showPage=idx;showSel=STU+pull;render();}   // a new page or student: the full render
+  else{paint(x.pull,cPull,pull?sentInk():[]);
+    [...$("dots").children].forEach((b,i)=>b.classList.toggle("sent",!!SENT[P(i)]));
+    $("note").textContent=pull?(SENT[P(idx)]?`งานของ ${d.n||""}`:"หน้านี้น้องยังไม่เขียน"):"";}
+  ansStatus();
 }
 function showStatus(card){
   const id=card.dataset.q,st=card.querySelector(".st"),d=STREE[STU],an=pull&&d&&d.ans&&d.ans[id],b=SBACK[STU]&&SBACK[STU][id];
@@ -690,7 +703,7 @@ function ansStatus(){
 async function sendAns(card){
   const id=card.dataset.q,v=readCard(card),d=ansDraft(id),g=secOf(id);
   if(!v.some(o=>o.n||o.c)){flash(g?"เลือกคำตอบก่อน":"Fill in an answer first");return;}
-  if(g&&v.some(o=>!o.c)){flash("เลือกคำตอบให้ครบก่อน");return;}
+  if(g&&v.some(o=>!o.c&&!o.n)){flash("ตอบให้ครบทุกช่องก่อน");return;}
   if(g==="D"&&!d.first&&!d.bet){flash("ลงเหรียญก่อน 1, 2 หรือ 3");return;}
   if((g==="A"||g==="B")&&d.k)return;               // the exams: one answer, final
   d.v=v;d.k=Date.now();d.sent=JSON.stringify(v);if(g==="D"&&!d.first)d.sbet=d.bet;save(K.ans,MYANS);ansStatus();
@@ -734,15 +747,15 @@ function gameStatus(card,d,b){
   const id=card.dataset.q,g=secOf(id),st=card.querySelector(".st"),go=card.querySelector(".go");
   const sent=!!d&&!!d.k,fresh=sent&&b&&b.for===d.k,cur=JSON.stringify(readCard(card)),changed=!sent||cur!==d.sent;
   const lock=(g==="A"||g==="B")&&sent||g==="D"&&fresh&&b.ok===true&&!changed;
-  card.querySelectorAll(".ch4 button").forEach(x=>x.disabled=lock);
+  card.querySelectorAll(".ch4 button,input").forEach(x=>x.disabled=lock);
   const first=d&&d.first;
   const bets=card.querySelector(".bets");
   if(bets&&first)bets.innerHTML=`<span>ลงไว้ ${first.bet} เหรียญ · ${first.gain>0?"ได้ +"+first.gain:"เสีย "+(-first.gain)}</span>`;
   else if(bets)bets.querySelectorAll("button").forEach(x=>{x.disabled=lock||sent&&!changed;});
   card.classList.toggle("ok",fresh&&!changed&&b.ok===true);card.classList.toggle("no",fresh&&!changed&&b.ok===false);
   go.innerHTML=icon("send")+(lock||sent&&!changed?"ส่งแล้ว":sent?"ส่งใหม่ (ไม่คิดเหรียญ)":"ส่งคำตอบ");
-  go.disabled=lock||!changed||!readCard(card).every(o=>o.c)||g==="D"&&!first&&!d.bet&&!sent;
-  if(!sent)st.innerHTML=g==="D"&&!first?"เลือกคำตอบ ลงเหรียญ แล้วกดส่ง":"";
+  go.disabled=lock||!changed||!readCard(card).every(o=>o.c||o.n)||g==="D"&&!first&&!d.bet&&!sent;
+  if(!sent)st.innerHTML=g==="D"&&!first?(allChoice(id)?"เลือกคำตอบ":"ใส่คำตอบ")+" ลงเหรียญ แล้วกดส่ง":"";
   else if(changed)st.innerHTML="แก้แล้ว ยังไม่ได้ส่ง";
   else if(fresh)st.innerHTML=b.ok?icon("check")+"<span>ถูก</span>":icon("x")+"<span>"+(g==="D"?"ยังไม่ถูก ลองใหม่ได้ (ไม่คิดเหรียญ)":"ผิด")+"</span>";
   else st.innerHTML=icon("clock")+"<span>"+(g==="A"?"ส่งแล้ว รอครูเปิดผล":"ส่งแล้ว กำลังตรวจ…")+"</span>";
@@ -759,7 +772,7 @@ function score(quiet){
   for(const [id,f] of list){const x=f.bet*BOSSX(id);if(f.ok){s++;f.gain=x+(s>=3?1:0);}else{s=0;f.gain=-x;}c=Math.max(0,c+f.gain);}
   const was=COINS;COINS=c;STREAK=s;if(fresh)save(K.ans,MYANS);
   $("coinN").textContent=c;$("fire").classList.toggle("on",s>=3);$("fireN").textContent=s>=3?s:"";
-  if(fresh&&!quiet){const f=MYANS[fresh].first;popCoins(f.gain,f.ok);ansStatus();}
+  if(fresh&&!quiet){const f=MYANS[fresh].first;popCoins(f.gain,f.ok);if(f.ok)confetti(BOSSX(fresh)>1);ansStatus();}
   if(fresh||was!==c)livePatch({sc:c});
   // set A opened by the teacher, or set B all marked: the summary comes up once
   const nA=QORDER.filter(id=>secOf(id)==="A"&&BACK[id]&&BACK[id].for).length;
@@ -774,6 +787,17 @@ function popCoins(n,ok){
   document.body.appendChild(el);setTimeout(()=>el.remove(),1400);
   if(!ok){$("coins").classList.remove("shake");void $("coins").offsetWidth;$("coins").classList.add("shake");}
 }
+// View 2026-11-02: a party when the teacher marks her first try right; a boss gets a bigger one and a banner
+function confetti(big){
+  const calm=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const n=calm?16:big?140:70,cols=["#f5b301","#16a34a","#2563eb","#dc2626","#9333ea","#ea580c","#06b6d4"],box=document.createElement("div");
+  box.className="confetti";
+  for(let i=0;i<n;i++){const c=document.createElement("i"),x=Math.random()*100,dx=(Math.random()-.5)*40,d=1.6+Math.random()*1.6;
+    c.style.cssText=`left:${x}vw;background:${cols[i%cols.length]};--dx:${dx}vw;--r:${Math.round(Math.random()*720-360)}deg;animation-duration:${d}s;animation-delay:${Math.random()*.35}s;`+(i%3?"":"border-radius:50%;");
+    box.appendChild(c);}
+  const t=document.createElement("div");t.className="yay"+(big?" boss":"");t.textContent=big?"ชนะบอส!":"ถูกต้อง!";box.appendChild(t);
+  document.body.appendChild(box);setTimeout(()=>box.remove(),3800);
+}
 async function livePatch(o){
   if(!FB||STAFF)return;
   try{const tok=await fbToken();await fetch(fbUrl("/"+FBA.uid,tok),{method:"PATCH",body:JSON.stringify(o)});}catch(e){}
@@ -787,6 +811,8 @@ function abRows(res){
 function sumHtml(rows,name,coins,drill){
   const t=x=>x===true?'<td class="c y">✓</td>':x===false?'<td class="c n">✗</td>':'<td class="c">–</td>';
   const nA=rows.filter(r=>r.a===true).length,nB=rows.filter(r=>r.b===true).length,openA=rows.some(r=>r.a!=null),anyB=rows.some(r=>r.b!=null);
+  if(!rows.length)return `<h2><span>${esc(name||"ผลของฉัน")}</span><button type="button" data-x="1" aria-label="ปิด">✕</button></h2>
+    <div class="big3"><div>เหรียญ<b><span class="coin"></span> ${coins}</b>${drill?drill:""}</div></div>`;
   return `<h2><span>${esc(name||"ผลของฉัน")}</span><button type="button" data-x="1" aria-label="ปิด">✕</button></h2>
     <div class="big3"><div>ก่อนเรียน (A)<b>${openA?nA+"/"+rows.length:"รอผล"}</b></div><div>หลังเรียน (B)<b>${anyB?nB+"/"+rows.length:"–"}</b></div>
     <div>เหรียญ<b><span class="coin"></span> ${coins}</b>${drill?drill:""}</div></div>
@@ -905,8 +931,9 @@ function treeSet(path,data){
 function dirty(path){
   const u=path.split("/").filter(Boolean)[0];
   if(u)DIRTY.add(u);else for(const k of Object.keys(CARDS).concat(Object.keys(TREE)))DIRTY.add(k);
-  if(!rafOn){rafOn=true;requestAnimationFrame(drawLive);}
+  if(!rafOn){rafOn=true;setTimeout(()=>requestAnimationFrame(drawLive),Math.max(0,150-(Date.now()-liveLast)));}
 }
+let liveLast=0;
 const inkOf=(u,i)=>{const o=TREE[u]&&TREE[u].ink&&TREE[u].ink[P(i)];if(!o)return [];
   return unpackInk(o);};
 let BTREE={},cuT=null;                              // back/<class>: what the teacher sent each student
@@ -964,12 +991,13 @@ function makeCard(u){
   el.onclick=()=>openFocus(u);
   return c;
 }
+let REVSIG="";
 function paintInk(cv,w,h,list){
-  const d=Math.min(devicePixelRatio||1,2);cv.width=Math.round(w*d);cv.height=Math.round(h*d);
+  const d=Math.min(devicePixelRatio||1,2),W=Math.round(w*d),H=Math.round(h*d);if(cv.width!==W)cv.width=W;if(cv.height!==H)cv.height=H;
   paint(cv.getContext("2d"),cv,list);
 }
 function drawLive(){
-  rafOn=false;
+  rafOn=false;liveLast=Date.now();
   for(const u of DIRTY){
     const d=TREE[u];let c=CARDS[u];
     if(!d||typeof d!=="object"||d.show){if(c){c.el.remove();delete CARDS[u];}continue;}
@@ -977,9 +1005,10 @@ function drawLive(){
     const i=Math.min(Math.max(+d.pg||0,0),N-1),src="p/"+P(i)+".jpg";
     c.name.textContent=d.n||"(ไม่มีชื่อ)";const nw=waiting(u).length;c.where.innerHTML="หน้า "+(i+1)+(nw?`<span class="wait">${nw}</span>`:"");
     if(c.img.getAttribute("src")!==src)c.img.src=src;
-    const w=c.el.clientWidth-12||cw;paintInk(c.cv,w,w*RATIO,inkOf(u,i));
+    // View 2026-11-01 (#live beside Google Meet lagged): the cards are painted only while "ดูรวม" shows them
+    if(!FOC){const w=c.el.clientWidth-12||cw;paintInk(c.cv,w,w*RATIO,inkOf(u,i));c.stale=false;}else c.stale=true;
     if(c.sig!==JSON.stringify([d.at,i])){c.sig=JSON.stringify([d.at,i]);c.seen=Date.now();c.el.classList.add("fresh");}
-    if(FOC&&FOC.u===u){drawFocus();drawRev();}
+    if(FOC&&FOC.u===u){drawFocus();const rs=JSON.stringify([d.ans||null,BTREE[u]||null,FOC.i]);if(rs!==REVSIG){REVSIG=rs;drawRev();}}
   }
   const all=Object.keys(CARDS).reduce((n,u)=>n+waiting(u).length,0);
   $("fWaitN").textContent=all;$("fWait").classList.toggle("has",all>0);
@@ -1138,7 +1167,7 @@ function startLive(){
     catch(e){lNet("ล้างไม่ได้ ("+e.message+")");}
   };
   $("fWait").onclick=nextWaiting;
-  if(GAME){$("fRevA").hidden=false;$("fAB").hidden=false;$("fRevA").onclick=revealA;$("fAB").onclick=openAB;}
+  if(GAME&&QORDER.some(q=>secOf(q)==="A")){$("fRevA").hidden=false;$("fAB").hidden=false;$("fRevA").onclick=revealA;$("fAB").onclick=openAB;}
   $("rev").addEventListener("input",e=>{const c=e.target.closest(".rq");if(c&&FOC)HINTS[FOC.u+"|"+c.dataset.q]=e.target.value;});
   $("rev").addEventListener("focusout",()=>setTimeout(()=>{if(revLater)drawRev();},0));
   $("rev").addEventListener("click",e=>{
@@ -1148,7 +1177,7 @@ function startLive(){
     if(e.target.closest(".y"))sendBack(c,true);else if(e.target.closest(".n"))sendBack(c,false);
     else if(e.target.closest("h3")){FOC.i=QINFO[c.dataset.q].pg;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);}
   });
-  $("fBack").onclick=()=>{$("focus").hidden=true;FOC=null;GRID=true;};
+  $("fBack").onclick=()=>{$("focus").hidden=true;FOC=null;GRID=true;dirty("");};
   $("fTitle").textContent=CFG.title;
   $("fPrev").onclick=()=>{if(FOC&&FOC.i>0){FOC.i--;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);}};
   $("fNext").onclick=()=>{if(FOC&&FOC.i<NP()-1){FOC.i++;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);}};
