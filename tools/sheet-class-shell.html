@@ -751,7 +751,7 @@ function gameStatus(card,d,b){
   const first=d&&d.first;
   const bets=card.querySelector(".bets");
   if(bets&&first)bets.innerHTML=`<span>ลงไว้ ${first.bet} เหรียญ · ${first.gain>0?"ได้ +"+first.gain:"เสีย "+(-first.gain)}</span>`;
-  else if(bets)bets.querySelectorAll("button").forEach(x=>{x.disabled=lock||sent&&!changed||+x.dataset.bet>1&&+x.dataset.bet>+($("coinN").textContent||10);});
+  else if(bets)bets.querySelectorAll("button").forEach(x=>{x.disabled=lock||sent&&!changed||!GAME.neg&&+x.dataset.bet>1&&+x.dataset.bet>+($("coinN").textContent||10);});
   card.classList.toggle("ok",fresh&&!changed&&b.ok===true);card.classList.toggle("no",fresh&&!changed&&b.ok===false);
   go.innerHTML=icon("send")+(lock||sent&&!changed?"ส่งแล้ว":sent?"ส่งใหม่ (ไม่คิดเหรียญ)":"ส่งคำตอบ");
   go.disabled=lock||!changed||!readCard(card).every(o=>o.c||o.n)||g==="D"&&!first&&!d.bet&&!sent;
@@ -769,7 +769,7 @@ function score(quiet){
     if(d&&d.k&&!d.first&&d.sbet&&b&&b.for===d.k){d.first={ok:!!b.ok,bet:d.sbet,k:d.k};fresh=id;}}
   const list=QORDER.filter(id=>MYANS[id]&&MYANS[id].first).map(id=>[id,MYANS[id].first]).sort((a,b)=>a[1].k-b[1].k);
   let c=10,s=0;
-  for(const [id,f] of list){const x=f.bet*BOSSX(id);if(f.ok){s++;f.gain=x+(s>=3?1:0);}else{s=0;f.gain=-x;}c=Math.max(0,c+f.gain);}
+  for(const [id,f] of list){const x=f.bet*BOSSX(id);if(f.ok){s++;f.gain=x+(s>=3?1:0);}else{s=0;f.gain=-x;}c=GAME.neg?c+f.gain:Math.max(0,c+f.gain);}
   const was=COINS;COINS=c;STREAK=s;if(fresh)save(K.ans,MYANS);
   $("coinN").textContent=c;$("fire").classList.toggle("on",s>=3);$("fireN").textContent=s>=3?s:"";
   if(fresh&&!quiet){const f=MYANS[fresh].first;popCoins(f.gain,f.ok);if(f.ok)confetti(BOSSX(fresh)>1);ansStatus();}
