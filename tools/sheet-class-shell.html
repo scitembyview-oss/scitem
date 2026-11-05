@@ -645,7 +645,7 @@ function checkPart(key,a){                  // -> {ok: true/false/null (teacher 
   if(key.c)return {ok:!!a&&a.c===key.a};
   if(key.t||!a)return {ok:a?null:false};
   const x=evalAns(a.n),y=evalAns(key.v),ua=normU(a.u),ub=normU(key.u);
-  let fa=1,fb=1,unit=ua===ub;
+  let fa=1,fb=1,unit=key.nu||ua===ub;                // nu: a number with no unit (maths classes)
   if(!unit&&UNITS[ua]&&UNITS[ub]&&UNITS[ua][0]===UNITS[ub][0]){fa=UNITS[ua][1];fb=UNITS[ub][1];unit=true;}
   const num=Number.isFinite(x)&&Math.abs(x*fa-y*fb)<=(key.tol||0.005)*Math.max(Math.abs(y*fb),1e-12);
   return {ok:num&&unit,num,unit};
@@ -660,14 +660,14 @@ function drawAns(){
   const box=$("ans"),qs=QS[P(idx)]||[];
   box.hidden=!qs.length||!(FB||SHOW);
   if(box.hidden){box.innerHTML="";return;}
-  const SYM=["√","π","²","×10^","/","(",")"];
+  const SYM=["√","π","²","×10^","/","(",")"];if(qs.some(q=>q.parts.some(p=>p.nu)))SYM.unshift("−");   // a maths class: a minus key
   box.innerHTML='<div class="sym">'+SYM.map(t=>`<button type="button" data-ins="${t}">${t==="×10^"?"×10ⁿ":t}</button>`).join("")+"</div>"+qs.map(q=>{
     const d=SHOW?{v:[]}:ansDraft(q.id);
     const g=secOf(q.id);
     return `<div class="qa" data-q="${esc(q.id)}"><h3>${esc(q.name)}</h3>`+(g==="D"&&q.boss?'<span class="boss">บอส · เหรียญ ×2</span>':"")+q.parts.map((p,k)=>{const v=d.v[k]||{};
-      if(g&&p.c)return `<div class="pt"><div class="ch4" data-k="${k}">${p.c.map(c=>`<button type="button" data-c="${esc(c)}"${v.c===c?' class="on"':""}>${esc(c)}</button>`).join("")}</div></div>`;
+      if(g&&p.c)return `<div class="pt">${q.parts.length>1?esc(p.l):""}<div class="ch4" data-k="${k}">${p.c.map(c=>`<button type="button" data-c="${esc(c)}"${v.c===c?' class="on"':""}>${esc(c)}</button>`).join("")}</div></div>`;
       return p.c?`<div class="pt">${esc(p.l)}<select data-k="${k}"><option value="">เลือก…</option>${p.c.map(c=>`<option${v.c===c?" selected":""}>${esc(c)}</option>`).join("")}</select></div>`
-        :`<div class="pt">${esc(p.l)}<div class="row"><input class="num" data-k="${k}" inputmode="decimal" autocomplete="off" placeholder="คำตอบ" value="${esc(v.n||"")}"><input class="unit" data-k="${k}" autocomplete="off" autocapitalize="off" placeholder="หน่วย" value="${esc(v.u||"")}"></div></div>`;}).join("")
+        :`<div class="pt">${esc(p.l)}<div class="row"><input class="num" data-k="${k}" inputmode="decimal" autocomplete="off" placeholder="คำตอบ" value="${esc(v.n||"")}">${p.nu?"":`<input class="unit" data-k="${k}" autocomplete="off" autocapitalize="off" placeholder="หน่วย" value="${esc(v.u||"")}">`}</div></div>`;}).join("")
       +(g==="D"&&!SHOW?`<div class="bets">ลง${(q.bets||[1,2,3]).map(n=>`<button type="button" data-bet="${n}"${d.bet===n?' class="on"':""}>${n}<span class="coin"></span></button>`).join("")}</div>`:"")
       +(SHOW?(g?'<div class="st"></div>':""):`<button class="go" type="button"></button><div class="st"></div>`)+"</div>";}).join("");
   ansStatus();

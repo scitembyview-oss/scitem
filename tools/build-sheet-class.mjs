@@ -6,7 +6,7 @@
 // FIREBASE in catalog.ts (when filled in) also streams every stroke live to the hidden #live screen (rules: tools/firebase-rules.json).
 // A game class (heat5): the answers file also has skills: [names] and level: {item: easy/hard}, each question sec 'A' | 'D' | 'B'
 // (pre-test / drill with coin bets / post-test), stage, boss, skill (= its item number in A and B). See tools/sheet-class-shell.html GAME.
-// Answer boxes: --answers <answers.json> (kept OUT of the repo, e.g. project files) = {q: [{id, page, name, parts: [{l, v, u, tol?} | {l, c: [choices], a} | {l, t: 1}]}]}.
+// Answer boxes: --answers <answers.json> (kept OUT of the repo, e.g. project files) = {q: [{id, page, name, parts: [{l, v, u, tol?} | {l, c: [choices], a} | {l, t: 1}]}]}; a part with nu: 1 is a number with no unit box (maths).
 // The labels and choices go into the page; the values (v, u, a) only into key.json. Use "-" as key.pdf for a class without key pages.
 // Usage: node tools/build-sheet-class.mjs <student.pdf> <key.pdf|-> <title> <teacher code> <out dir> <class id> [--local] [--answers <file>]
 //   e.g. node tools/build-sheet-class.mjs lesson3-student.pdf lesson3-key.pdf "Living Things and Weather" <code> public/class/sci3 sci3
@@ -94,10 +94,10 @@ for (const q of ansQ) {
   const pid = 'p' + String(q.page).padStart(2, '0');
   // sec/stage/boss/skill: a game class (the answers file has "skills"); public, no answers in them
   const meta = Object.fromEntries(['sec', 'stage', 'boss', 'skill', 'bets'].filter((k) => q[k] != null).map((k) => [k, q[k]]));
-  (qs[pid] ||= []).push({ id: q.id, name: q.name, ...meta, parts: q.parts.map((p) => (p.c ? { l: p.l, c: p.c } : { l: p.l })) });
+  (qs[pid] ||= []).push({ id: q.id, name: q.name, ...meta, parts: q.parts.map((p) => (p.c ? { l: p.l, c: p.c } : p.nu ? { l: p.l, nu: 1 } : { l: p.l })) });
   if (q.kpage) kq[q.id] = q.kpage - 1;
   if (q.hint) kh[q.id] = q.hint;                    // [top, bottom] of its worked-solution box on the key page, 0..1
-  answers[q.id] = q.parts.map((p) => (p.c ? { c: 1, a: p.a } : p.t ? { t: 1 } : { v: p.v, u: p.u ?? '', ...(p.tol ? { tol: p.tol } : {}) }));
+  answers[q.id] = q.parts.map((p) => (p.c ? { c: 1, a: p.a } : p.t ? { t: 1 } : { v: p.v, u: p.u ?? '', ...(p.tol ? { tol: p.tol } : {}), ...(p.nu ? { nu: 1 } : {}) }));
 }
 // kmap[student page] = the key page to open for it (the first question on that page, else the page before's)
 if (kpaged) for (let i = 0, last = 0; i < sp.length; i++) { const q = ansQ.find((x) => x.page === i + 1); if (q) last = q.kpage - 1; kmap.push(last); }
