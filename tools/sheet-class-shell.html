@@ -123,6 +123,8 @@ body.hbOpen #work,body.hbOpen #fWork{visibility:hidden}
 .qa .bets button{flex:1;min-height:44px;border-radius:22px;border:2px solid #e9b949;background:#fff8e1;color:#8a5a00;font:700 17px var(--display);display:inline-flex;align-items:center;justify-content:center;gap:4px}
 .qa .bets button.on{background:#f5b301;border-color:#f5b301;color:#3b2a00}
 .qa .bets button:disabled{opacity:.6}
+.qa .bets.ask{animation:betask .5s 2;border-radius:22px}.qa .bets.ask button{border-color:#d9822b;box-shadow:0 0 0 3px #f5b30155}
+@keyframes betask{0%,100%{transform:none}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 .qa .boss{font:700 13px var(--display);color:#fff;background:#c2410c;border-radius:8px;padding:2px 8px;align-self:flex-start}
 .coin{display:inline-block;width:1em;height:1em;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe58a,#f5b301 60%,#c98a00);box-shadow:inset 0 0 0 1.5px #b07800;vertical-align:-.12em}
 #coins{display:none;align-items:center;gap:6px;font:700 20px var(--display);background:#fff8e1;border:2px solid #f5b301;border-radius:22px;padding:2px 12px 2px 8px;color:#3b2a00;position:relative;min-height:40px}
@@ -704,7 +706,7 @@ async function sendAns(card){
   const id=card.dataset.q,v=readCard(card),d=ansDraft(id),g=secOf(id);
   if(!v.some(o=>o.n||o.c)){flash(g?"เลือกคำตอบก่อน":"Fill in an answer first");return;}
   if(g&&v.some(o=>!o.c&&!o.n)){flash("ตอบให้ครบทุกช่องก่อน");return;}
-  if(g==="D"&&!d.first&&!d.bet){flash("ลงเหรียญก่อน 1, 2 หรือ 3");return;}
+  if(g==="D"&&!d.first&&!d.bet){flash("ลงเหรียญก่อน 1, 2 หรือ 3");const bs=card.querySelector(".bets");if(bs){bs.classList.remove("ask");void bs.offsetWidth;bs.classList.add("ask");}return;}
   if((g==="A"||g==="B")&&d.k)return;               // the exams: one answer, final
   d.v=v;d.k=Date.now();d.sent=JSON.stringify(v);if(g==="D"&&!d.first)d.sbet=d.bet;save(K.ans,MYANS);ansStatus();
   try{
@@ -753,8 +755,9 @@ function gameStatus(card,d,b){
   if(bets&&first)bets.innerHTML=`<span>ลงไว้ ${first.bet} เหรียญ · ${first.gain>0?"ได้ +"+first.gain:"เสีย "+(-first.gain)}</span>`;
   else if(bets)bets.querySelectorAll("button").forEach(x=>{x.disabled=lock||sent&&!changed||!GAME.neg&&+x.dataset.bet>1&&+x.dataset.bet>+($("coinN").textContent||10);});
   card.classList.toggle("ok",fresh&&!changed&&b.ok===true);card.classList.toggle("no",fresh&&!changed&&b.ok===false);
-  go.innerHTML=icon("send")+(lock||sent&&!changed?"ส่งแล้ว":sent?"ส่งใหม่ (ไม่คิดเหรียญ)":"ส่งคำตอบ");
-  go.disabled=lock||!changed||!readCard(card).every(o=>o.c||o.n)||g==="D"&&!first&&!d.bet&&!sent;
+  const nobet=g==="D"&&!first&&!d.bet&&!sent;   // the send key stays live and asks for the bet (a grey key with no reason looked broken)
+  go.innerHTML=icon("send")+(lock||sent&&!changed?"ส่งแล้ว":sent?"ส่งใหม่ (ไม่คิดเหรียญ)":nobet?"ลงเหรียญก่อน แล้วส่ง":"ส่งคำตอบ");
+  go.disabled=lock||!changed||!readCard(card).every(o=>o.c||o.n);
   if(!sent)st.innerHTML=g==="D"&&!first?(allChoice(id)?"เลือกคำตอบ":"ใส่คำตอบ")+" ลงเหรียญ แล้วกดส่ง":"";
   else if(changed)st.innerHTML="แก้แล้ว ยังไม่ได้ส่ง";
   else if(fresh)st.innerHTML=b.ok?icon("check")+"<span>ถูก</span>":icon("x")+"<span>"+(g==="D"?"ยังไม่ถูก ลองใหม่ได้ (ไม่คิดเหรียญ)":"ผิด")+"</span>";
