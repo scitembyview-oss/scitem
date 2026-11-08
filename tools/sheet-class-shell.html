@@ -769,10 +769,13 @@ function score(quiet){
   // the first marked answer of each drill question, in the order she sent them
   let fresh=null;
   for(const id of QORDER){if(secOf(id)!=="D")continue;const d=MYANS[id],b=BACK[id];
-    if(d&&d.k&&!d.first&&d.sbet&&b&&b.for===d.k){d.first={ok:!!b.ok,bet:d.sbet,k:d.k};fresh=id;}}
+    if(d&&d.k&&!d.first&&d.sbet&&b&&b.for===d.k){d.first={ok:!!b.ok,bet:d.sbet,k:d.k};fresh=id;}
+    else if(d&&d.k&&!d.first&&d.sbet&&(GAME.regrade||[]).includes(id)){d.first={ok:true,bet:d.sbet,k:d.k};fresh=id;}}   // sent but never marked
   const list=QORDER.filter(id=>MYANS[id]&&MYANS[id].first).map(id=>[id,MYANS[id].first]).sort((a,b)=>a[1].k-b[1].k);
   let c=10,s=0;
-  for(const [id,f] of list){const x=f.bet*BOSSX(id);if(f.ok){s++;f.gain=x+(s>=3?1:0);}else{s=0;f.gain=-x;}c=GAME.neg?c+f.gain:Math.max(0,c+f.gain);}
+  // GAME.regrade: drill questions whose first try counts as right (View 2026-11-08: a key/marking slip on heat5 13–15)
+  const RG=new Set(GAME.regrade||[]);
+  for(const [id,f] of list){const x=f.bet*BOSSX(id);if(f.ok||RG.has(id)){s++;f.gain=x+(s>=3?1:0);}else{s=0;f.gain=-x;}c=GAME.neg?c+f.gain:Math.max(0,c+f.gain);}
   const was=COINS;COINS=c;STREAK=s;if(fresh)save(K.ans,MYANS);
   $("coinN").textContent=c;$("fire").classList.toggle("on",s>=3);$("fireN").textContent=s>=3?s:"";
   if(fresh&&!quiet){const f=MYANS[fresh].first;popCoins(f.gain,f.ok);if(f.ok)confetti(BOSSX(fresh)>1);ansStatus();}
