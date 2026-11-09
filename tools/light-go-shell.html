@@ -171,7 +171,7 @@ body.watch .wrap { max-width:640px; }
 <section id="scrName" class="hidden">
   <div class="glowbig" id="glowBig"></div>
   <h1 id="ttl"></h1>
-  <p>Learn the colours of light in 5 short lessons.<br>What is your name?</p>
+  <p><span id="sub"></span> in 5 short lessons.<br>What is your name?</p>
   <input id="nm" maxlength="30" autocomplete="off" placeholder="Your name">
   <button class="btn" id="go" disabled>Start</button>
 </section>
@@ -524,7 +524,7 @@ function show(id) { ["scrName", "scrPath", "scrLesson", "scrDone", "scrTeach", "
   $("foot").classList.toggle("hidden", id !== "scrLesson"); window.scrollTo(0, 0); }
 
 function nameScreen() {
-  $("glowBig").innerHTML = GLOW; $("ttl").textContent = DATA.title;
+  $("glowBig").innerHTML = GLOW; $("ttl").textContent = DATA.title; $("sub").textContent = DATA.sub || "Learn about light";
   $("nm").value = S.name || ""; $("go").disabled = !$("nm").value.trim();
   $("nm").oninput = function () { $("go").disabled = !this.value.trim(); };
   $("go").onclick = function () { S.name = $("nm").value.trim(); save(); pathScreen(); };

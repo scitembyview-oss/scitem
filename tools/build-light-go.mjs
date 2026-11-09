@@ -57,7 +57,7 @@ async function lockKey(obj, pw) {
   const ct = await subtle.encrypt({ name: 'AES-GCM', iv }, k, enc.encode(JSON.stringify(obj)));
   return [salt, iv, new Uint8Array(ct)].map((b) => Buffer.from(b).toString('base64')).join('.');
 }
-const data = { id: content.id, title: content.title, badge: content.badge, lessons, key: await lockKey(key, keyPw) };
+const data = { id: content.id, title: content.title, sub: content.sub, badge: content.badge, lessons, key: await lockKey(key, keyPw) };
 const shell = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'light-go-shell.html'), 'utf8');
 const html = shell.replace('/*DATA*/null', JSON.stringify(data)).replace('<!--TITLE-->', content.title);
 mkdirSync(dirname(resolve(out)), { recursive: true });
