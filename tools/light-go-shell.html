@@ -109,6 +109,7 @@ h2 { font-size:22px; margin:6px 0 10px; color:#3C3A8F; }
 .pop { animation:pop .5s ease-out both; }
 @keyframes spin { to { transform:rotate(360deg) } }
 .spin .wh { animation:spin .35s linear infinite; transform-origin:150px 85px; }
+.mixw, .wh { transform-box:view-box; }
 .mixw { opacity:0; transition:opacity 1.2s .3s; }
 .spin .mixw { opacity:.82; }
 .draw path.fan, .draw .lit { opacity:0; transition:opacity .5s; }
@@ -238,63 +239,128 @@ function star(c, on) { return '<path d="M50 22l7.6 16.2 17.6 1.9-13.2 12 3.7 17.
 function badgeSvg(c, on) { return '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#fff" stroke="' + c + '" stroke-width="3.5"/><circle cx="50" cy="50" r="37" fill="none" stroke="' + c + '" stroke-width="1.5" stroke-dasharray="3 3"/>' + star(c, on) + '</svg>'; }
 var CROWN = '<svg class="crown" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#fff" stroke="#E8962E" stroke-width="2.5"/><path d="M10 27 L12 14 L17 20 L20 11 L23 20 L28 14 L30 27z" fill="#FFD23F" stroke="#E8962E" stroke-width="2" stroke-linejoin="round"/></svg>';
 function arc(cx, cy, r, col, w, extra) { return '<path ' + (extra || "") + ' d="M' + (cx - r) + ' ' + cy + ' A' + r + ' ' + r + ' 0 0 1 ' + (cx + r) + ' ' + cy + '" stroke="' + col + '" stroke-width="' + w + '" fill="none"/>'; }
-function sun(cx, cy, r) { var s = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="#FFD23F" stroke="#E8962E" stroke-width="2.5"/><g stroke="#E8962E" stroke-width="2.5" stroke-linecap="round">';
-  for (var k = 0; k < 8; k++) { var a = k * Math.PI / 4; s += '<path d="M' + (cx + (r + 5) * Math.cos(a)).toFixed(1) + ' ' + (cy + (r + 5) * Math.sin(a)).toFixed(1) + ' L' + (cx + (r + 11) * Math.cos(a)).toFixed(1) + ' ' + (cy + (r + 11) * Math.sin(a)).toFixed(1) + '"/>'; }
-  return s + '</g>'; }
+/* pictures: soft gradients and light so they look closer to the real thing (View 2026-11-09). ids are numbered so many SVGs can share a page */
+var GID = 0;
+function gid(n) { return n + (++GID); }
+function sunGlow(cx, cy, r) {
+  var g = gid("sg"), c = gid("sc");
+  return '<defs><radialGradient id="' + g + '"><stop offset="0" stop-color="#FFF3B0" stop-opacity=".95"/><stop offset=".45" stop-color="#FFE07A" stop-opacity=".45"/><stop offset="1" stop-color="#FFE07A" stop-opacity="0"/></radialGradient>' +
+    '<radialGradient id="' + c + '" cx=".4" cy=".35"><stop offset="0" stop-color="#FFFBE6"/><stop offset=".6" stop-color="#FFD54A"/><stop offset="1" stop-color="#F5A623"/></radialGradient></defs>' +
+    '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r * 2.6) + '" fill="url(#' + g + ')"/><circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="url(#' + c + ')"/>';
+}
+function sun(cx, cy, r) { return sunGlow(cx, cy, r); }
+function skyDefs(id, top, bottom) { return '<linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + top + '"/><stop offset="1" stop-color="' + bottom + '"/></linearGradient>'; }
+function cloud(x, y, s, op) { return '<g opacity="' + (op || .9) + '" fill="#fff"><ellipse cx="' + x + '" cy="' + y + '" rx="' + 22 * s + '" ry="' + 9 * s + '"/><ellipse cx="' + (x - 12 * s) + '" cy="' + (y - 4 * s) + '" rx="' + 12 * s + '" ry="' + 9 * s + '"/><ellipse cx="' + (x + 8 * s) + '" cy="' + (y - 7 * s) + '" rx="' + 13 * s + '" ry="' + 11 * s + '"/></g>'; }
+function wedge(x, y, x1, y1, x2, y2, col, cls, d) { return '<path' + (cls ? ' class="' + cls + '" style="--d:' + d + '"' : "") + ' d="M' + x + ' ' + y + ' L' + x1 + ' ' + y1 + ' L' + x2 + ' ' + y2 + 'z" fill="' + col + '" opacity=".88"/>'; }
 function straw(kind) {
-  var b = '<svg viewBox="0 0 130 124"><path d="M30 20 L36 118 H94 L100 20" fill="#F7FBFF" stroke="#6B7785" stroke-width="2.5" stroke-linejoin="round"/><path d="M33 60 L36 118 H94 L97 60z" fill="#DDEEFF"/><path d="M33 60 H97" stroke="#2F80C9" stroke-width="2"/>';
-  var st = 'stroke="#E8962E" stroke-width="6" stroke-linecap="round"';
-  if (kind === 1) b += '<path d="M100 6 L50 108" ' + st + '/>';
-  else if (kind === 2) b += '<path d="M100 6 L74 60" ' + st + '/><path d="M66 60 L48 108" ' + st + '/>';
-  else b += '<path d="M100 6 L74 60" ' + st + '/><path d="M74 60 L96 104" ' + st + '/>';
+  var gl = gid("gl"), wa = gid("wa"), ip = gid("ip");
+  var b = '<svg viewBox="0 0 130 130"><defs>' +
+    '<linearGradient id="' + gl + '" x1="0" x2="1"><stop offset="0" stop-color="#E8F1F8"/><stop offset=".18" stop-color="#FFFFFF"/><stop offset=".8" stop-color="#F3F8FC"/><stop offset="1" stop-color="#D5E3EE"/></linearGradient>' +
+    '<linearGradient id="' + wa + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFE0F7"/><stop offset="1" stop-color="#7DB9E6"/></linearGradient>' +
+    '<pattern id="' + ip + '" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(-64)"><rect width="10" height="10" fill="#fff"/><rect width="5" height="10" fill="#E53935"/></pattern></defs>' +
+    '<ellipse cx="65" cy="122" rx="38" ry="5" fill="#000" opacity=".12"/>' +
+    '<path d="M30 20 L36 118 Q65 124 94 118 L100 20" fill="url(#' + gl + ')"/>';
+  var up = function (d) { return '<path d="' + d + '" stroke="url(#' + ip + ')" stroke-width="7" stroke-linecap="round"/>'; };
+  var dn = function (d) { return '<path d="' + d + '" stroke="url(#' + ip + ')" stroke-width="7.5" stroke-linecap="round" opacity=".75"/>'; };
+  b += '<path d="M33 60 L36 118 Q65 124 94 118 L97 60z" fill="url(#' + wa + ')" opacity=".85"/>';
+  if (kind === 1) b += up("M100 6 L74 60") + dn("M74 60 L50 108");
+  else if (kind === 2) b += up("M100 6 L74 60") + dn("M66 60 L48 108");
+  else b += up("M100 6 L74 60") + dn("M74 60 L96 104");
+  b += '<path d="M33 60 Q65 64 97 60" stroke="#fff" stroke-width="2" fill="none" opacity=".9"/><path d="M33 60 Q65 57 97 60" stroke="#5FA4D8" stroke-width="1.6" fill="none"/>' +
+    '<path d="M30 20 L36 118 Q65 124 94 118 L100 20" fill="none" stroke="#8FA3B5" stroke-width="2.2" stroke-linejoin="round"/><ellipse cx="65" cy="20" rx="35" ry="4" fill="none" stroke="#8FA3B5" stroke-width="2"/>' +
+    '<path d="M39 28 L43 108" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".85"/>';
   return b + '</svg>';
 }
 var PICS = {
   wheel: function () {
-    var s = '<svg viewBox="0 0 300 170"><g class="wh">';
+    var sh = gid("sh"), mx = gid("mx");
+    var s = '<svg viewBox="0 0 300 175"><defs><radialGradient id="' + sh + '" cx=".38" cy=".32" r=".75"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></radialGradient>' +
+      '<radialGradient id="' + mx + '"><stop offset="0" stop-color="#F7F5F0"/><stop offset=".85" stop-color="#ECE8E0"/><stop offset="1" stop-color="#DCD6CC"/></radialGradient></defs>' +
+      '<ellipse cx="156" cy="166" rx="70" ry="6" fill="#000" opacity=".13"/><circle cx="150" cy="85" r="78" fill="#F4EBDD" stroke="#C9B79C" stroke-width="2"/><g class="wh">';
     for (var k = 0; k < 7; k++) {
       var a1 = 2 * Math.PI * k / 7 - Math.PI / 2, a2 = 2 * Math.PI * (k + 1) / 7 - Math.PI / 2;
-      s += '<path d="M150 85 L' + (150 + 75 * Math.cos(a1)).toFixed(1) + ' ' + (85 + 75 * Math.sin(a1)).toFixed(1) + ' A75 75 0 0 1 ' + (150 + 75 * Math.cos(a2)).toFixed(1) + ' ' + (85 + 75 * Math.sin(a2)).toFixed(1) + 'z" fill="' + ROY[k] + '" stroke="#fff" stroke-width="2"/>';
+      s += '<path d="M150 85 L' + (150 + 72 * Math.cos(a1)).toFixed(1) + ' ' + (85 + 72 * Math.sin(a1)).toFixed(1) + ' A72 72 0 0 1 ' + (150 + 72 * Math.cos(a2)).toFixed(1) + ' ' + (85 + 72 * Math.sin(a2)).toFixed(1) + 'z" fill="' + ROY[k] + '"/>';
     }
-    return s + '</g><circle class="mixw" cx="150" cy="85" r="76" fill="#F4F2EE"/><circle cx="150" cy="85" r="5" fill="#1F2A44"/></svg>';
+    return s + '<path d="M150 20 l2 8" stroke="#fff" stroke-width="2" opacity=".6"/></g><circle class="mixw" cx="150" cy="85" r="73" fill="url(#' + mx + ')"/><circle cx="150" cy="85" r="73" fill="url(#' + sh + ')"/>' +
+      '<circle cx="150" cy="85" r="7" fill="#B0B7BF" stroke="#6B7785" stroke-width="1.5"/><circle cx="148" cy="83" r="2.4" fill="#fff" opacity=".8"/></svg>';
   },
   rainbow: function () {
-    var s = '<svg viewBox="0 0 300 160">';
-    for (var k = 0; k < 7; k++) { var r = 130 - k * 15; s += arc(150, 150, r, "#4A5560", 15.5) + arc(150, 150, r, ROY[k], 13, 'class="band" data-n="' + k + '"'); }
-    return s + '<text id="bandName" x="150" y="146" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="22" fill="#1F2A44"></text></svg>';
+    var sk = gid("sk"), hl = gid("hl");
+    var s = '<svg viewBox="0 0 300 170"><defs>' + skyDefs(sk, "#6FA8DC", "#D6EBFA") + skyDefs(hl, "#7CC47F", "#3E8E4A") + '</defs><rect width="300" height="170" rx="14" fill="url(#' + sk + ')"/>' +
+      cloud(60, 36, 1.1, .85) + cloud(250, 26, .8, .7);
+    for (var k = 0; k < 7; k++) { var r = 132 - k * 11; s += arc(150, 172, r, ROY[k], 11.5, 'class="band" data-n="' + k + '" opacity=".82"'); }
+    s += arc(150, 172, 136, "#fff", 3, 'opacity=".35"') + arc(150, 172, 62, "#fff", 4, 'opacity=".25"');
+    return s + '<path d="M0 150 Q60 128 120 146 T230 140 T300 136 V170 H0z" fill="url(#' + hl + ')"/><path d="M0 162 Q90 146 170 160 T300 154 V170 H0z" fill="#357E40" opacity=".8"/>' +
+      '<text id="bandName" x="150" y="138" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="22" fill="#1F2A44" stroke="#fff" stroke-width="4" paint-order="stroke"></text></svg>';
   },
   prism: function () {
-    var s = '<svg viewBox="0 0 320 170" class="draw"><rect x="6" y="70" width="34" height="18" rx="4" fill="#E6EEF8" stroke="#2F80C9" stroke-width="2.5"/><path d="M40 79 H120" stroke="#F3D36B" stroke-width="9" stroke-linecap="round" class="lit"/>' +
-      '<path d="M108 136 L190 136 L149 46z" fill="#EEF6FC" stroke="#2F80C9" stroke-width="2.5" stroke-linejoin="round"/><path d="M126 80 L170 92" stroke="#E3E7EC" stroke-width="5" class="lit"/>' +
-      '<path d="M306 30 V150" stroke="#6B7785" stroke-width="4" stroke-linecap="round"/>';
-    for (var k = 0; k < 7; k++) s += '<path class="fan" style="--d:' + k + '" d="M170 92 L302 ' + (52 + k * 13) + '" stroke="' + ROY[k] + '" stroke-width="3"/>';
-    return s + '<text x="10" y="62" font-family="Fredoka" font-weight="600" font-size="13" fill="#3C3A8F">torch</text><text x="128" y="156" font-family="Fredoka" font-weight="600" font-size="13" fill="#3C3A8F">prism</text></svg>';
+    var bg = gid("bg"), gp = gid("gp"), tb = gid("tb"), gw = gid("gw");
+    var s = '<svg viewBox="0 0 320 180" class="draw"><defs>' + skyDefs(bg, "#1E2638", "#2C3650") +
+      '<linearGradient id="' + gp + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E8F4FF" stop-opacity=".75"/><stop offset=".6" stop-color="#A9D0F0" stop-opacity=".45"/><stop offset="1" stop-color="#7FB2DE" stop-opacity=".6"/></linearGradient>' +
+      '<linearGradient id="' + tb + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9DEE4"/><stop offset=".5" stop-color="#8E99A6"/><stop offset="1" stop-color="#5B6572"/></linearGradient>' +
+      '<radialGradient id="' + gw + '"><stop offset="0" stop-color="#FFFDE8"/><stop offset="1" stop-color="#FFFDE8" stop-opacity="0"/></radialGradient></defs>' +
+      '<rect width="320" height="180" rx="14" fill="url(#' + bg + ')"/><path d="M0 150 H320 V166 Q320 180 306 180 H14 Q0 180 0 166z" fill="#3A445C"/>' +
+      '<rect x="8" y="70" width="40" height="20" rx="5" fill="url(#' + tb + ')"/><rect x="46" y="66" width="8" height="28" rx="2" fill="url(#' + tb + ')"/><rect x="18" y="66" width="10" height="5" rx="2" fill="#C62828"/>' +
+      '<g class="lit"><circle cx="56" cy="80" r="14" fill="url(#' + gw + ')"/><path d="M56 80 L132 86" stroke="#FFFBE0" stroke-width="12" opacity=".25" stroke-linecap="round"/><path d="M56 80 L132 86" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/></g>' +
+      '<path d="M114 146 L128 140 L176 46 L164 50z" fill="#9CC6EA" opacity=".35"/>' +
+      '<path d="M114 146 L198 146 L156 52z" fill="url(#' + gp + ')" stroke="#CFE6FA" stroke-width="2" stroke-linejoin="round"/><path d="M156 52 L124 132" stroke="#fff" stroke-width="2" opacity=".6"/>' +
+      '<path class="lit" d="M132 86 L178 98" stroke="#fff" stroke-width="4" opacity=".9"/>' +
+      '<rect x="292" y="26" width="16" height="124" rx="3" fill="#E9EDF2"/><rect x="292" y="26" width="4" height="124" fill="#C7CFD8"/>';
+    var y = [44, 58, 72, 86, 100, 114, 128];
+    for (var k = 0; k < 7; k++) s += wedge(178, 98, 292, y[k], 292, y[k] + 14, ROY[k], "fan", k);
+    return s + '<text x="10" y="60" font-family="Fredoka" font-weight="600" font-size="13" fill="#E6ECF5">torch</text><text x="136" y="166" font-family="Fredoka" font-weight="600" font-size="13" fill="#E6ECF5">prism</text><text x="268" y="20" font-family="Fredoka" font-weight="600" font-size="13" fill="#E6ECF5">screen</text></svg>';
   },
   bend: function () {
-    return '<svg viewBox="0 0 300 170" class="draw"><text x="10" y="30" font-family="Fredoka" font-weight="600" font-size="14" fill="#3C3A8F">air</text><rect x="0" y="86" width="300" height="84" fill="#DDEEFF"/><path d="M0 86 H300" stroke="#2F80C9" stroke-width="2.5"/><text x="10" y="160" font-family="Fredoka" font-weight="600" font-size="14" fill="#2F80C9">water</text>' +
-      '<path d="M60 10 L150 86" stroke="#E8962E" stroke-width="4" stroke-linecap="round"/><path d="M150 86 L240 162" stroke="#8A929B" stroke-width="2" stroke-dasharray="6 6"/>' +
-      '<path class="lit" d="M150 86 L196 162" stroke="#E8962E" stroke-width="4" stroke-linecap="round"/><circle cx="150" cy="86" r="5" fill="#E8962E" class="lit"/></svg>';
+    var ai = gid("ai"), wa = gid("wa"), tb = gid("tb");
+    return '<svg viewBox="0 0 300 175" class="draw"><defs>' + skyDefs(ai, "#F7FBFF", "#E9F2FA") + skyDefs(wa, "#9CCDF0", "#4F95CC") +
+      '<linearGradient id="' + tb + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9DEE4"/><stop offset="1" stop-color="#7A8592"/></linearGradient></defs>' +
+      '<rect width="300" height="175" rx="14" fill="url(#' + ai + ')"/><path d="M0 86 Q75 82 150 86 T300 86 V161 Q300 175 286 175 H14 Q0 175 0 161z" fill="url(#' + wa + ')"/>' +
+      '<path d="M0 86 Q75 82 150 86 T300 86" stroke="#fff" stroke-width="2.5" fill="none" opacity=".9"/>' +
+      '<g transform="rotate(40 40 20)"><rect x="14" y="13" width="44" height="14" rx="6" fill="url(#' + tb + ')"/><rect x="54" y="15" width="6" height="10" rx="2" fill="#C62828"/></g>' +
+      '<path d="M150 40 V165" stroke="#5B6572" stroke-width="1.5" stroke-dasharray="4 5" opacity=".7"/>' +
+      '<path d="M62 24 L150 86" stroke="#FF7043" stroke-width="10" opacity=".22" stroke-linecap="round"/><path d="M62 24 L150 86" stroke="#F4511E" stroke-width="3.5" stroke-linecap="round"/>' +
+      '<path d="M150 86 L238 148" stroke="#8A929B" stroke-width="2" stroke-dasharray="6 6"/>' +
+      '<g class="lit"><path d="M150 86 L200 165" stroke="#FF7043" stroke-width="10" opacity=".25" stroke-linecap="round"/><path d="M150 86 L200 165" stroke="#F4511E" stroke-width="3.5" stroke-linecap="round"/><circle cx="150" cy="86" r="6" fill="#FFF3E0" stroke="#F4511E" stroke-width="2"/></g>' +
+      '<text x="250" y="30" font-family="Fredoka" font-weight="600" font-size="15" fill="#5B6572">air</text><text x="236" y="120" font-family="Fredoka" font-weight="600" font-size="15" fill="#fff">water</text></svg>';
   },
   drop: function () {
-    var s = '<svg viewBox="0 0 320 190" class="draw">' + sun(28, 40, 13) +
-      '<path d="M232 14 Q272 60 279 84 A50 50 0 1 1 185 84 Q192 60 232 14z" fill="#E6F2FB" stroke="#2F80C9" stroke-width="2.5"/>' +
-      '<path d="M50 88 L186 94" stroke="#F3D36B" stroke-width="8" stroke-linecap="round"/>' +
-      '<path class="trace" pathLength="1" d="M186 94 L272 122 L202 144" stroke="#4A5560" stroke-width="2.6" fill="none" stroke-linejoin="round"/>';
-    for (var k = 0; k < 7; k++) s += '<path class="fan" style="--d:' + (k + 14) + '" d="M202 144 L40 ' + (150 + k * 5) + '" stroke="' + ROY[k] + '" stroke-width="2.4"/>';
-    return s + '<text x="236" y="186" font-family="Fredoka" font-weight="600" font-size="13" fill="#3C3A8F">raindrop</text></svg>';
+    var sk = gid("sk"), dr = gid("dr");
+    var s = '<svg viewBox="0 0 320 195" class="draw"><defs>' + skyDefs(sk, "#7FB3E0", "#DCEEFB") +
+      '<radialGradient id="' + dr + '" cx=".35" cy=".38" r=".75"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/><stop offset=".35" stop-color="#D7ECFB" stop-opacity=".85"/><stop offset=".85" stop-color="#8CC3EC" stop-opacity=".85"/><stop offset="1" stop-color="#4C93CF"/></radialGradient></defs>' +
+      '<rect width="320" height="195" rx="14" fill="url(#' + sk + ')"/>' + sunGlow(32, 42, 15) + cloud(120, 30, .8, .6) +
+      '<path d="M232 14 Q272 60 279 84 A50 50 0 1 1 185 84 Q192 60 232 14z" fill="url(#' + dr + ')" stroke="#3E86C6" stroke-width="2"/>' +
+      '<path d="M206 70 Q212 54 226 44" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none" opacity=".9"/>' +
+      '<path d="M52 88 L186 94" stroke="#FFFBE0" stroke-width="12" opacity=".35" stroke-linecap="round"/><path d="M52 88 L186 94" stroke="#fff" stroke-width="4" stroke-linecap="round"/>' +
+      '<path class="trace" pathLength="1" d="M186 94 L272 122 L202 144" stroke="#fff" stroke-width="3.5" fill="none" stroke-linejoin="round"/>';
+    for (var k = 0; k < 7; k++) s += wedge(202, 144, 40, 146 + k * 6, 40, 152 + k * 6, ROY[k], "fan", k + 14);
+    return s + '<text x="232" y="190" font-family="Fredoka" font-weight="600" font-size="13" fill="#1F4F7A">raindrop</text></svg>';
   },
   tray: function () {
-    return '<svg viewBox="0 0 360 170"><path d="M60 80 H300 V132 H60z" fill="#F4F6F8" stroke="#6B7785" stroke-width="2.5"/><path d="M62 96 H298 V130 H62z" fill="#CFE6F7"/><path d="M62 96 H298" stroke="#2F80C9" stroke-width="2"/>' +
-      '<rect x="246" y="92" width="8" height="40" rx="2" transform="rotate(-35 250 112)" fill="#EEF6FC" stroke="#2F80C9" stroke-width="2.5"/><rect x="10" y="22" width="40" height="16" rx="3" transform="rotate(28 30 30)" fill="#E6EEF8" stroke="#2F80C9" stroke-width="2.5"/>' +
-      '<path d="M50 44 L238 110" stroke="#FFE68A" stroke-width="9" opacity=".8" stroke-linecap="round"/><path d="M340 6 V150" stroke="#6B7785" stroke-width="5" stroke-linecap="round"/>' +
-      '<text x="296" y="166" font-family="Fredoka" font-weight="600" font-size="13" fill="#3C3A8F">white wall</text><text x="120" y="152" font-family="Fredoka" font-weight="600" font-size="13" fill="#3C3A8F">tray of water</text><text x="258" y="82" font-family="Fredoka" font-weight="600" font-size="13" fill="#3C3A8F">mirror</text></svg>';
+    var wa = gid("wa"), tb = gid("tb"), mi = gid("mi"), wl = gid("wl");
+    return '<svg viewBox="0 0 360 180"><defs>' + skyDefs(wa, "#B8DDF5", "#6FAEDD") +
+      '<linearGradient id="' + tb + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9DEE4"/><stop offset="1" stop-color="#7A8592"/></linearGradient>' +
+      '<linearGradient id="' + mi + '" x1="0" x2="1"><stop offset="0" stop-color="#F5F8FB"/><stop offset=".5" stop-color="#C3CCD6"/><stop offset="1" stop-color="#EEF2F6"/></linearGradient>' +
+      '<linearGradient id="' + wl + '" x1="0" x2="1"><stop offset="0" stop-color="#F2F2EE"/><stop offset="1" stop-color="#DCDCD6"/></linearGradient></defs>' +
+      '<rect width="360" height="180" rx="14" fill="#F6EFE4"/><path d="M0 128 H360 V166 Q360 180 346 180 H14 Q0 180 0 166z" fill="#D9C3A3"/>' +
+      '<rect x="318" y="4" width="30" height="128" fill="url(#' + wl + ')" stroke="#C9C9C2"/>' +
+      '<ellipse cx="180" cy="138" rx="128" ry="7" fill="#000" opacity=".12"/>' +
+      '<path d="M54 84 L306 84 L292 136 L68 136z" fill="#EEF1F4" stroke="#8E99A6" stroke-width="2" stroke-linejoin="round"/>' +
+      '<path d="M60 98 L300 98 L291 132 L69 132z" fill="url(#' + wa + ')" opacity=".9"/><path d="M60 98 L300 98" stroke="#fff" stroke-width="2"/>' +
+      '<rect x="244" y="90" width="9" height="42" rx="2" transform="rotate(-35 250 112)" fill="url(#' + mi + ')" stroke="#6B7785" stroke-width="1.5"/>' +
+      '<g transform="rotate(28 30 30)"><rect x="6" y="22" width="40" height="16" rx="5" fill="url(#' + tb + ')"/><rect x="44" y="20" width="7" height="20" rx="2" fill="url(#' + tb + ')"/></g>' +
+      '<path d="M50 46 L238 110" stroke="#FFF6C8" stroke-width="12" opacity=".5" stroke-linecap="round"/><path d="M50 46 L238 110" stroke="#FFF3B0" stroke-width="4" stroke-linecap="round"/>' +
+      '<text x="290" y="150" font-family="Fredoka" font-weight="600" font-size="13" fill="#5A4630">white wall</text><text x="120" y="160" font-family="Fredoka" font-weight="600" font-size="13" fill="#5A4630">tray of water</text><text x="258" y="80" font-family="Fredoka" font-weight="600" font-size="13" fill="#3C3A8F">mirror</text></svg>';
   },
   moonbow: function () {
-    var s = '<svg viewBox="0 0 300 160"><rect width="300" height="160" rx="14" fill="#1F2A44"/>';
-    for (var k = 0; k < 7; k++) s += arc(170, 160, 110 - k * 7, ROY[k], 6, 'opacity=".22"');
-    s += '<circle cx="50" cy="44" r="20" fill="#F3F5F7"/><circle cx="44" cy="39" r="4" fill="#DDE2E7"/><circle cx="56" cy="50" r="5" fill="#DDE2E7"/>';
-    for (var i = 0; i < 26; i++) s += '<path d="M' + (90 + (i * 37) % 200) + ' ' + (20 + (i * 53) % 120) + ' l-4 10" stroke="#9CC6EA" stroke-width="2" stroke-linecap="round" opacity=".7"/>';
-    return s + '</svg>';
+    var sk = gid("sk"), mg = gid("mg");
+    var s = '<svg viewBox="0 0 300 165"><defs>' + skyDefs(sk, "#0B1430", "#2A3D66") + '<radialGradient id="' + mg + '"><stop offset="0" stop-color="#F4F7FF" stop-opacity=".7"/><stop offset="1" stop-color="#F4F7FF" stop-opacity="0"/></radialGradient></defs>' +
+      '<rect width="300" height="165" rx="14" fill="url(#' + sk + ')"/>';
+    for (var i = 0; i < 30; i++) s += '<circle cx="' + ((i * 71) % 290 + 5) + '" cy="' + ((i * 37) % 70 + 6) + '" r="' + (i % 3 ? .9 : 1.4) + '" fill="#fff" opacity="' + (i % 2 ? .5 : .85) + '"/>';
+    s += '<circle cx="52" cy="42" r="44" fill="url(#' + mg + ')"/><circle cx="52" cy="42" r="17" fill="#F2F4F8"/><circle cx="46" cy="37" r="3.5" fill="#D7DCE4"/><circle cx="58" cy="48" r="4.5" fill="#D7DCE4"/><circle cx="57" cy="34" r="2" fill="#D7DCE4"/>';
+    for (var k = 0; k < 7; k++) s += arc(176, 168, 112 - k * 6, ROY[k], 6, 'opacity=".2"');
+    s += arc(176, 168, 100, "#fff", 40, 'opacity=".07"');
+    for (var j = 0; j < 40; j++) s += '<path d="M' + (100 + (j * 37) % 195) + ' ' + (14 + (j * 53) % 120) + ' l-3 9" stroke="#AFCBEB" stroke-width="1.4" stroke-linecap="round" opacity=".55"/>';
+    return s + '<path d="M0 140 Q40 126 70 138 Q110 120 150 136 Q200 124 240 138 Q270 130 300 134 V151 Q300 165 286 165 H14 Q0 165 0 151z" fill="#0A1022"/></svg>';
   },
   straw1: function () { return straw(1); }, straw2: function () { return straw(2); }, straw3: function () { return straw(3); },
 };
@@ -307,7 +373,7 @@ var TAPS = {
     var b = ev.target.closest(".band"); if (!b) return;
     var n = +b.getAttribute("data-n"), t = el.querySelector("#bandName");
     t.textContent = ROYN[n]; t.setAttribute("fill", n === 2 ? "#B8860B" : ROY[n]);
-    el.querySelectorAll(".band").forEach(function (x) { x.setAttribute("stroke-width", x === b ? 15 : 13); });
+    el.querySelectorAll(".band").forEach(function (x) { x.setAttribute("opacity", x === b ? 1 : .55); });
   },
 };
 
