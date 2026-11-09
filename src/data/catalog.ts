@@ -38,6 +38,9 @@ export interface Item {
 }
 
 export const items: Item[] = [
+  { title: 'Light Explorer · Mission 4 (มือถือ)', th: 'สีของแสง รุ้ง ปริซึม และทบทวนทั้งบท', kind: 'check', grade: 'P5',
+    meta: '5 บทสั้น', href: '/light-m4-go/', course: 'p5-light',
+    note: 'เรียนในมือถือทีละการ์ดแบบ Duolingo ตอบผิดได้คำใบ้แล้ววนกลับมาถาม ผลส่งถึงครู' },
   { title: 'Light Explorer · Mission 3', th: 'การมองเห็นและวัตถุโปร่งใส โปร่งแสง ทึบแสง', kind: 'slides', grade: 'P5',
     meta: '14 หน้า', href: '/light-p5-m3/', course: 'p5-light',
     note: 'เรามองเห็นได้อย่างไร แสงสะท้อน และวัสดุที่แสงผ่านได้ พร้อมปากกาเขียนบนสไลด์',

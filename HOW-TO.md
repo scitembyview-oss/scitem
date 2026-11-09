@@ -75,6 +75,13 @@ npm run dev      # แล้วเปิด http://localhost:4321
 แก้เสร็จแล้วรัน `python3 tools/build-light-p5.py` เพื่อสร้างหน้าเว็บใหม่
 ใช้งาน: โหมด ✏️ เขียนได้ และแตะสั้นๆ บนรูปเพื่อเล่นอนิเมชั่น · โหมด 👆 แตะอย่างเดียว ไม่เขียน · ปุ่ม ◀ ▶ หรือลูกศรซ้าย/ขวาเพื่อเปลี่ยนหน้า
 
+## Light Explorer · Mission 4 บนมือถือ (scitem.net/light-m4-go/)
+
+บทเรียนแบบ Duolingo ให้น้องทำในมือถือ 5 บท ตอบผิดจะได้คำใบ้ แล้วข้อนั้นจะวนกลับมาท้ายบท จบแต่ละบทจะส่งผลเข้าชีทครูเอง (ดูในหน้าครู หัวข้อ "Light Mission 4 บนมือถือ")
+ครูเปิด `scitem.net/light-m4-go/#open` เพื่อดูทุกบทโดยไม่ต้องทำตามลำดับ
+แก้เนื้อหาที่ project files `worksheets/light-mission4/phone/content.mjs` (มีเฉลย ห้ามเอาเข้า repo) แล้วรัน
+`node tools/build-light-go.mjs <content.mjs> public/light-m4-go/index.html` แล้ว commit หน้าเว็บ
+
 ## สไลด์ Light Explorer · Mission 3 (scitem.net/light-p5-m3/)
 
 หน้าเว็บ `public/light-p5-m3/index.html` สร้างจาก `tools/build-light-p5-m3.py` ห้ามแก้ไฟล์นี้ตรงๆ
