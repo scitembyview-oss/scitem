@@ -43,7 +43,7 @@ for (const [li, L] of content.lessons.entries()) {
       canon = c.pairs.map(([l, r]) => `${l}=${r}`).join('|');
       pub = { lefts: c.pairs.map((p) => p[0]), rights: c.pairs.map((p) => p[1]).sort(byText) };
     } else throw new Error(`${id}: unknown type ${c.type}`);
-    key[id] = canon;
+    key[id] = { k: canon, why: c.why };
     if (!c.hint || !c.why || !c.tag) throw new Error(`${id}: needs tag, hint and why`);
     cards.push({ type: c.type, tag: c.tag, q: c.q, pic: c.pic, boss: c.boss, hint: c.hint, ...pub, h: await hashOf(id, canon), x: await lock(id, canon, c.why) });
   }

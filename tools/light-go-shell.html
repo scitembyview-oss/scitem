@@ -141,21 +141,26 @@ body.teach .wrap { max-width:none; padding:0; }
 #tcard .opts .opt, #tcard .tile { font-size:21px; }
 #tcard .opts.pics svg { max-width:180px; }
 #ink { position:absolute; left:0; top:0; width:100%; touch-action:none; }
-body.watch { font-family:'Sarabun',sans-serif; font-size:16px; }
-.wsess { font-weight:600; color:var(--green); margin:4px 0 8px; }
-.wstu { border:2px solid var(--line); border-radius:14px; padding:10px 12px; margin:8px 0 14px; }
-.wn { font-size:17px; margin-bottom:6px; } .wh { font-size:13px; color:var(--mute); }
-.wcard { border-left:6px solid var(--line); padding:6px 10px; margin:6px 0; background:var(--soft); border-radius:8px; }
-.wcard.ok { border-color:var(--green); } .wcard.fix { border-color:var(--orange); } .wcard.no { border-color:var(--red); }
-.wcard .q { font-size:16px; margin:2px 0 6px; } .wcard .tag { font-size:12px; text-transform:none; letter-spacing:0; }
-.wl { display:flex; gap:8px; margin:3px 0; font-size:15px; } .wl > span { flex:0 0 88px; color:var(--mute); font-size:13px; padding-top:2px; }
-.wl .now { color:var(--blue); font-weight:600; } .wl.key div { color:var(--red); font-weight:600; }
+.opt.key { border:3px solid var(--red); background:#FDECEC; box-shadow:0 3px 0 #F5C4C4; }
+.keybox { border:3px solid var(--red); border-radius:14px; padding:10px 14px; background:#FDECEC; font-size:17px; }
+#tans { margin-top:18px; display:flex; flex-direction:column; gap:10px; }
+.tanswer { display:flex; gap:14px; align-items:center; border:2px solid var(--line); border-radius:14px; padding:10px 14px; background:#fff; flex-wrap:wrap; }
+.tanswer.ok { border-color:#9FD6B2; background:var(--gbg); } .tanswer.no { border-color:#F5C4C4; background:var(--rbg); }
+.tanswer > b { font-family:'Fredoka'; min-width:90px; } .tv { flex:1; font-size:20px; } .tv .mpic svg { width:110px; }
+.tbtn { display:flex; gap:8px; }
+.tbtn button { font:inherit; font-family:'Fredoka'; font-weight:600; font-size:18px; border-radius:12px; padding:8px 18px; border:2px solid var(--line); background:#fff; }
+.tbtn button[data-ok="1"] { color:var(--green); border-color:#9FD6B2; } .tbtn button[data-ok="0"] { color:var(--red); border-color:#F5C4C4; }
+.tbtn button[data-ok="1"].on { background:var(--green); color:#fff; } .tbtn button[data-ok="0"].on { background:var(--red); color:#fff; }
+.tres { font-family:'Fredoka'; color:var(--mute); }
 .mpic svg { width:70px; height:auto; vertical-align:middle; }
-details summary { cursor:pointer; color:var(--blue); margin:6px 0; }
-.ex { color:#8A4B00; font-size:14px; }
-.wsum { border-top:1px solid var(--line); padding:10px 0; }
-#scrWatch .chip { background:#fff; font-size:14px; }
-.hint { color:var(--mute); }
+body.watch .wrap { max-width:640px; }
+.wbar { display:flex; gap:6px; align-items:center; padding:10px 0; position:sticky; top:0; background:var(--paper); z-index:3; border-bottom:1px solid var(--line); }
+.wbar button, .wbar select { font:inherit; font-size:15px; min-height:38px; min-width:38px; border:1px solid var(--line); background:#fff; border-radius:10px; padding:0 8px; max-width:55vw; }
+#wno { font-family:'Fredoka'; font-weight:600; min-width:3.6em; text-align:center; }
+.wbar .fred { color:var(--red); }
+.wpage { padding:10px 0; }
+.wwhy { border:2px dashed #F5C4C4; border-radius:14px; padding:10px 14px; margin:8px 0 40px; background:#FFFBFB; font-family:'Sarabun',sans-serif; font-size:16px; }
+.wwhy b { color:var(--red); } .wwhy p { margin:2px 0 10px; }
 </style>
 </head>
 <body>
@@ -191,7 +196,7 @@ details summary { cursor:pointer; color:var(--blue); margin:6px 0; }
 </section>
 
 <section id="scrWatch" class="hidden">
-  <div class="top"><b class="fred">จอซ่อน · Light Mission 4</b><span><button class="chip" id="wkey">ใส่รหัสเฉลย</button> <button class="chip" id="wcopy">คัดลอก</button> <button class="chip" id="wclear">เริ่มคาบใหม่</button></span></div>
+  <div class="wbar"><select id="wsel"></select><button id="wprev" aria-label="Back">◀</button><span id="wno"></span><button id="wnext" aria-label="Next">▶</button><span class="tsp"></span><b class="fred">เฉลย</b></div>
   <div id="wbody"></div>
 </section>
 <div id="net" class="hidden"></div>
@@ -471,17 +476,16 @@ function send() {
 
 /* =====================================================================
    LIVE CLASS (3 screens). View 2026-11-09:
-   #live  = student phone: the exercises, one part (lesson) or one card at a time, as the teacher opens them
-   #teach = show screen (share this one): controls the session and the phones, big card + pen. No answers, no password (View 2026-11-09):
-            it signs in anonymously and writes its controls to live/<CLS>/<its uid>; #watch (teacher account) passes them on to the phones,
-            so #watch must stay open during class
-   #watch = hidden screen: sees everything the student does (what she is tapping now, every answer) + the answer key
+   #live  = student phone: the exercises, one card at a time with the teacher ("one") or a whole part at her own pace ("part")
+   #teach = show screen (shared): controls the session and the phones, big card + pen, shows what the student sent,
+            the teacher taps ถูก / ยังไม่ถูก there and the phone gets the result. Signs in once as the teacher (Firebase).
+   #watch = hidden screen: the answer book only. The teacher pages through it on her own: each card laid out like the
+            other screens, the answer marked, and why. Needs only the key password, no Firebase.
    Firebase Realtime DB over REST (rules: tools/firebase-rules.json, the same as the live sheet classes):
-     live/<CLS>/<uid> = {n, at, cur: card id on screen, sel: what is picked right now, a: {cardId: {f, ok1, ok, tries, v, at}}}  student writes own
-     live/<CLS>/<showUid> = {show: 1, ctl: {mode, li, pos, at}}                                                       the show screen writes own
-     back/<CLS>/<uid> = {mode: "wait"|"one"|"part", li, pos}  #watch writes, student reads own; back/<CLS>/now = the session
-     back/<CLS>/<showUid> = {dots: [{n, a: answered this card, t: on this card}]}  #watch writes, the show screen reads (no right/wrong)
-   Answer key for #watch: DATA.key, AES-GCM with a key from the key password (PBKDF2), password kept outside the repo.
+     live/<CLS>/<uid> = {n, at, cur: card on screen, a: {cardId: {v: sent, at, tries, ok?, ok1?, auto?}}}   student writes own
+     back/<CLS>/<uid> = {mode: "wait"|"one"|"part", li, pos, mark: {cardId: {ok, for: sent at}}}             show screen writes
+   In "one" mode the phone does not check: the teacher's mark is the result. In "part" mode the phone checks itself (hash).
+   Answer book: DATA.key, AES-GCM with a key from the key password (PBKDF2); the password stays outside the repo.
    ===================================================================== */
 var FB = { key: "AIzaSyClZhItG5C3aaz413ToeXPDKzh6Aw5y9CU", db: "https://scitem-live-default-rtdb.asia-southeast1.firebasedatabase.app" }; // = FIREBASE in src/data/catalog.ts
 var FB_TEACHER = "teacher@scitem.net", CLS = DATA.id.replace(/[^a-z0-9]/gi, ""), MODE = (location.hash.match(/^#(live|teach|watch)/) || [])[1] || "";
@@ -503,8 +507,8 @@ function token() {
 function token1() {
   var old = AUTH; if (!old) try { old = JSON.parse(localStorage.getItem(AKEY) || "null"); } catch (e) {}
   var fresh = function () {
-    if (MODE !== "watch") return fbPost("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=" + FB.key, { returnSecureToken: true }).then(authSet);
-    var pw = prompt("รหัส Firebase ของ " + FB_TEACHER + " (รหัสเดียวกับจอ #live ของห้องเรียนสด)");
+    if (MODE === "live") return fbPost("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=" + FB.key, { returnSecureToken: true }).then(authSet);
+    var pw = prompt("รหัส Firebase ของ " + FB_TEACHER + " (รหัสเดียวกับจอ #live ของห้องเรียนสด) ใส่ครั้งเดียวในเครื่องนี้");
     if (!pw) return Promise.reject(new Error("no password"));
     return fbPost("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + FB.key, { email: FB_TEACHER, password: pw.trim(), returnSecureToken: true }).then(authSet);
   };
@@ -541,30 +545,45 @@ function fbStream(root, path, onChange) {
 }
 function net(t) { var n = $("net"); if (n) { n.textContent = t; n.classList.toggle("hidden", !t); } }
 function cardAt(pos) { var p = String(pos || "").split("-"), L = DATA.lessons[+p[0]]; return L && L.cards[+p[1]] ? { li: +p[0], ci: +p[1], c: L.cards[+p[1]], id: pos } : null; }
-function smallPic(c, k) { var o = (c.opts || []).filter(function (o) { return o.k === k; })[0]; return o ? '<span class="mpic">' + PICS[o.pic]() + '</span>' : esc(k); }
-function pickHtml(c, v) {   // a pick (or a half-done pick) as the teacher reads it
+function allPos() { var out = []; DATA.lessons.forEach(function (L, li) { L.cards.forEach(function (_, ci) { out.push(li + "-" + ci); }); }); return out; }
+function pickHtml(c, v) {   // a sent answer as the teacher reads it
   if (v == null || v === "") return '<span class="hint">—</span>';
-  if (c.type === "choice") return typeof c.opts[0] === "object" ? smallPic(c, v) : esc(v);
-  if (c.type === "order") return String(v).split("|").map(esc).join(" → ");
-  return String(v).split("|").map(function (p) { return esc(p.replace("=", " = ")); }).join("<br>");
+  if (c.type === "choice") { if (typeof c.opts[0] === "object") { var o = c.opts.filter(function (o) { return o.k === v; })[0]; return o ? '<span class="mpic">' + PICS[o.pic]() + '</span>' : esc(v); } return esc(v); }
+  if (c.type === "order") return String(v).split("|").map(function (t, i) { return (i + 1) + ". " + esc(t); }).join("<br>");
+  return String(v).split("|").map(function (p) { return esc(p.replace("=", " → ")); }).join("<br>");
+}
+function staticCard(c, key) {   // a card laid out like the phone; key = the right answer to mark (answer book only)
+  var h = "";
+  if (c.type === "teach") {
+    h = '<h2>' + esc(c.title) + '</h2><div class="say"><div class="me">' + GLOW + '</div><div class="bub">' + c.text + '</div></div>';
+    if (c.pic) h += '<div class="pic' + (TAPS[c.pic] ? " tap" : "") + '" id="pic">' + PICS[c.pic]() + '</div>';
+    return h;
+  }
+  h = '<div class="tag' + (c.boss ? " boss" : "") + '">' + (c.boss ? "Boss question" : c.type === "order" ? "Put in order" : c.type === "match" ? "Match" : "Choose") + '</div><div class="q">' + esc(c.q) + '</div>';
+  if (c.pic) h += '<div class="pic">' + PICS[c.pic]() + '</div>';
+  if (c.type === "choice") { var pics = typeof c.opts[0] === "object";
+    h += '<div class="opts' + (pics ? " pics" : "") + '">' + c.opts.map(function (o) { var k = pics ? o.k : o;
+      return '<div class="opt' + (key != null && k === key ? " key" : "") + '">' + (pics ? PICS[o.pic]() : esc(o)) + '</div>'; }).join("") + '</div>'; }
+  else if (key != null) h += '<div class="keybox">' + pickHtml(c, key) + '</div>';
+  else if (c.type === "order") h += '<div class="bank">' + c.tiles.map(function (t) { return '<div class="tile">' + esc(t) + '</div>'; }).join("") + '</div>';
+  else h += '<div class="mgrid"><div class="mcol">' + c.lefts.map(function (t) { return '<div class="tile">' + esc(t) + '</div>'; }).join("") + '</div><div class="mcol">' + c.rights.map(function (t) { return '<div class="tile">' + esc(t) + '</div>'; }).join("") + '</div></div>';
+  return h;
 }
 
 /* ---------- student phone ---------- */
-var LIVE = { mine: {}, ctl: {}, uid: "" }, selT = null;
-function liveCur(id) { if (MODE === "live" && AUTH) fbWrite("PATCH", "live", "/" + AUTH.uid, { cur: id, sel: "", at: Date.now() }); }
-function liveRecord(id, canon, ok) {
+var LIVE = { mine: {}, ctl: {}, marks: {} };
+function liveCur(id) { if (MODE === "live" && AUTH) fbWrite("PATCH", "live", "/" + AUTH.uid, { cur: id, at: Date.now() }); }
+function liveRecord(id, canon, ok) {   // "part" mode: the phone checked it
   var prev = LIVE.mine[id] || null;
-  var rec = { f: prev ? prev.f : canon, ok1: prev ? prev.ok1 : ok, ok: ok || !!(prev && prev.ok), tries: (prev ? prev.tries : 0) + 1, v: canon, at: Date.now() };
+  var rec = { v: canon, at: Date.now(), tries: (prev ? prev.tries : 0) + 1, ok: ok || !!(prev && prev.ok), ok1: prev ? !!prev.ok1 : ok, auto: 1 };
   LIVE.mine[id] = rec; fbWrite("PUT", "live", "/" + AUTH.uid + "/a/" + id, rec);
   return prev;
 }
-SELHOOK = function () {   // every tap goes to the hidden screen (at most 4 a second)
-  if (MODE !== "live" || !AUTH || !CUR_GET) return;
-  clearTimeout(selT); selT = setTimeout(function () { var v = CUR_GET(); fbWrite("PATCH", "live", "/" + AUTH.uid, { sel: v == null ? "" : v, at: Date.now() }); }, 250);
-};
+SELHOOK = null;
 function waitHtml(t) { return '<div class="say" style="margin-top:30px"><div class="me">' + GLOW + '</div><div class="bub">' + t + '</div></div>'; }
+function bare() { show("scrLesson"); $("quit").classList.add("hidden"); $("prog").parentNode.classList.add("hidden"); }
 function liveWait() {
-  LS = null; CUR_GET = null; show("scrLesson"); $("quit").classList.add("hidden"); $("prog").parentNode.classList.add("hidden");
+  LS = null; CUR_GET = null; bare();
   $("card").innerHTML = waitHtml("Hi " + esc(S.name) + "! Look at Teacher View's screen. Your next exercise will show up here.");
   $("foot").classList.add("hidden"); liveCur("");
 }
@@ -579,22 +598,26 @@ function liveStudent() {
   }, function (e) { net("ต่อไม่ได้ (" + e.message + ")"); });
 }
 function liveRoute(t) {
-  t = t || {}; var old = LIVE.ctl; LIVE.ctl = t;
-  if (t.mode === "part") {   // a whole part: she works through it at her own pace
+  t = JSON.parse(JSON.stringify(t || {}));   // a copy: the stream changes its tree in place, and old must stay old
+  var old = LIVE.ctl; LIVE.ctl = t; LIVE.marks = t.mark || {};
+  if (t.mode === "part") {   // a whole part at her own pace, checked on the phone
     if (LS && LS.live && LS.i === +t.li && old.mode === "part") return;
     startLesson(+t.li); LS.live = true; $("quit").classList.add("hidden"); $("prog").parentNode.classList.remove("hidden");
-    LS.queue.forEach(function (it) { var r = LIVE.mine[it.id]; if (r && r.ok) { it.skip = true; } });
-    LS.queue = LS.queue.filter(function (it) { if (it.skip) { LS.done++; return false; } return true; });
+    LS.queue = LS.queue.filter(function (it) { var r = LIVE.mine[it.id]; if (r && r.ok) { LS.done++; return false; } return true; });
     next(); return;
   }
-  if (t.mode === "one" && t.pos) { if (old.mode !== "one" || old.pos !== t.pos) liveCard(); return; }
+  if (t.mode === "one" && t.pos) {
+    if (old.mode !== "one" || old.pos !== t.pos) return liveCard();
+    var m = LIVE.marks[t.pos], a = LIVE.mine[t.pos], om = (old.mark || {})[t.pos];
+    if (m && a && m.for === a.at && (!om || om.for !== m.for || om.ok !== m.ok)) liveResult(m.ok);
+    return;
+  }
   if (old.mode !== t.mode || !t.mode) liveWait();
 }
-function liveCard() {   // one card, the one the teacher is on
+function liveCard() {   // the card the teacher is on
   var k = cardAt(LIVE.ctl.pos); if (!k) return;
-  var c = k.c, rec = LIVE.mine[k.id] || null, h = "";
-  LS = null; CUR_GET = null; show("scrLesson"); $("quit").classList.add("hidden"); $("prog").parentNode.classList.add("hidden");
-  liveCur(k.id);
+  var c = k.c, a = LIVE.mine[k.id] || null, m = LIVE.marks[k.id], h = "";
+  LS = null; CUR_GET = null; bare(); liveCur(k.id);
   if (c.type === "teach") {
     h = '<h2>' + esc(c.title) + '</h2><div class="say"><div class="me">' + GLOW + '</div><div class="bub">' + c.text + '</div></div>';
     if (c.pic) h += '<div class="pic' + (TAPS[c.pic] ? " tap" : "") + '" id="pic">' + PICS[c.pic]() + '</div>' + (TAPS[c.pic] ? '<div class="tapme">Tap the picture</div>' : "");
@@ -602,52 +625,44 @@ function liveCard() {   // one card, the one the teacher is on
     var pic = $("pic"); if (pic && TAPS[c.pic]) pic.onclick = function (ev) { TAPS[c.pic](pic, ev); };
     return;
   }
-  if (rec && rec.ok) { $("card").innerHTML = waitHtml("You got this one! Wait for the next card."); $("foot").classList.add("hidden"); return; }
-  h = '<div class="tag' + (c.boss ? " boss" : "") + '">' + (rec ? "Try again" : c.boss ? "Boss question" : c.type === "order" ? "Put in order" : c.type === "match" ? "Match" : "Choose") + '</div><div class="q">' + esc(c.q) + '</div>';
+  if (a && m && m.for === a.at && m.ok) a.ok = true;
+  if (a && a.ok) { $("card").innerHTML = waitHtml("You got this one! Wait for the next card."); $("foot").classList.add("hidden"); return; }
+  if (a && !(m && m.for === a.at)) return liveSent(k, a.v);   // sent, teacher still checking
+  h = '<div class="tag' + (c.boss ? " boss" : "") + '">' + (a ? "Try again" : c.boss ? "Boss question" : c.type === "order" ? "Put in order" : c.type === "match" ? "Match" : "Choose") + '</div><div class="q">' + esc(c.q) + '</div>';
   if (c.pic) h += '<div class="pic">' + PICS[c.pic]() + '</div>';
   $("card").innerHTML = h + '<div id="ans"></div>';
   var get = CUR_GET = ({ choice: renderChoice, order: renderOrder, match: renderMatch })[c.type](c, $("ans"));
-  foot("", "", "Check", false);
-  $("act").onclick = function () { liveCheck(k, get()); };
+  foot("", "", "Send to Teacher View", false);
+  $("act").onclick = function () {
+    var v = get(), prev = LIVE.mine[k.id], rec = { v: v, at: Date.now(), tries: (prev ? prev.tries : 0) + 1 };
+    LIVE.mine[k.id] = rec; fbWrite("PUT", "live", "/" + AUTH.uid + "/a/" + k.id, rec); liveSent(k, v);
+  };
 }
-function liveCheck(k, canon) {
-  $("act").disabled = true;
-  var c = k.c, id = k.id, pos = LIVE.ctl.pos;
-  hashOf(id, canon).then(function (h) {
-    var ok = h === c.h, prev = liveRecord(id, canon, ok);
-    $("card").querySelectorAll("button").forEach(function (b) { b.disabled = true; });
-    if (ok) {
-      if (!prev) { S.xp += 10; save(); }
-      return unlock(id, canon, c.x).then(function (why) {
-        foot("ok", OKIC + '<div><h3>' + PRAISE[Math.floor(Math.random() * PRAISE.length)] + '</h3><p>' + esc(why) + '</p></div>', "Wait for Teacher View", false);
-      });
-    }
+function liveSent(k, v) {
+  $("card").querySelectorAll("button").forEach(function (b) { b.disabled = true; });
+  if (!$("ans")) $("card").innerHTML = '<div class="q">' + esc(k.c.q) + '</div><div class="keybox">' + pickHtml(k.c, v) + '</div>';
+  foot("", '<span class="ic"><svg viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="12" r="9" fill="none" stroke="#2F80C9" stroke-width="2.4"/><path d="M12 7v5l3 2" stroke="#2F80C9" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg></span><div><h3 style="color:#2F80C9">Sent!</h3><p>Teacher View is checking your answer…</p></div>', "Waiting…", false);
+}
+function liveResult(ok) {
+  var k = cardAt(LIVE.ctl.pos), a = LIVE.mine[k.id], c = k.c;
+  if (!ok) {
     foot("no", NOIC + '<div><h3>Not quite</h3><p>' + esc(c.hint) + '</p></div>', "Try again", true);
-    $("act").onclick = function () { if (LIVE.ctl.pos === pos) { delete LIVE.ctl.pos; LIVE.ctl.pos = pos; liveCard(); } };
+    $("act").onclick = function () { liveCardFresh(k); };
+    return;
+  }
+  if (!a.ok) { a.ok = true; fbWrite("PATCH", "live", "/" + AUTH.uid + "/a/" + k.id, { ok: true }); S.xp += a.tries > 1 ? 5 : 10; save(); }
+  unlock(k.id, a.v, c.x).then(function (why) {
+    foot("ok", OKIC + '<div><h3>' + PRAISE[Math.floor(Math.random() * PRAISE.length)] + '</h3><p>' + esc(why || "Teacher View says you are right!") + '</p></div>', "Wait for the next card", false);
   });
 }
-
-/* ---------- teacher screens ---------- */
-var ROOM = {};
-function allPos() { var out = []; DATA.lessons.forEach(function (L, li) { L.cards.forEach(function (_, ci) { out.push(li + "-" + ci); }); }); return out; }
-function students() { return Object.keys(ROOM).filter(function (u) { return ROOM[u] && ROOM[u].n && !ROOM[u].show; }); }
-function staticCard(c) {
-  var h = "";
-  if (c.type === "teach") {
-    h = '<h2>' + esc(c.title) + '</h2><div class="say"><div class="me">' + GLOW + '</div><div class="bub">' + c.text + '</div></div>';
-    if (c.pic) h += '<div class="pic' + (TAPS[c.pic] ? " tap" : "") + '" id="pic">' + PICS[c.pic]() + '</div>';
-    return h;
-  }
-  h = '<div class="tag' + (c.boss ? " boss" : "") + '">' + (c.boss ? "Boss question" : c.type === "order" ? "Put in order" : c.type === "match" ? "Match" : "Choose") + '</div><div class="q">' + esc(c.q) + '</div>';
-  if (c.pic) h += '<div class="pic">' + PICS[c.pic]() + '</div>';
-  if (c.type === "choice") { var pics = typeof c.opts[0] === "object";
-    h += '<div class="opts' + (pics ? " pics" : "") + '">' + c.opts.map(function (o) { return '<div class="opt">' + (pics ? PICS[o.pic]() : esc(o)) + '</div>'; }).join("") + '</div>'; }
-  if (c.type === "order") h += '<div class="bank">' + c.tiles.map(function (t) { return '<div class="tile">' + esc(t) + '</div>'; }).join("") + '</div>';
-  if (c.type === "match") h += '<div class="mgrid"><div class="mcol">' + c.lefts.map(function (t) { return '<div class="tile">' + esc(t) + '</div>'; }).join("") + '</div><div class="mcol">' + c.rights.map(function (t) { return '<div class="tile">' + esc(t) + '</div>'; }).join("") + '</div></div>';
-  return h;
+function liveCardFresh(k) {   // try again: same card, a new answer
+  var keep = LIVE.mine[k.id]; LIVE.mine[k.id] = null; liveCard(); LIVE.mine[k.id] = keep;
+  var tg = $("card").querySelector(".tag"); if (tg) tg.textContent = "Try again";
 }
 
-/* show screen: controls the session and the phones. Shared in Zoom, so it never shows right or wrong. */
+/* ---------- show screen: controls the session and the phones; shows what she sent; the teacher marks it ---------- */
+var ROOM = {}, BACK = {};
+function students() { return Object.keys(ROOM).filter(function (u) { return ROOM[u] && ROOM[u].n; }); }
 function liveTeacher() {
   document.body.classList.add("teach"); show("scrTeach");
   var list = allPos(), ST = { mode: "wait", li: 0, pos: list[0] };
@@ -658,40 +673,59 @@ function liveTeacher() {
   $("tnext").onclick = function () { var i = list.indexOf(ST.pos); if (i < list.length - 1) { ST.pos = list[i + 1]; ST.li = +ST.pos.split("-")[0]; push(); } };
   document.querySelectorAll("[data-mode]").forEach(function (b) { b.onclick = function () { ST.mode = b.getAttribute("data-mode"); push(); }; });
   document.addEventListener("keydown", function (e) { if (e.target.tagName === "SELECT") return; if (e.key === "ArrowRight") $("tnext").click(); if (e.key === "ArrowLeft") $("tprev").click(); });
-  var DOTS = [];
   inkSetup(); draw();
   token().then(function () {
-    fbStream("back", "/" + AUTH.uid, function (t) { DOTS = (t && t.dots) || []; dots(); });
+    fbStream("live", "", function (t) { var before = students().join(); ROOM = t || {};
+      students().forEach(function (u) { if (before.indexOf(u) < 0) fbWrite("PATCH", "back", "/" + u, ctl()); });   // a phone that joins late gets the session as it is
+      answers(); });
+    fbStream("back", "", function (t) { BACK = t || {}; answers(); });
     push();
   });
-  function ctl() { return ST.mode === "part" ? { mode: "part", li: ST.li, pos: ST.pos } : ST.mode === "one" ? { mode: "one", pos: ST.pos } : { mode: "wait", pos: ST.pos }; }
+  function ctl() { return ST.mode === "part" ? { mode: "part", li: ST.li, pos: null } : ST.mode === "one" ? { mode: "one", pos: ST.pos, li: null } : { mode: "wait", pos: null, li: null }; }
   function push() {
     try { localStorage.setItem(CLS + "-ctl", JSON.stringify(ST)); } catch (e) {}
     draw();
-    var c = ctl(); c.at = Date.now();
-    if (AUTH) fbWrite("PUT", "live", "/" + AUTH.uid, { show: 1, ctl: c, at: c.at });
+    if (!AUTH) return;
+    var c = ctl(), batch = {};
+    students().forEach(function (u) { Object.keys(c).forEach(function (k) { batch[u + "/" + k] = c[k]; }); });
+    if (Object.keys(batch).length) fbWrite("PATCH", "back", "", batch);
   }
   function draw() {
     var k = cardAt(ST.pos), L = DATA.lessons[k.li];
     $("tsel").value = k.li; $("tno").textContent = (k.ci + 1) + " / " + L.cards.length;
     document.querySelectorAll("[data-mode]").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-mode") === ST.mode); });
     $("tmode").textContent = ST.mode === "part" ? "Phones: Part " + (ST.li + 1) + ", own pace" : ST.mode === "one" ? "Phones: this card" : "Phones: waiting";
-    $("tcard").innerHTML = staticCard(k.c); inkClear();
+    $("tcard").innerHTML = staticCard(k.c) + '<div id="tans"></div>'; inkClear();
     var pic = $("pic"); if (pic && TAPS[k.c.pic]) pic.onclick = function (ev) { if (!INK.on) TAPS[k.c.pic](pic, ev); };
-    dots();
+    answers();
   }
-  function dots() {   // who is here and whether they answered (from #watch): no right or wrong on the shared screen
-    var k = cardAt(ST.pos); if (!k) return;
-    $("tdots").innerHTML = DOTS.map(function (d) { return '<span class="sd' + (d.a ? " in" : "") + '">' + esc(d.n) + (k.c.type === "teach" ? "" : d.a ? " · answered" : d.t ? " · thinking" : "") + '</span>'; }).join("") ||
-      '<span class="sd">' + (AUTH ? "no phones yet (or the hidden screen is closed)" : "connecting…") + '</span>';
+  function answers() {   // under the card: what each student sent for it, with ถูก / ยังไม่ถูก
+    var k = cardAt(ST.pos), box = $("tans"); if (!k || !box) return;
+    var us = students();
+    $("tdots").innerHTML = us.map(function (u) { var d = ROOM[u]; return '<span class="sd' + (d.cur === k.id ? " in" : "") + '">' + esc(d.n) + (d.cur === k.id ? " · on this card" : d.cur ? " · card " + d.cur.replace(/^(\d+)-(\d+)$/, function (_, a, b) { return (+a + 1) + "." + (+b + 1); }) : " · waiting") + '</span>'; }).join("") || '<span class="sd">' + (AUTH ? "no phones yet" : "connecting…") + '</span>';
+    if (k.c.type === "teach") { box.innerHTML = ""; return; }
+    box.innerHTML = us.map(function (u) {
+      var d = ROOM[u], a = (d.a || {})[k.id], m = ((BACK[u] || {}).mark || {})[k.id], done = a && m && m.for === a.at;
+      if (!a) return '<div class="tanswer"><b>' + esc(d.n) + '</b><span class="hint">' + (d.cur === k.id ? "thinking…" : "not sent yet") + '</span></div>';
+      var res = a.auto ? (a.ok ? "right" + (a.tries > 1 ? " (try " + a.tries + ")" : "") : "not yet") : done ? (m.ok ? "marked right" : "marked not yet") : "";
+      return '<div class="tanswer' + (done || a.auto ? (a.ok || (done && m.ok) ? " ok" : " no") : "") + '"><b>' + esc(d.n) + '</b><div class="tv">' + pickHtml(k.c, a.v) + '</div>' +
+        (a.auto ? '<span class="tres">' + res + '</span>' : '<span class="tbtn"><button data-u="' + u + '" data-ok="1"' + (done && m.ok ? ' class="on"' : "") + '>ถูก</button><button data-u="' + u + '" data-ok="0"' + (done && !m.ok ? ' class="on"' : "") + '>ยังไม่ถูก</button></span>') + '</div>';
+    }).join("");
+    box.querySelectorAll("[data-ok]").forEach(function (b) { b.onclick = function () {
+      var u = b.getAttribute("data-u"), a = ((ROOM[u] || {}).a || {})[k.id]; if (!a) return;
+      fbWrite("PUT", "back", "/" + u + "/mark/" + k.id, { ok: b.getAttribute("data-ok") === "1", for: a.at });
+    }; });
+    if (INK.size) INK.size();
   }
 }
-/* pen on the show screen: Apple Pencil / mouse draws; a finger still taps the pictures */
+/* pen on the show screen: Apple Pencil / mouse draws; a finger still taps the pictures and buttons */
 var INK = { on: false, er: false, cv: null, cx: null, col: "#C62828", pen: false };
 function inkSetup() {
   var cv = INK.cv = $("ink"), cx = INK.cx = cv.getContext("2d"), down = false;
   function size() { var r = $("tstage").getBoundingClientRect(), d = window.devicePixelRatio || 1, h = Math.max(r.height, $("tcard").scrollHeight + 40);
-    cv.width = r.width * d; cv.height = h * d; cv.style.height = h + "px"; cx.setTransform(d, 0, 0, d, 0, 0); }
+    if (Math.abs(cv.height - h * d) < 2 && cv.width === Math.round(r.width * d)) return;
+    var img = null; try { img = cx.getImageData(0, 0, cv.width, cv.height); } catch (e) {}
+    cv.width = r.width * d; cv.height = h * d; cv.style.height = h + "px"; cx.setTransform(d, 0, 0, d, 0, 0); if (img) cx.putImageData(img, 0, 0); }
   INK.size = size; window.addEventListener("resize", size); setTimeout(size, 50);
   function pt(e) { var r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
   cv.addEventListener("pointerdown", function (e) { if (e.pointerType === "pen") INK.pen = true; if (e.pointerType === "touch" && INK.pen) return;
@@ -709,74 +743,45 @@ function inkSetup() {
 }
 function inkClear() { if (INK.cx) { INK.cx.clearRect(0, 0, INK.cv.width, INK.cv.height); if (INK.size) setTimeout(INK.size, 30); } }
 
-/* hidden screen: everything the student does + the answer key */
-var KEYS = null;
-function b64u(s) { return b64(s); }
+/* ---------- hidden screen: the answer book, paged by the teacher ---------- */
 function openKey(pw) {
   var p = DATA.key.split(".");
   return crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"])
-    .then(function (k) { return crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64u(p[0]), iterations: 150000, hash: "SHA-256" }, k, { name: "AES-GCM", length: 256 }, false, ["decrypt"]); })
-    .then(function (k) { return crypto.subtle.decrypt({ name: "AES-GCM", iv: b64u(p[1]) }, k, b64u(p[2])); })
+    .then(function (k) { return crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64(p[0]), iterations: 150000, hash: "SHA-256" }, k, { name: "AES-GCM", length: 256 }, false, ["decrypt"]); })
+    .then(function (k) { return crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(p[1]) }, k, b64(p[2])); })
     .then(function (b) { return JSON.parse(new TextDecoder().decode(b)); });
 }
-function keyHtml(id) { if (!KEYS) return '<span class="hint">ใส่รหัสเฉลยเพื่อดู</span>'; var c = cardAt(id).c, v = KEYS[id]; return v == null ? "" : pickHtml(c, v); }
 function liveWatch() {
   document.body.classList.add("watch"); show("scrWatch");
-  var list = allPos(), BACK = {};
-  var askKey = function () {
-    var saved = ""; try { saved = localStorage.getItem(CLS + "-keypw") || ""; } catch (e) {}
-    var pw = saved || prompt("รหัสเฉลย (ดูได้ในไฟล์ของโปรเจกต์ light-mission4/phone)");
-    if (!pw) return;
-    openKey(pw.trim()).then(function (k) { KEYS = k; try { localStorage.setItem(CLS + "-keypw", pw.trim()); } catch (e) {} $("wkey").classList.add("hidden"); render(); },
-      function () { try { localStorage.removeItem(CLS + "-keypw"); } catch (e) {} if (!saved) alert("รหัสเฉลยไม่ถูก"); else askKey(); });
-  };
-  $("wkey").onclick = askKey; askKey();
-  function cardBlock(u, id, live) {
-    var k = cardAt(id); if (!k) return "";
-    var c = k.c, d = ROOM[u], a = (d.a || {})[id];
-    if (c.type === "teach") return '<div class="wcard"><div class="tag">Part ' + (k.li + 1) + ' · card ' + (k.ci + 1) + ' · teaching card</div><b>' + esc(c.title) + '</b></div>';
-    var st = !a ? "ยังไม่ส่ง" : a.ok1 ? "ถูกตั้งแต่ครั้งแรก" : a.ok ? "ถูกในครั้งที่ " + a.tries : "ยังไม่ถูก (ส่ง " + a.tries + " ครั้ง)";
-    return '<div class="wcard ' + (!a ? "" : a.ok1 ? "ok" : a.ok ? "fix" : "no") + '"><div class="tag">Part ' + (k.li + 1) + ' · card ' + (k.ci + 1) + ' · ' + st + '</div><div class="q">' + esc(c.q) + '</div>' +
-      (live ? '<div class="wl"><span>กำลังเลือก</span><div class="now">' + pickHtml(c, d.sel) + '</div></div>' : "") +
-      (a && !a.ok1 ? '<div class="wl"><span>ครั้งแรกเลือก</span><div>' + pickHtml(c, a.f) + '</div></div>' : "") +
-      (a && !a.ok ? '<div class="wl"><span>ล่าสุดเลือก</span><div>' + pickHtml(c, a.v) + '</div></div>' : "") +
-      '<div class="wl key"><span>เฉลย</span><div>' + keyHtml(id) + '</div></div>' +
-      (a && !a.ok1 ? '<div class="ex">อธิบายเรื่อง: ' + esc(c.tag) + ' · ' + esc(c.hint) + '</div>' : "") + '</div>';
-  }
+  var list = allPos(), KEYS = null, pos = list[0];
+  try { pos = localStorage.getItem(CLS + "-book") || pos; } catch (e) {}
+  $("wsel").innerHTML = DATA.lessons.map(function (L, i) { return '<option value="' + i + '">Part ' + (i + 1) + ": " + esc(L.title) + '</option>'; }).join("");
+  $("wsel").onchange = function () { go(this.value + "-0"); };
+  $("wprev").onclick = function () { var i = list.indexOf(pos); if (i > 0) go(list[i - 1]); };
+  $("wnext").onclick = function () { var i = list.indexOf(pos); if (i < list.length - 1) go(list[i + 1]); };
+  document.addEventListener("keydown", function (e) { if (e.target.tagName === "SELECT") return; if (e.key === "ArrowRight") $("wnext").click(); if (e.key === "ArrowLeft") $("wprev").click(); });
+  var x0 = null; $("wbody").addEventListener("touchstart", function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+  $("wbody").addEventListener("touchend", function (e) { if (x0 == null) return; var dx = e.changedTouches[0].clientX - x0; x0 = null; if (dx < -70) $("wnext").click(); if (dx > 70) $("wprev").click(); });
+  function go(p) { pos = p; try { localStorage.setItem(CLS + "-book", p); } catch (e) {} render(); window.scrollTo(0, 0); }
   function render() {
-    var now = BACK.now || {}, us = students(), h = '<div class="wsess">' + (now.mode === "part" ? "จอน้อง: Part " + (now.li + 1) + " ทำเอง" : now.mode === "one" ? "จอน้อง: ทีละข้อ ตามจอโชว์" : "จอน้อง: รอครู") + '</div>';
-    h += us.map(function (u) {
-      var d = ROOM[u], a = d.a || {}, done = list.filter(function (p) { return a[p]; }), first = done.filter(function (p) { return a[p].ok1; }).length;
-      var past = done.filter(function (p) { return p !== d.cur; }).sort(function (x, y) { return (a[y].at || 0) - (a[x].at || 0); });
-      return '<div class="wstu"><div class="wn"><b>' + esc(d.n) + '</b> ถูกครั้งแรก ' + first + '/' + done.length + ' ข้อ</div>' +
-        (d.cur ? '<div class="wh">ตอนนี้อยู่ที่</div>' + cardBlock(u, d.cur, true) : '<p class="hint">น้องรอครูอยู่</p>') +
-        (past.length ? '<details' + (past.length < 6 ? " open" : "") + '><summary>ข้อที่ทำแล้ว ' + past.length + ' ข้อ (ล่าสุดก่อน)</summary>' + past.map(function (p) { return cardBlock(u, p, false); }).join("") + '</details>' : "") + '</div>';
-    }).join("") || '<p class="hint">ยังไม่มีน้องเข้า (ให้น้องเปิดลิงก์ #live)</p>';
+    var k = cardAt(pos), c = k.c, L = DATA.lessons[k.li], K = KEYS && KEYS[pos];
+    $("wsel").value = k.li; $("wno").textContent = (k.ci + 1) + " / " + L.cards.length;
+    var h = '<div class="wpage">' + staticCard(c, K ? K.k : null) + '</div>';
+    if (c.type === "teach") h += '<div class="wwhy"><b>การ์ดสอน</b>' + (c.tap ? "<p>แตะรูปแล้วจะขึ้น: " + esc(c.tap) + "</p>" : "<p>ไม่มีคำถาม อ่านกับน้องแล้วไปต่อ</p>") + '</div>';
+    else if (!KEYS) h += '<div class="wwhy"><button class="btn ghost" id="wkey2">ใส่รหัสเฉลย</button></div>';
+    else h += '<div class="wwhy"><b>ทำไมตอบแบบนี้</b><p>' + esc(K.why) + '</p><b>ถ้าน้องยังไม่ถูก ใบ้ว่า</b><p>' + esc(c.hint) + '</p><div class="hint">เรื่อง: ' + esc(c.tag) + '</div></div>';
     $("wbody").innerHTML = h;
+    var pic = $("pic"); if (pic && TAPS[c.pic]) pic.onclick = function (ev) { TAPS[c.pic](pic, ev); };
+    var b = $("wkey2"); if (b) b.onclick = askKey;
   }
-  var sent = {};
-  function relay() {   // the show screen's controls -> every phone; who answered -> the show screen
-    var shows = Object.keys(ROOM).filter(function (u) { return ROOM[u] && ROOM[u].show && ROOM[u].ctl; })
-      .sort(function (x, y) { return (ROOM[y].ctl.at || 0) - (ROOM[x].ctl.at || 0); });
-    if (!shows.length) return;
-    var c = ROOM[shows[0]].ctl, phone = c.mode === "part" ? { mode: "part", li: c.li } : c.mode === "one" ? { mode: "one", pos: c.pos } : { mode: "wait" }, batch = {}, sig;
-    sig = JSON.stringify(phone);
-    if (!BACK.now || BACK.now.at !== c.at) batch.now = c;
-    students().forEach(function (u) { if (sent[u] !== sig) { batch[u] = phone; sent[u] = sig; } });
-    var dots = students().map(function (u) { var d = ROOM[u]; return { n: d.n, a: !!(d.a && d.a[c.pos]), t: d.cur === c.pos }; }), ds = JSON.stringify(dots);
-    shows.forEach(function (s) { if (sent["s" + s] !== ds) { batch[s] = { dots: dots }; sent["s" + s] = ds; } });
-    if (Object.keys(batch).length) fbWrite("PATCH", "back", "", batch);
+  function askKey() {
+    var saved = ""; try { saved = localStorage.getItem(CLS + "-keypw") || ""; } catch (e) {}
+    var pw = saved || prompt("รหัสเฉลย (อยู่ในไฟล์ KEY-PASSWORD.txt ของโปรเจกต์)");
+    if (!pw) return;
+    openKey(pw.trim()).then(function (k) { KEYS = k; try { localStorage.setItem(CLS + "-keypw", pw.trim()); } catch (e) {} render(); },
+      function () { try { localStorage.removeItem(CLS + "-keypw"); } catch (e) {} if (saved) askKey(); else alert("รหัสเฉลยไม่ถูก"); });
   }
-  token().then(function () {
-    fbStream("live", "", function (t) { ROOM = t || {}; relay(); render(); });
-    fbStream("back", "", function (t) { BACK = t || {}; render(); });
-  });
-  $("wcopy").onclick = function () {
-    var lines = students().map(function (u) { var d = ROOM[u], a = d.a || {};
-      return d.n + "\n" + list.filter(function (p) { return a[p]; }).map(function (p) { var c = cardAt(p).c, r = a[p]; return (r.ok1 ? "✓ " : r.ok ? "~ " : "✗ ") + c.tag + (r.ok1 ? "" : " (first pick: " + r.f + ")"); }).join("\n"); });
-    if (navigator.clipboard) navigator.clipboard.writeText(lines.join("\n\n")); this.textContent = "คัดลอกแล้ว";
-  };
-  $("wclear").onclick = function () { if (confirm("ลบคำตอบทั้งหมดของห้องนี้ เพื่อเริ่มคาบใหม่?")) students().forEach(function (u) { fbWrite("DELETE", "live", "/" + u + "/a", null); }); };
+  render(); askKey();
 }
 
 load();
