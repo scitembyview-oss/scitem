@@ -117,6 +117,45 @@ h2 { font-size:22px; margin:6px 0 10px; color:#3C3A8F; }
 .trace { stroke-dasharray:1; stroke-dashoffset:1; }
 .on .trace { transition:stroke-dashoffset 1.6s ease-in-out; stroke-dashoffset:0; }
 .band { cursor:pointer; }
+/* live mode */
+body.watch .wrap { max-width:640px; }
+#net { position:fixed; top:8px; left:50%; transform:translateX(-50%); background:#1F2A44; color:#fff; font-size:13px; border-radius:99px; padding:4px 12px; z-index:9; font-family:'Sarabun',sans-serif; }
+body.teach .wrap { max-width:none; padding:0; }
+#scrTeach { min-height:100dvh; display:flex; flex-direction:column; }
+.tbar { display:flex; gap:6px; align-items:center; padding:8px 12px; border-bottom:1px solid var(--line); background:#fff; position:sticky; top:0; z-index:4; flex-wrap:wrap; }
+.tbar button, .tbar select { font:inherit; font-size:15px; min-height:38px; min-width:38px; border:1px solid var(--line); background:#fff; border-radius:10px; padding:0 10px; }
+.tbar button.on { background:#1F2A44; color:#fff; }
+.tbar .sw { width:32px; min-width:32px; padding:0; border-radius:50%; border:3px solid #fff; box-shadow:0 0 0 1px var(--line); }
+.tbar .sw.on { box-shadow:0 0 0 3px #1F2A44; }
+.tsp { flex:1; }
+#tno { font-family:'Fredoka'; font-weight:600; min-width:4em; text-align:center; }
+.tinfo { display:flex; gap:10px; align-items:center; padding:6px 16px; flex-wrap:wrap; min-height:34px; }
+#tmode { font-family:'Fredoka'; font-weight:600; color:var(--green); font-size:15px; }
+#tdots { display:flex; gap:8px; flex-wrap:wrap; }
+.tgrp { display:inline-flex; gap:4px; margin-left:8px; }
+.sd { font-size:14px; border:1.5px solid var(--line); border-radius:99px; padding:2px 10px; color:var(--mute); }
+.sd.in { border-color:#9DBFE0; color:var(--blue); }
+#tstage { position:relative; flex:1; }
+#tcard { max-width:900px; margin:0 auto; padding:10px 28px 60px; font-size:22px; }
+#tcard .q { font-size:28px; } #tcard h2 { font-size:32px; } #tcard .pic svg { max-width:520px; }
+#tcard .opts .opt, #tcard .tile { font-size:21px; }
+#tcard .opts.pics svg { max-width:180px; }
+#ink { position:absolute; left:0; top:0; width:100%; touch-action:none; }
+body.watch { font-family:'Sarabun',sans-serif; font-size:16px; }
+.wsess { font-weight:600; color:var(--green); margin:4px 0 8px; }
+.wstu { border:2px solid var(--line); border-radius:14px; padding:10px 12px; margin:8px 0 14px; }
+.wn { font-size:17px; margin-bottom:6px; } .wh { font-size:13px; color:var(--mute); }
+.wcard { border-left:6px solid var(--line); padding:6px 10px; margin:6px 0; background:var(--soft); border-radius:8px; }
+.wcard.ok { border-color:var(--green); } .wcard.fix { border-color:var(--orange); } .wcard.no { border-color:var(--red); }
+.wcard .q { font-size:16px; margin:2px 0 6px; } .wcard .tag { font-size:12px; text-transform:none; letter-spacing:0; }
+.wl { display:flex; gap:8px; margin:3px 0; font-size:15px; } .wl > span { flex:0 0 88px; color:var(--mute); font-size:13px; padding-top:2px; }
+.wl .now { color:var(--blue); font-weight:600; } .wl.key div { color:var(--red); font-weight:600; }
+.mpic svg { width:70px; height:auto; vertical-align:middle; }
+details summary { cursor:pointer; color:var(--blue); margin:6px 0; }
+.ex { color:#8A4B00; font-size:14px; }
+.wsum { border-top:1px solid var(--line); padding:10px 0; }
+#scrWatch .chip { background:#fff; font-size:14px; }
+.hint { color:var(--mute); }
 </style>
 </head>
 <body>
@@ -142,12 +181,26 @@ h2 { font-size:22px; margin:6px 0 10px; color:#3C3A8F; }
 </section>
 
 <section id="scrDone" class="hidden"></section>
+
+<section id="scrTeach" class="hidden">
+  <div class="tbar"><select id="tsel"></select><button id="tprev" aria-label="Back">◀</button><span id="tno"></span><button id="tnext" aria-label="Next">▶</button>
+    <span class="tgrp"><button data-mode="one">ทีละข้อ</button><button data-mode="part">ทั้ง part</button><button data-mode="wait">พัก</button></span>
+    <span class="tsp"></span><button id="tpen">Pen</button><button class="sw" data-c="#C62828" style="background:#C62828"></button><button class="sw" data-c="#2F80C9" style="background:#2F80C9"></button><button class="sw" data-c="#1F2A44" style="background:#1F2A44"></button><button id="ter">Eraser</button><button id="tclr">Clear</button></div>
+  <div class="tinfo"><span id="tmode"></span><span id="tdots"></span></div>
+  <div id="tstage"><div id="tcard"></div><canvas id="ink"></canvas></div>
+</section>
+
+<section id="scrWatch" class="hidden">
+  <div class="top"><b class="fred">จอซ่อน · Light Mission 4</b><span><button class="chip" id="wkey">ใส่รหัสเฉลย</button> <button class="chip" id="wcopy">คัดลอก</button> <button class="chip" id="wclear">เริ่มคาบใหม่</button></span></div>
+  <div id="wbody"></div>
+</section>
+<div id="net" class="hidden"></div>
 </div>
 
 <div class="foot hidden" id="foot"><div class="in"><div class="fb hidden" id="fb"></div><button class="btn" id="act" disabled>Check</button></div></div>
 
 <script>
-var DATA = {"id":"go-light4","title":"Light Explorer · Mission 4","badge":"Light Master","lessons":[{"title":"White light","color":"#2F80C9","cards":[{"type":"choice","tag":"Warm-up: see a tree","q":"Warm-up from Mission 3! How do we see a tree on a sunny day?","hint":"Is a tree a source of light? Which way does the light travel?","opts":["Our eyes send light out to the tree.","Sunlight reflects off the tree into our eyes.","The tree gives out its own light."],"h":"3333219fe9d20f1eaad6","x":"W0H91tVZTOOq3OqW.g8YnJP6gnH8o/asUSttFcT83oGSvlzXsXIQ5yQr0a2b4mXW6gpq5Urkfg1vPkgClLFUTYK+Oz9Wy+Mh9qo6ufSbizWzLinV5DlJ9Fm91tRy4BWjP8Uu+4cUdmF/4"},{"type":"choice","tag":"Warm-up: darker shadow","q":"Ben puts a glass of water and a book in the sunlight. Which one makes the darker shadow?","hint":"Which one lets no light through at all?","opts":["the book","the glass of water"],"h":"1aca574814d8b40a3c1e","x":"Ehq04Yo/T69QlM/O.Dzj3u26UxuYXvTT9Pb3ZUS11PjUzU1C6oFk3g/Jv3lClV2O342n5gusQO7qDHRRoxPwEHjLmQF1IoNH/kXNrxA+glCtdAjnt07/yFRbTdOoe"},{"type":"teach","title":"The white light mystery","pic":"wheel","text":"Sunlight looks white. But white light is really a <b>mix of many colours</b>! Tap the colour wheel to spin it.","tap":"Spinning fast, the colours mix together again in our eyes."},{"type":"choice","tag":"White light is…","q":"White light is…","hint":"Remember what happened when the wheel spun.","opts":["a mix of colours","just one colour","red light"],"h":"d695c55911cf5d248a34","x":"ieToq5scjFYbLNLl.PLGhPRZANP5ncwn7f3z2Bzo4CSYLJkqqJGyqU7Q1L0zIlrviOGl6JohvAJ3/DkA+oSvwz1kSxR2Yp+l1oNVTQumw02Bv"},{"type":"choice","tag":"Spinning wheel colour","q":"Ploy paints the 7 rainbow colours on a wheel and spins it very fast. What colour does it look?","hint":"What happens when all the colours of light come back together?","opts":["almost white","black","rainbow stripes","red"],"h":"addc01080520ad14960c","x":"Y7DGMpXLSPq+B01A.VK5QUZUynyX8980GleGnL2l7C9mS9EQcCLaJJbVFLM0SFNqeT6jP43IMeCugF3Eq0Ir22ahk/kcej92eRdwS7yNgdbIN+OfWQd9pXpI72JxPIIdLPDXdQ+/txEk="},{"type":"choice","tag":"Mali: no colours","q":"Mali says, \"Sunlight has no colours in it.\" What is the best answer?","hint":"Think about what you see in a rainbow.","opts":["No. A rainbow shows the colours hiding in sunlight.","Yes. Colours come only from paint.","Yes. Sunlight is only white."],"h":"d6bf9ef70df491138e85","x":"tj693Cn3hFZxHxtp.7VV2Qhl6P9llP0a0JsJhmVTrSv2Sc444XM1S4r9ls67tgKjDrJOfHXsKdgzuOqiJl3nEdj8xyi7oLy1Uyq5QjbUbaoaZfcACtWRTWXBljQXwD1d1V1Lz071AAvInkt8LKtY="},{"type":"choice","tag":"T/F colours spread apart","q":"True or false? When the colours of light spread apart, we see white.","hint":"Do we see white when the colours come together, or when they spread apart?","opts":["False","True"],"h":"e970a5a70bc406e22a0c","x":"Iq9KUMvJXE6zPFrV.eIjhI8qB4CSeXjvB1GDDtovPOZXm+11JvXUJH5R2AUD6vBpIW4auuf/un410qh55atGO0dlaHNfiAcSpYQSYE8uVuJ2icDvfmfA227zuKA=="}]},{"title":"ROY G BIV","color":"#2E8B57","cards":[{"type":"teach","title":"Rainbow order","pic":"rainbow","text":"A rainbow always shows its colours in the <b>same order</b>. Scientists remember it with a funny name: <b>ROY G BIV</b>! Tap each band.","tap":"Tap every band, then say the names out loud."},{"type":"order","tag":"Order the 7 colours","q":"Put the rainbow colours in order, from the outside (top) to the inside.","hint":"Say ROY G BIV out loud. Each letter is the first letter of a colour.","tiles":["blue","green","indigo","orange","red","violet","yellow"],"h":"a26950d7d8ec8d40a026","x":"hBbt+OQupbxx5qJ3.KQIPWA40C81BiUjkZMofY8Y3KRRjG3ycP5b9ncqWaXvtgBp65Wo97KWXoaml3B2j0LxlAbAFnF52D7233HSxq0uhVuvLpYGlsbZJDQ=="},{"type":"choice","tag":"Between green and indigo","q":"Which colour comes between green and indigo?","hint":"Find G and I in ROY G BIV. What is between them?","opts":["blue","orange","violet","yellow"],"h":"d5988786b30079ec2ca4","x":"jet/j66qL1xO2nDU.I4eTMWL7LpN5OBP76oFVSQvJ5kmsLjca9Lt2QFmZyHKopzL9pwU7qHeYs5GL"},{"type":"choice","tag":"Colour at the top","q":"Which colour is on the outside, at the very top of a rainbow?","hint":"Which letter starts ROY G BIV?","opts":["green","red","violet"],"h":"b47a7a30d55e8557607d","x":"lEhQdXzAn1uGtC48.8g7MJt4VcOvEIQb7H/P7hxkJLvFBoyK6ZbgupcGaaX+TQCtdEhSBXYOIBj5uE2vFsxb/+i4DdFPgAZyY6qrHdlNRlLA1JqKyyO8="},{"type":"choice","tag":"Colour at the bottom","q":"Which colour is on the inside, at the bottom of a rainbow?","hint":"Which letter ends ROY G BIV?","opts":["red","violet","yellow"],"h":"7e01e9c6d4c1eccd378e","x":"cdJdTjlnRRU/K4bL.a6YnHv74O2nM2nsvb8FUPEVm+QR1TGEIw4+Kn6WwtM8n2HFAIHwP+MMVgXZxjdfvqNLVHVx2y1g8pmfl+/3JElEKTC7pPYRdFrrv"},{"type":"choice","tag":"Ben's two mistakes","q":"Ben writes: red, yellow, orange, green, blue, violet, indigo. What must he change?","hint":"Check his list against ROY G BIV one letter at a time.","opts":["Nothing. It is correct.","Swap green and blue.","Swap red and violet.","Swap yellow and orange, and swap violet and indigo."],"h":"afcda1985352f97ca502","x":"qbq1t3hJPYzCBEv1.3k3RKKZV9kYISCd1rDQnsiYYXNtTkORb8Rl2R8fNnACZn/L+BaC9f+k+2skxGkHZfrhjmilSm4++55eg0NxFeJUrhqnKtd+My7nihS+1O0y3rPT7"},{"type":"choice","tag":"I = ?","q":"What does the I in ROY G BIV stand for?","hint":"It is a colour between blue and violet.","opts":["ice","indigo","ink"],"h":"97ccbff162d010857b6d","x":"hYwHHZ3nBdNqIFLo.SaVI5qaXPZ7oDV20ZZ6HkVEs8r0w+4fWu7Fc7+dHSYB1Hlf+4AEb+Szn05IvgLT6ZKtdQYPkUl6qb8Dmyr45ox421l7XyDYBEFFuDYc="}]},{"title":"Prism and bending light","color":"#7B61C9","cards":[{"type":"teach","title":"Prism power","pic":"prism","text":"A <b>prism</b> is a block of clear glass. When white light goes into a prism, the light <b>bends</b>. Tap the torch!","tap":"Look at the colours. Which one bends the most?"},{"type":"choice","tag":"Prism and white light","q":"What happens to white light in a prism?","hint":"Look again at the torch picture.","opts":["It bends and splits into colours.","It makes new colours that were not there.","It stops.","It turns black."],"h":"c80ee092e9f19fdcbfc9","x":"fxcvoXoinH3zXFf3.Fxvy0Kb6xd24dhkHgrRdAJrqAeYm/XEQ/7roZ4FFyHQUnmKbLCuEcLa8muq65z9bBb5avIk2l5Ae5LNwPRcbC24fbU8mXD6E9qIBHbbuMtTrOg=="},{"type":"choice","tag":"Bends the most","q":"Which colour bends the most in a prism?","hint":"Look at the bottom of the fan of colours.","opts":["green","red","violet"],"h":"cefc625248d143bbc941","x":"3sfVdO+dT3j7Qhdb.zTP7k3KwLDjpElJJ37S4Oo75gfdrAsuqkIn2a+jshqV8feaWhiNMcicmvmyfh9CcGFoM8ngMKq3NcXc="},{"type":"choice","tag":"T/F prism makes colours","q":"True or false? A prism makes new colours that were not in the light.","hint":"Where were the colours before the light went in?","opts":["False","True"],"h":"e6153be65ec3de8c797d","x":"4s8eFzD8V5udD5v1.bZ5xiZjwkhrI28VLqeNBKnQdD2KSDKQXHQOvwX8IbBV0/OpW4a1B7GHXKniQiLjKZ8e8UZUNzlbt9wWJXSyMIfDijgO4z0EQOENVovLk3ST5zVPz2w/Zg7Kf3w=="},{"type":"teach","title":"Bending light","pic":"bend","text":"Light travels in straight lines. But when light goes from air into <b>water</b> or glass, it changes direction. This bending is called <b>refraction</b>. Tap the picture.","tap":"See how the light changes direction at the water."},{"type":"choice","tag":"Straw in water picture","q":"Brooke puts a straw in a glass of water. Which picture shows what she sees?","hint":"Try it with a real glass of water if you can!","opts":[{"k":"s1","pic":"straw1"},{"k":"s2","pic":"straw2"},{"k":"s3","pic":"straw3"}],"h":"45b46a60f391b9e3bac7","x":"DClXbRPuecb8H6My.fU+grI/HaQ67ryR/E5LnSpPeBlS4sKhoKbxztoZmYf0Zws0WI7bSRg0hpRh+cL4Xy3DUvQBGaJkPBH0Fxq/TK2dd"},{"type":"choice","tag":"Why the straw looks broken","q":"Why does the straw look broken?","hint":"What did you learn about light going between water and air?","opts":["Light bends when it comes out of the water.","The straw melts.","The water breaks the straw.","Water stops all the light."],"h":"041df035666fba1a2257","x":"Oi1wPHVqj2yDRPdT.VdYdLTte17XAfPN5dMPTXD3irlkmomtqm0CXuzhmhbrOW0aIYX5qkTg+NeaSYfWUi9A0OjfKoMHgnpWiqRPva2dbHA=="}]},{"title":"How a rainbow is made","color":"#E8962E","cards":[{"type":"teach","title":"Tiny prisms","pic":"drop","text":"Each <b>raindrop</b> works like a tiny prism! Tap the raindrop to follow the light.","tap":"In, bend, bounce off the back, bend out. Then the colours spread."},{"type":"order","tag":"Rainbow steps in order","q":"Put the steps in order.","hint":"Follow the light from the Sun to your eyes.","tiles":["Sunlight shines into the raindrops.","The coloured light comes out to our eyes.","The light bends and splits as it goes in.","The light bounces off the back of each drop."],"h":"0891d03ae63f436e9400","x":"xS0MgQRLMM640Nsa.mdRKDk0+tCRmEhqXAPwDR1OsPJsosw5VcOFbp7zJ10cI/P5h4GKzw1AAQwJGVp1cu9R45UKoGSeUU8RsJCGDPN7RZLrJ"},{"type":"choice","tag":"Where is the Sun?","q":"To see a rainbow, where must the Sun be?","hint":"The light goes into the drops and bounces back. Where does it come back to?","opts":["behind you","in front of you","right above the rain"],"h":"dfb17bd2cad5957c92b2","x":"4bCIPEOQXvMtvVPl.NN5ojrcve9z13qf+REypV3XB11baTe24faxtxKhmM2ruPNR73fZxeCFfH/nGDemWBtbuZEh5S5dELK1lzQ9gv9KYahLBDvi/9QVCF7qIc74cUOJBY0stx8rtZF9zt5M4d1iR8A=="},{"type":"choice","tag":"No rain, no rainbow","q":"Why can't we see a rainbow on a sunny day with no rain?","hint":"What works like a tiny prism?","opts":["Rainbows only come at night.","The Sun is too bright.","There are no raindrops to bend and split the light."],"h":"d6274e681a8cff84dae7","x":"QrBVSXvPGv+zygwR.aeb9b3ADGW5DVhJJSfP5T1O3cAtOZ3kSOvkuQQSLiq8sdM6St6w61Cgwjxg+kkDLUIJazgXadw=="},{"type":"choice","tag":"Garden hose","q":"Mali makes a rainbow with a garden hose on a sunny afternoon. How should she stand?","hint":"Where must the Sun be to see a rainbow?","opts":["facing the Sun","with her back to the Sun"],"h":"2ae802cf02848d1bb76c","x":"8MUF+0TQSK0EzX57.SfxPRj7dDeqG9C34bxWO1OXIdpFdfiOQCVf8JEj1cz/0W+dtsjxd/bqA/O//4KkiltpacjxE2lfiAYtdiSfizLrut06TZlTpJA41IZi7zg=="},{"type":"choice","tag":"Mirror in water","q":"Ben puts a mirror in a tray of water. He shines a torch on the mirror under the water. What appears on the white wall?","pic":"tray","hint":"The water does the same job as a raindrop.","opts":["a dark shadow","a small rainbow","nothing"],"h":"749c280394fdb6c5b879","x":"c/BXP0L537pbt05I.+tjwMzmiMxnITZB+poNhKtnQU3unqcUwEk4ESHfcnjaA/GBsn9jzeEZUjPa9h3zfJlZSxJKV5g66d4KrHI8IASOVb4pZ7g=="},{"type":"teach","title":"Rainbows at night?","pic":"moonbow","text":"Moonlight shining on raindrops can make a <b>moonbow</b>! Remember, moonlight is only sunlight that the Moon reflects."},{"type":"choice","tag":"Moonbow fainter","q":"Why is a moonbow much fainter than a rainbow?","hint":"Where does moonlight come from? Is it bright or weak?","opts":["Moonlight is much weaker than sunlight.","Raindrops are smaller at night.","The Moon gives out blue light."],"h":"2588eacdaf47b2f3dd85","x":"c9dskpubG5b0FFFc.Bfi6DcPVxLsyVWSSj8KNiF1vWc9p3kt1b6GLCsnxJBhOdxDWI/TNXNyQowSV9hgM6uT/Pvo78l67Uybobt97HIvSPlhpsNYpA0euHsA="},{"type":"choice","tag":"Dark rainy night","q":"A rainy night with no Moon and no lamps. Can you see a rainbow or a moonbow?","hint":"What do you need besides raindrops?","opts":["No","Yes"],"h":"224018f0f2928a50b34f","x":"W9I0U9CMOqgINtyg.Q0NZPnPOfCrH1JkE19xMrQCRzGy1onZzTSOsUw/q6Nwq"}]},{"title":"Whole unit + boss","color":"#C2557A","cards":[{"type":"choice","tag":"Source of light","q":"Which one is a source of light?","hint":"Which one makes its own light?","opts":["a firefly","a mirror","a white wall","the Moon"],"h":"d9f2575de97b786551d0","x":"Whu0NoaCTaqoex1l.e1kzWqFpab0IYUOhuWcG3f0L5Pcikixks3iEqrGJxSDDGyYN0UOzP6f3Y+4C+MG2XtvHQ86QB3MuUuMiBR+mCH3xxy3+iqfPtqHK81ykM8kX"},{"type":"choice","tag":"How a shadow forms","q":"How is a shadow formed?","hint":"Remember Mission 2. How does light travel?","opts":["An opaque object blocks light that travels in straight lines.","Light bends around the object.","The object gives out dark light."],"h":"8e010cdd0e570bec88eb","x":"zbAgkjt3idVj2EMS.0Ebwp3OpymIN3P5e2wrIPW+1HPnPJcPiC//ocKCsDBBciYbcn93dn7j8lO8pGmZcGxxIHpuI3FgUZ7XuEIkezxtH6CvVx1Kn/NK6kB8y56F9GOfnvxc="},{"type":"choice","tag":"Tracing paper","q":"Tracing paper lets some light through. It is…","hint":"Think of frosted glass. Things look blurry through it.","opts":["opaque","translucent","transparent"],"h":"73f4eb76a9d05688fc7e","x":"rNZvUYlDmV6J/Wwv.Br+m0W8G1jJa8czV4oo0OjIsq2+zyF1zMRE74YWGFfLh0YZQddqoCy7RCj4EPir31fXiKZiskIMrYjNhpZTrrrhVjSfGc4jtaekQgkW/tfO3"},{"type":"choice","tag":"Rainbow a source?","q":"Is a rainbow a source of light?","hint":"Where does the light in a rainbow come from?","opts":["No. It is sunlight bent and reflected by raindrops.","Yes. It makes its own colours."],"h":"260d0b4e10bd820fc3c1","x":"GMO/GNjOpV9oKGqO.WVfQE+Y36jyzSclGkYlyQrGIjcnnXyha70e3bmAaGvnmMWwusKmYJreveC2gQ70ASJ2kQ7Ppf98OQa7Pb5wzuBq/YjiUJg9qJHjhNx2kTzY="},{"type":"match","tag":"Match the words","q":"Match each word to what it means.","hint":"Refraction and reflection sound alike. One bends, one bounces.","lefts":["refraction","reflection","white light","ROY G BIV"],"rights":["a mix of all colours","light bending","light bouncing off","the rainbow order"],"h":"433f2079f4828d061f6f","x":"RrGvsaL3eLoOXI2O.D/UABHlU9xSQCtIuvkjs5KXCjlo2OApHdMIMivjOWF7CCmQv4Kz8jMVyAObYI3k+UHlCdJod1SuECLxG2iiZqzE="},{"type":"choice","tag":"Afternoon rainbow","q":"In the late afternoon, the Sun is in the west. Where should Glow look for a rainbow?","hint":"Where must the Sun be when you see a rainbow?","opts":["east","straight up","west"],"h":"0328daeef8e12f06bc40","x":"ZhKmQyhhqokyWZm1.ktWi3Yl8F0jJGKl2lIbsW0l1SXbjqRwyPFYedFtrM0AcPud+i2hKw+4wIOW9ZyOgkfK6FJiXDVdIatwG+Q=="},{"type":"choice","tag":"Boss: rainbow and shadow","q":"Boss question! Glow sees a rainbow and his own shadow at the same time. Where is the rainbow?","boss":true,"hint":"Which way does a shadow point? Where must the Sun be for a rainbow?","opts":["next to the Sun","on the opposite side from his shadow","on the same side as his shadow"],"h":"a309ca4f92bab60750ac","x":"FKxWsp9xUqKFZbyf.7O1/iP9nw6liFdt9n/ZG/4/9lyFWrdPgtnAhNLO5daiPU2cAViERnZMeXCGCI1PMy3B8T4U73GpeSRs2IyRHqHQD3kYSmhv1PoOH6uneRtVDrfnrEv5oGiuhQhWsraQnmnDY5NIyXIl2QB0="}]}]};
+var DATA = {"id":"go-light4","title":"Light Explorer · Mission 4","badge":"Light Master","lessons":[{"title":"White light","color":"#2F80C9","cards":[{"type":"choice","tag":"Warm-up: see a tree","q":"Warm-up from Mission 3! How do we see a tree on a sunny day?","hint":"Is a tree a source of light? Which way does the light travel?","opts":["Our eyes send light out to the tree.","Sunlight reflects off the tree into our eyes.","The tree gives out its own light."],"h":"3333219fe9d20f1eaad6","x":"IXcSxhrih9yUNork.TGeFjum3ulztSqHzWkgaENBGGu9y8i7fQiDEMakzD8l8HyfBVXkZKfEo81bdAICxnjpt6yBF/+ytGc+6zrbmD00J4z9GMa4NLWMn1bV3TPzjexAT8vPkOXAPvVr3"},{"type":"choice","tag":"Warm-up: darker shadow","q":"Ben puts a glass of water and a book in the sunlight. Which one makes the darker shadow?","hint":"Which one lets no light through at all?","opts":["the book","the glass of water"],"h":"1aca574814d8b40a3c1e","x":"Bx4BAq0sTh8DlfKq.ATtRg5vayLM7Rh69n+6pljGLLBLpOwG3bc/l05b5z08i3Zl/A5DdjMJ9G5FHiOvcDMltwf5dMTAwkX+xkiN7n9450DBl4Ew+9t6/tDwYwkFO"},{"type":"teach","title":"The white light mystery","pic":"wheel","text":"Sunlight looks white. But white light is really a <b>mix of many colours</b>! Tap the colour wheel to spin it.","tap":"Spinning fast, the colours mix together again in our eyes."},{"type":"choice","tag":"White light is…","q":"White light is…","hint":"Remember what happened when the wheel spun.","opts":["a mix of colours","just one colour","red light"],"h":"d695c55911cf5d248a34","x":"B8j7w+dvDdpqYCDd.6KIXt6wT0STcIl31jiB51E17rwcjm5Z4RgjCVOm8ZoS+fXhGvD6BCfRGU2ooT0la4oG5/rq6I8ZenV2q1nnEyTX0+lno"},{"type":"choice","tag":"Spinning wheel colour","q":"Ploy paints the 7 rainbow colours on a wheel and spins it very fast. What colour does it look?","hint":"What happens when all the colours of light come back together?","opts":["almost white","black","rainbow stripes","red"],"h":"addc01080520ad14960c","x":"y0/0HKuiafpLzopy.jLK+EKdq1U2p6GZ35kUHZetj0xvm4aH8PrWGasxnqsdSgSNp9TNkzpZ4L39LTBXXM0TDf8BzELWXreoCNhDKr6WTUPWMvRKx+C8G52OAfg4Bi4Mt5xhgjmOfHKA="},{"type":"choice","tag":"Mali: no colours","q":"Mali says, \"Sunlight has no colours in it.\" What is the best answer?","hint":"Think about what you see in a rainbow.","opts":["No. A rainbow shows the colours hiding in sunlight.","Yes. Colours come only from paint.","Yes. Sunlight is only white."],"h":"d6bf9ef70df491138e85","x":"Qi9nGe1tOKeUg7WK.b59VXwL/XW88vPAgQ3VYm2dD1JY3DKRYhqy+DWa5yWWtIRRWXBGn2EfWjygU/2LetZGyvubhgMtizc38+o/GXMMq2+01Xc6KluVBakwSZMCsy46nd7esiesZtxO88933aeI="},{"type":"choice","tag":"T/F colours spread apart","q":"True or false? When the colours of light spread apart, we see white.","hint":"Do we see white when the colours come together, or when they spread apart?","opts":["False","True"],"h":"e970a5a70bc406e22a0c","x":"bHrVGk+WffOi0rXd.POG9A+QAaGRBpoAjKh2CEMkUIAidXo6QqrIRi3fUDmYcuSIPQ27kpEepthQB/s9LPGPRd+Z1UVy4yGHVG0Fu2dvmf13NktuywrcYqXMV3Q=="}]},{"title":"ROY G BIV","color":"#2E8B57","cards":[{"type":"teach","title":"Rainbow order","pic":"rainbow","text":"A rainbow always shows its colours in the <b>same order</b>. Scientists remember it with a funny name: <b>ROY G BIV</b>! Tap each band.","tap":"Tap every band, then say the names out loud."},{"type":"order","tag":"Order the 7 colours","q":"Put the rainbow colours in order, from the outside (top) to the inside.","hint":"Say ROY G BIV out loud. Each letter is the first letter of a colour.","tiles":["blue","green","indigo","orange","red","violet","yellow"],"h":"a26950d7d8ec8d40a026","x":"sgxwr2ytZh1hgjLp.j8/O4aPR9bw/J70IR0DAsYs5azPmit9aXEfh6cd9UyQ2DrPUbFi6Arj8+YTtjioDYsxjWlgaV1jGsLKWZiXh6bcxBjWPKTJhnkzxYw=="},{"type":"choice","tag":"Between green and indigo","q":"Which colour comes between green and indigo?","hint":"Find G and I in ROY G BIV. What is between them?","opts":["blue","orange","violet","yellow"],"h":"d5988786b30079ec2ca4","x":"JqAYTsaovecNbHHN.9dpxk1cnVSuq2uluRqnF01PGCskegNGn0vuXo4UzrdZCBzfmFid+RyZJagrZ"},{"type":"choice","tag":"Colour at the top","q":"Which colour is on the outside, at the very top of a rainbow?","hint":"Which letter starts ROY G BIV?","opts":["green","red","violet"],"h":"b47a7a30d55e8557607d","x":"vQAcLSEaI9qdqmr6.F+O6NLg+0K8Nmv9CxA22Ws57ecIilAh74q2OsVQKcMlPk90a+Kv0BosRT59DN2MbUnaeZDB5EpDH31yQtTc3IuZrOlxTqzthcrs="},{"type":"choice","tag":"Colour at the bottom","q":"Which colour is on the inside, at the bottom of a rainbow?","hint":"Which letter ends ROY G BIV?","opts":["red","violet","yellow"],"h":"7e01e9c6d4c1eccd378e","x":"C3FtFlUTz2XzhyXB.pFwWfYr2exYUT2SCamNwGdV2LYFx+n8xN/Q1pY1akdgZF2CalSaZy3giySrp3dafXio+e8EWKVh9URsY80qz3QjlA/x5vHXxFRwH"},{"type":"choice","tag":"Ben's two mistakes","q":"Ben writes: red, yellow, orange, green, blue, violet, indigo. What must he change?","hint":"Check his list against ROY G BIV one letter at a time.","opts":["Nothing. It is correct.","Swap green and blue.","Swap red and violet.","Swap yellow and orange, and swap violet and indigo."],"h":"afcda1985352f97ca502","x":"SBSb0mJOGFgmAYkF.vDMGBijTvgN0JYcrfXvKAQYZUIWmBQSBios5dh57E0yGumH6XUUFtvwpBDbpRenBbRQ7gHMtHhM2db56Bm/P0zmKeizTcU0Srk8inYYolaqKtluP"},{"type":"choice","tag":"I = ?","q":"What does the I in ROY G BIV stand for?","hint":"It is a colour between blue and violet.","opts":["ice","indigo","ink"],"h":"97ccbff162d010857b6d","x":"/LWWPWdIUBC2ETNe.DONKjpVkF39L4xlchRuKZNYoogOCwrsOlrXVFqhMZqYtUpZ+8UIVYD53Rxf9u9bFWgqUIB0cBl9gAswePM/1pe09//b7SV+WsXEkoX8="}]},{"title":"Prism and bending light","color":"#7B61C9","cards":[{"type":"teach","title":"Prism power","pic":"prism","text":"A <b>prism</b> is a block of clear glass. When white light goes into a prism, the light <b>bends</b>. Tap the torch!","tap":"Look at the colours. Which one bends the most?"},{"type":"choice","tag":"Prism and white light","q":"What happens to white light in a prism?","hint":"Look again at the torch picture.","opts":["It bends and splits into colours.","It makes new colours that were not there.","It stops.","It turns black."],"h":"c80ee092e9f19fdcbfc9","x":"oQOsUqWqq3H6nFn3.Hb0RK3K3l7W6N2mOaco0Vt2k0ExpbBNQf0GKIegfbQ/870u0BD+7qyESNWcZA1WNbGnObDZJw3Yy1AynNJliDIEuYchMy+xYqxyVDkGXVPTsUw=="},{"type":"choice","tag":"Bends the most","q":"Which colour bends the most in a prism?","hint":"Look at the bottom of the fan of colours.","opts":["green","red","violet"],"h":"cefc625248d143bbc941","x":"nCEQ25jIaL4Ehij8./GWGdkripUL69CQSXg49ksvJ30MH8ch7EvXvWk6J5H29KWlzha9Pk9L6/c5/uXCfEJtCnZ/zRxPZId8="},{"type":"choice","tag":"T/F prism makes colours","q":"True or false? A prism makes new colours that were not in the light.","hint":"Where were the colours before the light went in?","opts":["False","True"],"h":"e6153be65ec3de8c797d","x":"LdpgOz2Mo1UPWdoe.M70LoDszbBIi5G7q7cAfvjWlyjJ0sqiGRihLsVuMc0ZsSGIZKVT/6ZoMY3c8lkhRfCoT59SvSLjJFBf2ADC8Zm2rhn885hjvW6TNMsrx0Pkj+8TmeiyRMBpCGg=="},{"type":"teach","title":"Bending light","pic":"bend","text":"Light travels in straight lines. But when light goes from air into <b>water</b> or glass, it changes direction. This bending is called <b>refraction</b>. Tap the picture.","tap":"See how the light changes direction at the water."},{"type":"choice","tag":"Straw in water picture","q":"Brooke puts a straw in a glass of water. Which picture shows what she sees?","hint":"Try it with a real glass of water if you can!","opts":[{"k":"s1","pic":"straw1"},{"k":"s2","pic":"straw2"},{"k":"s3","pic":"straw3"}],"h":"45b46a60f391b9e3bac7","x":"lSrNgT1EMObftvwx.X9v9WmBnYJmWp1S2l44Fb/XstJuMcA3FCUaF/uL4/w6W/vb7p8e9ZH7IFW0dppFJIkYDM/+QPhXAKZ5Zd9GewVgq"},{"type":"choice","tag":"Why the straw looks broken","q":"Why does the straw look broken?","hint":"What did you learn about light going between water and air?","opts":["Light bends when it comes out of the water.","The straw melts.","The water breaks the straw.","Water stops all the light."],"h":"041df035666fba1a2257","x":"QUIz80NAuolV1MfO.4TYAXtEZuy+UzAbAEthKDJ6REi0efLvgGvS9XQQSzK7vO3ZW4B62VI6kC8EE+MO8V6ib8FITSUpvP+c5aozAnFtBGw=="}]},{"title":"How a rainbow is made","color":"#E8962E","cards":[{"type":"teach","title":"Tiny prisms","pic":"drop","text":"Each <b>raindrop</b> works like a tiny prism! Tap the raindrop to follow the light.","tap":"In, bend, bounce off the back, bend out. Then the colours spread."},{"type":"order","tag":"Rainbow steps in order","q":"Put the steps in order.","hint":"Follow the light from the Sun to your eyes.","tiles":["Sunlight shines into the raindrops.","The coloured light comes out to our eyes.","The light bends and splits as it goes in.","The light bounces off the back of each drop."],"h":"0891d03ae63f436e9400","x":"HDiqh/bye+z0qa9z.623jMTjLybHpiHQAS+3dxTkg9eN+hl4RG3WnrcZqSRRmLzH/tSzrVi6qNNU2O3NtqYpwdzQxLEzEAMjavbL+ZOb8KisF"},{"type":"choice","tag":"Where is the Sun?","q":"To see a rainbow, where must the Sun be?","hint":"The light goes into the drops and bounces back. Where does it come back to?","opts":["behind you","in front of you","right above the rain"],"h":"dfb17bd2cad5957c92b2","x":"KyODTLq2eOkkd22p.KS7VOJuPIHuCf7iHHFMGW/6bdr9xrQcnaxkPDlaeE8JkLYGneo2MhQkFnvmMXU1rgj3q7kee0yUw3cNg812Bu8VMt1aFfAIKB8FYuLGne/YdvKH0gJ+9UKExnA4YKK//7ECn2w=="},{"type":"choice","tag":"No rain, no rainbow","q":"Why can't we see a rainbow on a sunny day with no rain?","hint":"What works like a tiny prism?","opts":["Rainbows only come at night.","The Sun is too bright.","There are no raindrops to bend and split the light."],"h":"d6274e681a8cff84dae7","x":"QbU8HGlVK6qBMATL.e3KYRMct9mRyvapuw/8bE4w+LykiJ6pfAXv48kPWeHHMwVD23YCdC6NSYhRrC9HGDvlG6tqBYQ=="},{"type":"choice","tag":"Garden hose","q":"Mali makes a rainbow with a garden hose on a sunny afternoon. How should she stand?","hint":"Where must the Sun be to see a rainbow?","opts":["facing the Sun","with her back to the Sun"],"h":"2ae802cf02848d1bb76c","x":"x0Xa/bB4IChe9Jtk.DhB4xcaATQOyNFLMRf75Fo6JMnXZXup2okOtxqhVo7S2ODm5Of2VLOHgU8fgCvxVdWtRFVTnyhm09XrnVBZY/nNMikfjyOzNeKvvrNN1zg=="},{"type":"choice","tag":"Mirror in water","q":"Ben puts a mirror in a tray of water. He shines a torch on the mirror under the water. What appears on the white wall?","pic":"tray","hint":"The water does the same job as a raindrop.","opts":["a dark shadow","a small rainbow","nothing"],"h":"749c280394fdb6c5b879","x":"mPFyc5RAatObdDKd.lAsEc7vazZbUEW0wqSeI3YUlDsnHakYsLSqSZGNNWoMh/I+SxN0xMu+t4SWcLCKmIisZZDOUu7/0gQPI17EizbXDCNt2rw=="},{"type":"teach","title":"Rainbows at night?","pic":"moonbow","text":"Moonlight shining on raindrops can make a <b>moonbow</b>! Remember, moonlight is only sunlight that the Moon reflects."},{"type":"choice","tag":"Moonbow fainter","q":"Why is a moonbow much fainter than a rainbow?","hint":"Where does moonlight come from? Is it bright or weak?","opts":["Moonlight is much weaker than sunlight.","Raindrops are smaller at night.","The Moon gives out blue light."],"h":"2588eacdaf47b2f3dd85","x":"4IBqq+Kx11KCs1KM.z4BVM2zj3Iq4SU2i9FijtMEgMHD2Bm34gEaV0YXlgL5cuYaclZ+KjvE00XmkNEIxZ7bqp+RCxrNaBnL0nO2Buf71qHKyiWAJVDpNpyw="},{"type":"choice","tag":"Dark rainy night","q":"A rainy night with no Moon and no lamps. Can you see a rainbow or a moonbow?","hint":"What do you need besides raindrops?","opts":["No","Yes"],"h":"224018f0f2928a50b34f","x":"7Hf94XpULnwxQ8xW.xE+oMYj+OD+MKS178M2yNUETi3FTrQXulDUovOPeKdtf"}]},{"title":"Whole unit + boss","color":"#C2557A","cards":[{"type":"choice","tag":"Source of light","q":"Which one is a source of light?","hint":"Which one makes its own light?","opts":["a firefly","a mirror","a white wall","the Moon"],"h":"d9f2575de97b786551d0","x":"0DQTml04RtgMpzHw.CpRbfG2iGu89wZFrUl+r3uBRXV6iwTizfw8bzIjX4Ri1CkDfpK5g/M3KZtP8uFfHm/APsSGuRRB4sQo0rXRsW/KSfD33pMq70uIyYATGbSmd"},{"type":"choice","tag":"How a shadow forms","q":"How is a shadow formed?","hint":"Remember Mission 2. How does light travel?","opts":["An opaque object blocks light that travels in straight lines.","Light bends around the object.","The object gives out dark light."],"h":"8e010cdd0e570bec88eb","x":"PvfrpjCAJsDjV2OU.L5y4bjeOuLArp+CSGKqaHdBXyhnHoG+zzpEVZfA1XEd7ZXFJP37vQes8Wha4d+EtDAsLA2164oSLi2dTLwSWr3yJE/ykR1WoTNXcOagXKMXVvLXGOTE="},{"type":"choice","tag":"Tracing paper","q":"Tracing paper lets some light through. It is…","hint":"Think of frosted glass. Things look blurry through it.","opts":["opaque","translucent","transparent"],"h":"73f4eb76a9d05688fc7e","x":"+vqd+TmduFRhj6JS.XKWkDYezAe15PXdjizFozmbins8gOZ2PhjckaWJI0jIJriV0TUUEvSbDT7bcjzst33uAD16CcjEZpINRJJP91YOlVccLYUXYqatdmiZx3Wzq"},{"type":"choice","tag":"Rainbow a source?","q":"Is a rainbow a source of light?","hint":"Where does the light in a rainbow come from?","opts":["No. It is sunlight bent and reflected by raindrops.","Yes. It makes its own colours."],"h":"260d0b4e10bd820fc3c1","x":"pdQhGDBdWHSS6BGC.dVf/NIyKCaL7zaqCAcQVBPbwf8GYktquye5CslOxNzIK1NrcXXTqe8xXfz2qFbR6M/OU5QAuMfxW2TC4+hQi1pySg1986A7noaiAj93qalw="},{"type":"match","tag":"Match the words","q":"Match each word to what it means.","hint":"Refraction and reflection sound alike. One bends, one bounces.","lefts":["refraction","reflection","white light","ROY G BIV"],"rights":["a mix of all colours","light bending","light bouncing off","the rainbow order"],"h":"433f2079f4828d061f6f","x":"se9LQuLEURWFUVkr.SF++2OJHAOuJjjQOu1xf/eg/prCONi1eOW6xEW7PXIG9bNJaPhPr1ttgxrHcM3A55ahkhsOZOHSv/ZI/Vndn/EI="},{"type":"choice","tag":"Afternoon rainbow","q":"In the late afternoon, the Sun is in the west. Where should Glow look for a rainbow?","hint":"Where must the Sun be when you see a rainbow?","opts":["east","straight up","west"],"h":"0328daeef8e12f06bc40","x":"nF4GIFlk5/WTHM7b.QxkgVhr+Wjg5xUjvgKe21DgrJoaCfFBFSf4ci4lAw3UJjiKizvhN9/NBWgsMsVGz/BpemWq2F841vo9tVg=="},{"type":"choice","tag":"Boss: rainbow and shadow","q":"Boss question! Glow sees a rainbow and his own shadow at the same time. Where is the rainbow?","boss":true,"hint":"Which way does a shadow point? Where must the Sun be for a rainbow?","opts":["next to the Sun","on the opposite side from his shadow","on the same side as his shadow"],"h":"a309ca4f92bab60750ac","x":"QkgbwsMxKmtbGP8d.fqgfRW+cVaRtq/PtiwzHg0LVczN4tl4cdi9qRemrN9IUKFcrGXifXInDtP+EgO/HADXTrTm9yaUGPkJk+orVcA4KUpTWKmrHviva13Sz36SMlRkV5d2Ib6QgZA1hodVYNkeDJsxNEbGbLSM="}]}],"key":"pvETfY0ZnIbLUwEN5DgxRg==.aE+fLy5I5vjL6CqW.AyJg0+gzT8TSjGprD12yHzOciTqsBSYfcrSpOUP0Bz62GgxaWsCozaIRwW5Nt6nwMP5v7PSSldaB1fpDsRpChkKp2ZANSvint+iLvredbCBLhTDYcZiFM/fX1snE711i5wxXJl1DhD0FDxQQkePN2mkPiD7Erq0uppHGBOXGq1Elikv4VS7IHd4gOABy2W1tHo60EtW4NpAqFMfGqGZ2O+8jyn3c3eeS6Fj/AlRNrbGTLVrUbP7eh45VpEV1MXb0U02+Tba3o4vXpWNtt6Qus/OQrsGziKiohLWWkExMMuJVzT6bYbwKrZmLxGoMycCAW0+SvinIq+RQUcLSDaMVoviRzbhjF/SZyBzoWZYi3ViYsL+ecLKbY9W6eO/u/6OAwL13mHW9LMDidiiSckFzi1PyVYkiFZKg13V9F9vjpKK5zbkzllqlq4thIGi7XRIshA4PpCa2BPXX4DQOT8vuE6fBXeIUBg+GoM9c/+246HRr+gAsUc3LJyzuCZ+lhBzsCFCU5gEFzYTUoUz3D6iP7csc1eQ8VvB1z9UrTy6G1a+wt54JPgn8pk3hCXFdIT+ki5KgqGqP9nO7MsogNo22thdWaDicUlLXKqsgkb9lcAq18CIxR9qbcjraiVLEMRfSXa41tVQIPUbCye3UbQb0tYXwKAwch/Av8L5y69SXPBNNlWW86WL9x9+EZzCM3wO80YmxKURWBw6nA4oA6JxWaIk3uMfsjCTTS5QQPuJ6hlrEhc2Xk07By4LN4/qX46zEiSbYrR8KmB7gtDLgKub/jIAELNXq1r5EfODctf4EwrN2YOtiGZh83cuWsZUqHzlIyd/MF6KB2SDl3sbzMzCkIe0kAa7MI62cTjlqgebX1As37o9Yuk3w+Yndh7RGQoSk4WcOG/auLsnV96hFlW7GifRlNS3WP7LC2MFOu4du9xahi2EPu+PC7dWzjTKr7ggt+RP88aNmJG84U5SiPlxJu+vBhW8yfTSqCZ7xmCPScyS4blP9Qec1YiFr4qK1O7TPJxBYB5DVvzAARSZTr7zXozk7pQDNP776erWVEeEpqc3gVQR6xLw14LbyVjbmpXkmPclNkkwQWJLob1Pa8zJbTC29lH7Zk8l681ysgvw1sd93PndZIwoy3teyIZcIHyzdcmaJTAzhUDuDE21iKEUKPwi7ioSIXAGmZOu34b9gJ1nWz+50Ec0MDGgdpGegx/O2XFMgQqqSY9vmrQKONYL0ie9KekrFHfEZYnwTag2epbvCahAOfNVE8pXYzcrWEoErX/FOGg1qXc/lyVRY7dt1k7JI8biMKKVvZC++1ZELptqi298roaX3bsTeNmcT+UAdo19IINx0dfZqssKC5ZuoBwzyLsupGWZdfGI2c66ppT/OQZHuvbXX7eoM7zQwWq9S0P7MivIcIijMdY+J9Z1l0Qs23OyOogLP1Xn4mP24vr8mz8+Io+6sy7lDWoWp4alN7u+bTriMqBTodp01VApyDB1KiKY75g8ws+bXK2GxwgQqOqHQvTpfUpd8E/gGE2LO+3vBZEYXWxAoKZsGqtehdWHCpSSJl1CacNWIc/HYWXHUt8Cd5/s+4zm7lDhOdGKWP6SpMveEXyCBJo4nRwpvQd8KGyA="};
 var SHEET_URL = "https://script.google.com/macros/s/AKfycbyq7E1RkdI8pARED-cN4XAHeqRNx9BlQMwoY5AYiXF1_MjdPVoosxA7oefBbxgHky0/exec"; // = SHEET_URL in src/data/catalog.ts
 var $ = function (id) { return document.getElementById(id); };
 var ROY = ["#E53935","#FB8C00","#FDD835","#43A047","#1E88E5","#3949AB","#8E24AA"];
@@ -254,7 +307,7 @@ var TAPS = {
 };
 
 /* ---------- screens ---------- */
-function show(id) { ["scrName", "scrPath", "scrLesson", "scrDone"].forEach(function (s) { $(s).classList.toggle("hidden", s !== id); });
+function show(id) { ["scrName", "scrPath", "scrLesson", "scrDone", "scrTeach", "scrWatch"].forEach(function (s) { $(s).classList.toggle("hidden", s !== id); });
   $("foot").classList.toggle("hidden", id !== "scrLesson"); window.scrollTo(0, 0); }
 
 function nameScreen() {
@@ -304,6 +357,7 @@ function next() {
   setProg();
   if (!LS.queue.length) return finish();
   var it = LS.queue[0], c = it.c, h = "";
+  CUR_GET = null; if (LS.live) liveCur(it.id);
   if (c.type === "teach") {
     h = '<h2>' + esc(c.title) + '</h2><div class="say"><div class="me">' + GLOW + '</div><div class="bub">' + c.text + '</div></div>';
     if (c.pic) h += '<div class="pic' + (TAPS[c.pic] ? " tap" : "") + '" id="pic">' + PICS[c.pic]() + '</div>' + (TAPS[c.pic] ? '<div class="tapme">Tap the picture</div>' : "");
@@ -318,11 +372,12 @@ function next() {
   h = '<div class="tag' + (c.boss ? " boss" : "") + '">' + (it.tries ? "Try again" : c.boss ? "Boss question" : c.type === "order" ? "Put in order" : c.type === "match" ? "Match" : "Choose") + '</div><div class="q">' + esc(c.q) + '</div>';
   if (c.pic) h += '<div class="pic">' + PICS[c.pic]() + '</div>';
   $("card").innerHTML = h + '<div id="ans"></div>';
-  var getCanon = ({ choice: renderChoice, order: renderOrder, match: renderMatch })[c.type](c, $("ans"));
+  var getCanon = CUR_GET = ({ choice: renderChoice, order: renderOrder, match: renderMatch })[c.type](c, $("ans"));
   foot("", "", "Check", false);
   $("act").onclick = function () { check(it, getCanon()); };
 }
-function ready(on) { $("act").disabled = !on; }
+var CUR_GET = null, SELHOOK = null;
+function ready(on) { $("act").disabled = !on; if (SELHOOK) setTimeout(SELHOOK, 0); }
 
 function renderChoice(c, box) {
   var pics = typeof c.opts[0] === "object", sel = null;
@@ -361,7 +416,7 @@ function renderMatch(c, box) {
     ready(Object.keys(pair).length === c.lefts.length);
   }
   draw();
-  return function () { return c.lefts.map(function (t, l) { return t + "=" + rights[pair[l]]; }).join("|"); };
+  return function () { return c.lefts.map(function (t, l) { return t + "=" + (pair[l] != null ? rights[pair[l]] : "?"); }).join("|"); };
 }
 
 var OKIC = '<span class="ic"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#2E8B57" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
@@ -371,6 +426,7 @@ function check(it, canon) {
   $("act").disabled = true;
   hashOf(it.id, canon).then(function (h) {
     $("card").querySelectorAll("button").forEach(function (b) { b.disabled = true; });
+    if (LS.live) liveRecord(it.id, canon, h === it.c.h);
     if (h === it.c.h) {
       var gain = it.tries ? 5 : 10; LS.xp += gain; if (!it.tries) LS.first++;
       return unlock(it.id, canon, it.c.x).then(function (why) {
@@ -395,7 +451,7 @@ function finish() {
   if (all && (!prev || LS.i === DATA.lessons.length - 1)) h += '<div class="badge pop">' + badgeSvg("#E8962E", true) + '</div><h2>You are a ' + esc(DATA.badge) + '!</h2><p>You finished every lesson of the Light unit.</p>';
   h += '<button class="btn" id="back">Continue</button>';
   $("scrDone").innerHTML = h; show("scrDone");
-  $("back").onclick = pathScreen;
+  $("back").onclick = LS.live ? liveWait : pathScreen;
 }
 
 /* ---------- results to Teacher View (one line per lesson) ---------- */
@@ -413,9 +469,322 @@ function send() {
     .catch(function () { S.sendErr = true; save(); });
 }
 
+/* =====================================================================
+   LIVE CLASS (3 screens). View 2026-11-09:
+   #live  = student phone: the exercises, one part (lesson) or one card at a time, as the teacher opens them
+   #teach = show screen (share this one): controls the session and the phones, big card + pen. No answers, no password (View 2026-11-09):
+            it signs in anonymously and writes its controls to live/<CLS>/<its uid>; #watch (teacher account) passes them on to the phones,
+            so #watch must stay open during class
+   #watch = hidden screen: sees everything the student does (what she is tapping now, every answer) + the answer key
+   Firebase Realtime DB over REST (rules: tools/firebase-rules.json, the same as the live sheet classes):
+     live/<CLS>/<uid> = {n, at, cur: card id on screen, sel: what is picked right now, a: {cardId: {f, ok1, ok, tries, v, at}}}  student writes own
+     live/<CLS>/<showUid> = {show: 1, ctl: {mode, li, pos, at}}                                                       the show screen writes own
+     back/<CLS>/<uid> = {mode: "wait"|"one"|"part", li, pos}  #watch writes, student reads own; back/<CLS>/now = the session
+     back/<CLS>/<showUid> = {dots: [{n, a: answered this card, t: on this card}]}  #watch writes, the show screen reads (no right/wrong)
+   Answer key for #watch: DATA.key, AES-GCM with a key from the key password (PBKDF2), password kept outside the repo.
+   ===================================================================== */
+var FB = { key: "AIzaSyClZhItG5C3aaz413ToeXPDKzh6Aw5y9CU", db: "https://scitem-live-default-rtdb.asia-southeast1.firebasedatabase.app" }; // = FIREBASE in src/data/catalog.ts
+var FB_TEACHER = "teacher@scitem.net", CLS = DATA.id.replace(/[^a-z0-9]/gi, ""), MODE = (location.hash.match(/^#(live|teach|watch)/) || [])[1] || "";
+var AUTH = null, AKEY = CLS + "-auth-" + MODE;
+function fbPost(url, body, form) {
+  return fetch(url, { method: "POST", headers: { "Content-Type": form ? "application/x-www-form-urlencoded" : "application/json" }, body: form ? body : JSON.stringify(body) })
+    .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error((j.error && j.error.message) || "HTTP " + r.status); return j; }); });
+}
+function authSet(a) {
+  AUTH = { uid: a.localId || a.user_id, id: a.idToken || a.id_token, rt: a.refreshToken || a.refresh_token, exp: Date.now() + 1000 * (+(a.expiresIn || a.expires_in) || 3600) };
+  try { localStorage.setItem(AKEY, JSON.stringify({ uid: AUTH.uid, rt: AUTH.rt })); } catch (e) {}
+  return AUTH.id;
+}
+var authP = null;
+function token() {
+  if (AUTH && AUTH.exp > Date.now() + 120000) return Promise.resolve(AUTH.id);
+  return authP || (authP = token1().finally(function () { authP = null; }));
+}
+function token1() {
+  var old = AUTH; if (!old) try { old = JSON.parse(localStorage.getItem(AKEY) || "null"); } catch (e) {}
+  var fresh = function () {
+    if (MODE !== "watch") return fbPost("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=" + FB.key, { returnSecureToken: true }).then(authSet);
+    var pw = prompt("รหัส Firebase ของ " + FB_TEACHER + " (รหัสเดียวกับจอ #live ของห้องเรียนสด)");
+    if (!pw) return Promise.reject(new Error("no password"));
+    return fbPost("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + FB.key, { email: FB_TEACHER, password: pw.trim(), returnSecureToken: true }).then(authSet);
+  };
+  if (old && old.rt) return fbPost("https://securetoken.googleapis.com/v1/token?key=" + FB.key, "grant_type=refresh_token&refresh_token=" + encodeURIComponent(old.rt), true).then(authSet, fresh);
+  return fresh();
+}
+function fbUrl(root, path, tok) { return FB.db + "/" + root + "/" + CLS + path + ".json?auth=" + encodeURIComponent(tok); }
+function fbWrite(method, root, path, data) {
+  return token().then(function (t) { return fetch(fbUrl(root, path, t), { method: method, body: JSON.stringify(data) }); })
+    .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); net(""); }).catch(function (e) { net("ส่งไม่ได้ (" + e.message + ") ลองใหม่…"); });
+}
+function pathSet(tree, path, data) {
+  var ks = path.split("/").filter(Boolean);
+  if (!ks.length) return data && typeof data === "object" ? data : {};
+  var o = tree; ks.slice(0, -1).forEach(function (k) { if (!o[k] || typeof o[k] !== "object") o[k] = {}; o = o[k]; });
+  var last = ks[ks.length - 1]; if (data == null) delete o[last]; else o[last] = data; return tree;
+}
+function fbStream(root, path, onChange) {
+  var es = null, tree = {};
+  var go = function () {
+    if (es) es.close();
+    token().then(function (t) {
+      var me = es = new EventSource(fbUrl(root, path, t));
+      var on = function (ty, fn) { me.addEventListener(ty, function (ev) { if (me === es) fn(ev.data ? JSON.parse(ev.data) : null); }); };
+      on("put", function (d) { tree = pathSet(tree, d.path, d.data); onChange(tree); });
+      on("patch", function (d) { var b = d.path.replace(/\/+$/, ""); Object.keys(d.data || {}).forEach(function (k) { tree = pathSet(tree, b + "/" + k, d.data[k]); }); onChange(tree); });
+      on("auth_revoked", function () { AUTH.exp = 0; go(); });
+      on("cancel", function () { me.close(); net("อ่านไม่ได้: เช็ค Rules ใน Firebase"); });
+      me.onopen = function () { net(""); };
+      me.onerror = function () { net("หลุด กำลังต่อใหม่…"); };
+    }, function (e) { net("ต่อไม่ได้ (" + e.message + ")"); setTimeout(go, 5000); });
+  };
+  go();
+}
+function net(t) { var n = $("net"); if (n) { n.textContent = t; n.classList.toggle("hidden", !t); } }
+function cardAt(pos) { var p = String(pos || "").split("-"), L = DATA.lessons[+p[0]]; return L && L.cards[+p[1]] ? { li: +p[0], ci: +p[1], c: L.cards[+p[1]], id: pos } : null; }
+function smallPic(c, k) { var o = (c.opts || []).filter(function (o) { return o.k === k; })[0]; return o ? '<span class="mpic">' + PICS[o.pic]() + '</span>' : esc(k); }
+function pickHtml(c, v) {   // a pick (or a half-done pick) as the teacher reads it
+  if (v == null || v === "") return '<span class="hint">—</span>';
+  if (c.type === "choice") return typeof c.opts[0] === "object" ? smallPic(c, v) : esc(v);
+  if (c.type === "order") return String(v).split("|").map(esc).join(" → ");
+  return String(v).split("|").map(function (p) { return esc(p.replace("=", " = ")); }).join("<br>");
+}
+
+/* ---------- student phone ---------- */
+var LIVE = { mine: {}, ctl: {}, uid: "" }, selT = null;
+function liveCur(id) { if (MODE === "live" && AUTH) fbWrite("PATCH", "live", "/" + AUTH.uid, { cur: id, sel: "", at: Date.now() }); }
+function liveRecord(id, canon, ok) {
+  var prev = LIVE.mine[id] || null;
+  var rec = { f: prev ? prev.f : canon, ok1: prev ? prev.ok1 : ok, ok: ok || !!(prev && prev.ok), tries: (prev ? prev.tries : 0) + 1, v: canon, at: Date.now() };
+  LIVE.mine[id] = rec; fbWrite("PUT", "live", "/" + AUTH.uid + "/a/" + id, rec);
+  return prev;
+}
+SELHOOK = function () {   // every tap goes to the hidden screen (at most 4 a second)
+  if (MODE !== "live" || !AUTH || !CUR_GET) return;
+  clearTimeout(selT); selT = setTimeout(function () { var v = CUR_GET(); fbWrite("PATCH", "live", "/" + AUTH.uid, { sel: v == null ? "" : v, at: Date.now() }); }, 250);
+};
+function waitHtml(t) { return '<div class="say" style="margin-top:30px"><div class="me">' + GLOW + '</div><div class="bub">' + t + '</div></div>'; }
+function liveWait() {
+  LS = null; CUR_GET = null; show("scrLesson"); $("quit").classList.add("hidden"); $("prog").parentNode.classList.add("hidden");
+  $("card").innerHTML = waitHtml("Hi " + esc(S.name) + "! Look at Teacher View's screen. Your next exercise will show up here.");
+  $("foot").classList.add("hidden"); liveCur("");
+}
+function liveStudent() {
+  document.body.classList.add("live");
+  if (!S.name) { nameScreen(); $("go").onclick = function () { S.name = $("nm").value.trim(); save(); liveStudent(); }; return; }
+  liveWait();
+  token().then(function () {
+    fbWrite("PATCH", "live", "/" + AUTH.uid, { n: S.name, at: Date.now() });
+    fbStream("live", "/" + AUTH.uid + "/a", function (t) { LIVE.mine = t || {}; });
+    fbStream("back", "/" + AUTH.uid, liveRoute);
+  }, function (e) { net("ต่อไม่ได้ (" + e.message + ")"); });
+}
+function liveRoute(t) {
+  t = t || {}; var old = LIVE.ctl; LIVE.ctl = t;
+  if (t.mode === "part") {   // a whole part: she works through it at her own pace
+    if (LS && LS.live && LS.i === +t.li && old.mode === "part") return;
+    startLesson(+t.li); LS.live = true; $("quit").classList.add("hidden"); $("prog").parentNode.classList.remove("hidden");
+    LS.queue.forEach(function (it) { var r = LIVE.mine[it.id]; if (r && r.ok) { it.skip = true; } });
+    LS.queue = LS.queue.filter(function (it) { if (it.skip) { LS.done++; return false; } return true; });
+    next(); return;
+  }
+  if (t.mode === "one" && t.pos) { if (old.mode !== "one" || old.pos !== t.pos) liveCard(); return; }
+  if (old.mode !== t.mode || !t.mode) liveWait();
+}
+function liveCard() {   // one card, the one the teacher is on
+  var k = cardAt(LIVE.ctl.pos); if (!k) return;
+  var c = k.c, rec = LIVE.mine[k.id] || null, h = "";
+  LS = null; CUR_GET = null; show("scrLesson"); $("quit").classList.add("hidden"); $("prog").parentNode.classList.add("hidden");
+  liveCur(k.id);
+  if (c.type === "teach") {
+    h = '<h2>' + esc(c.title) + '</h2><div class="say"><div class="me">' + GLOW + '</div><div class="bub">' + c.text + '</div></div>';
+    if (c.pic) h += '<div class="pic' + (TAPS[c.pic] ? " tap" : "") + '" id="pic">' + PICS[c.pic]() + '</div>' + (TAPS[c.pic] ? '<div class="tapme">Tap the picture</div>' : "");
+    $("card").innerHTML = h; $("foot").classList.add("hidden");
+    var pic = $("pic"); if (pic && TAPS[c.pic]) pic.onclick = function (ev) { TAPS[c.pic](pic, ev); };
+    return;
+  }
+  if (rec && rec.ok) { $("card").innerHTML = waitHtml("You got this one! Wait for the next card."); $("foot").classList.add("hidden"); return; }
+  h = '<div class="tag' + (c.boss ? " boss" : "") + '">' + (rec ? "Try again" : c.boss ? "Boss question" : c.type === "order" ? "Put in order" : c.type === "match" ? "Match" : "Choose") + '</div><div class="q">' + esc(c.q) + '</div>';
+  if (c.pic) h += '<div class="pic">' + PICS[c.pic]() + '</div>';
+  $("card").innerHTML = h + '<div id="ans"></div>';
+  var get = CUR_GET = ({ choice: renderChoice, order: renderOrder, match: renderMatch })[c.type](c, $("ans"));
+  foot("", "", "Check", false);
+  $("act").onclick = function () { liveCheck(k, get()); };
+}
+function liveCheck(k, canon) {
+  $("act").disabled = true;
+  var c = k.c, id = k.id, pos = LIVE.ctl.pos;
+  hashOf(id, canon).then(function (h) {
+    var ok = h === c.h, prev = liveRecord(id, canon, ok);
+    $("card").querySelectorAll("button").forEach(function (b) { b.disabled = true; });
+    if (ok) {
+      if (!prev) { S.xp += 10; save(); }
+      return unlock(id, canon, c.x).then(function (why) {
+        foot("ok", OKIC + '<div><h3>' + PRAISE[Math.floor(Math.random() * PRAISE.length)] + '</h3><p>' + esc(why) + '</p></div>', "Wait for Teacher View", false);
+      });
+    }
+    foot("no", NOIC + '<div><h3>Not quite</h3><p>' + esc(c.hint) + '</p></div>', "Try again", true);
+    $("act").onclick = function () { if (LIVE.ctl.pos === pos) { delete LIVE.ctl.pos; LIVE.ctl.pos = pos; liveCard(); } };
+  });
+}
+
+/* ---------- teacher screens ---------- */
+var ROOM = {};
+function allPos() { var out = []; DATA.lessons.forEach(function (L, li) { L.cards.forEach(function (_, ci) { out.push(li + "-" + ci); }); }); return out; }
+function students() { return Object.keys(ROOM).filter(function (u) { return ROOM[u] && ROOM[u].n && !ROOM[u].show; }); }
+function staticCard(c) {
+  var h = "";
+  if (c.type === "teach") {
+    h = '<h2>' + esc(c.title) + '</h2><div class="say"><div class="me">' + GLOW + '</div><div class="bub">' + c.text + '</div></div>';
+    if (c.pic) h += '<div class="pic' + (TAPS[c.pic] ? " tap" : "") + '" id="pic">' + PICS[c.pic]() + '</div>';
+    return h;
+  }
+  h = '<div class="tag' + (c.boss ? " boss" : "") + '">' + (c.boss ? "Boss question" : c.type === "order" ? "Put in order" : c.type === "match" ? "Match" : "Choose") + '</div><div class="q">' + esc(c.q) + '</div>';
+  if (c.pic) h += '<div class="pic">' + PICS[c.pic]() + '</div>';
+  if (c.type === "choice") { var pics = typeof c.opts[0] === "object";
+    h += '<div class="opts' + (pics ? " pics" : "") + '">' + c.opts.map(function (o) { return '<div class="opt">' + (pics ? PICS[o.pic]() : esc(o)) + '</div>'; }).join("") + '</div>'; }
+  if (c.type === "order") h += '<div class="bank">' + c.tiles.map(function (t) { return '<div class="tile">' + esc(t) + '</div>'; }).join("") + '</div>';
+  if (c.type === "match") h += '<div class="mgrid"><div class="mcol">' + c.lefts.map(function (t) { return '<div class="tile">' + esc(t) + '</div>'; }).join("") + '</div><div class="mcol">' + c.rights.map(function (t) { return '<div class="tile">' + esc(t) + '</div>'; }).join("") + '</div></div>';
+  return h;
+}
+
+/* show screen: controls the session and the phones. Shared in Zoom, so it never shows right or wrong. */
+function liveTeacher() {
+  document.body.classList.add("teach"); show("scrTeach");
+  var list = allPos(), ST = { mode: "wait", li: 0, pos: list[0] };
+  try { ST = JSON.parse(localStorage.getItem(CLS + "-ctl")) || ST; } catch (e) {}
+  $("tsel").innerHTML = DATA.lessons.map(function (L, i) { return '<option value="' + i + '">Part ' + (i + 1) + ": " + esc(L.title) + '</option>'; }).join("");
+  $("tsel").onchange = function () { ST.li = +this.value; ST.pos = this.value + "-0"; push(); };
+  $("tprev").onclick = function () { var i = list.indexOf(ST.pos); if (i > 0) { ST.pos = list[i - 1]; ST.li = +ST.pos.split("-")[0]; push(); } };
+  $("tnext").onclick = function () { var i = list.indexOf(ST.pos); if (i < list.length - 1) { ST.pos = list[i + 1]; ST.li = +ST.pos.split("-")[0]; push(); } };
+  document.querySelectorAll("[data-mode]").forEach(function (b) { b.onclick = function () { ST.mode = b.getAttribute("data-mode"); push(); }; });
+  document.addEventListener("keydown", function (e) { if (e.target.tagName === "SELECT") return; if (e.key === "ArrowRight") $("tnext").click(); if (e.key === "ArrowLeft") $("tprev").click(); });
+  var DOTS = [];
+  inkSetup(); draw();
+  token().then(function () {
+    fbStream("back", "/" + AUTH.uid, function (t) { DOTS = (t && t.dots) || []; dots(); });
+    push();
+  });
+  function ctl() { return ST.mode === "part" ? { mode: "part", li: ST.li, pos: ST.pos } : ST.mode === "one" ? { mode: "one", pos: ST.pos } : { mode: "wait", pos: ST.pos }; }
+  function push() {
+    try { localStorage.setItem(CLS + "-ctl", JSON.stringify(ST)); } catch (e) {}
+    draw();
+    var c = ctl(); c.at = Date.now();
+    if (AUTH) fbWrite("PUT", "live", "/" + AUTH.uid, { show: 1, ctl: c, at: c.at });
+  }
+  function draw() {
+    var k = cardAt(ST.pos), L = DATA.lessons[k.li];
+    $("tsel").value = k.li; $("tno").textContent = (k.ci + 1) + " / " + L.cards.length;
+    document.querySelectorAll("[data-mode]").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-mode") === ST.mode); });
+    $("tmode").textContent = ST.mode === "part" ? "Phones: Part " + (ST.li + 1) + ", own pace" : ST.mode === "one" ? "Phones: this card" : "Phones: waiting";
+    $("tcard").innerHTML = staticCard(k.c); inkClear();
+    var pic = $("pic"); if (pic && TAPS[k.c.pic]) pic.onclick = function (ev) { if (!INK.on) TAPS[k.c.pic](pic, ev); };
+    dots();
+  }
+  function dots() {   // who is here and whether they answered (from #watch): no right or wrong on the shared screen
+    var k = cardAt(ST.pos); if (!k) return;
+    $("tdots").innerHTML = DOTS.map(function (d) { return '<span class="sd' + (d.a ? " in" : "") + '">' + esc(d.n) + (k.c.type === "teach" ? "" : d.a ? " · answered" : d.t ? " · thinking" : "") + '</span>'; }).join("") ||
+      '<span class="sd">' + (AUTH ? "no phones yet (or the hidden screen is closed)" : "connecting…") + '</span>';
+  }
+}
+/* pen on the show screen: Apple Pencil / mouse draws; a finger still taps the pictures */
+var INK = { on: false, er: false, cv: null, cx: null, col: "#C62828", pen: false };
+function inkSetup() {
+  var cv = INK.cv = $("ink"), cx = INK.cx = cv.getContext("2d"), down = false;
+  function size() { var r = $("tstage").getBoundingClientRect(), d = window.devicePixelRatio || 1, h = Math.max(r.height, $("tcard").scrollHeight + 40);
+    cv.width = r.width * d; cv.height = h * d; cv.style.height = h + "px"; cx.setTransform(d, 0, 0, d, 0, 0); }
+  INK.size = size; window.addEventListener("resize", size); setTimeout(size, 50);
+  function pt(e) { var r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+  cv.addEventListener("pointerdown", function (e) { if (e.pointerType === "pen") INK.pen = true; if (e.pointerType === "touch" && INK.pen) return;
+    down = true; cv.setPointerCapture(e.pointerId); var p = pt(e); cx.beginPath(); cx.moveTo(p[0], p[1]); });
+  cv.addEventListener("pointermove", function (e) { if (!down) return; var p = pt(e);
+    cx.globalCompositeOperation = INK.er ? "destination-out" : "source-over"; cx.strokeStyle = INK.col; cx.lineWidth = INK.er ? 26 : 3.5; cx.lineCap = cx.lineJoin = "round"; cx.lineTo(p[0], p[1]); cx.stroke(); });
+  cv.addEventListener("pointerup", function () { down = false; });
+  $("tpen").onclick = function () { INK.on = !(INK.on && !INK.er); INK.er = false; tools(); };
+  $("ter").onclick = function () { INK.on = true; INK.er = !INK.er; tools(); };
+  $("tclr").onclick = inkClear;
+  document.querySelectorAll(".sw").forEach(function (b) { b.onclick = function () { INK.col = b.getAttribute("data-c"); INK.on = true; INK.er = false; tools(); }; });
+  function tools() { cv.style.pointerEvents = INK.on ? "auto" : "none"; $("tpen").classList.toggle("on", INK.on && !INK.er); $("ter").classList.toggle("on", INK.on && INK.er);
+    document.querySelectorAll(".sw").forEach(function (b) { b.classList.toggle("on", INK.on && !INK.er && b.getAttribute("data-c") === INK.col); }); }
+  tools();
+}
+function inkClear() { if (INK.cx) { INK.cx.clearRect(0, 0, INK.cv.width, INK.cv.height); if (INK.size) setTimeout(INK.size, 30); } }
+
+/* hidden screen: everything the student does + the answer key */
+var KEYS = null;
+function b64u(s) { return b64(s); }
+function openKey(pw) {
+  var p = DATA.key.split(".");
+  return crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"])
+    .then(function (k) { return crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64u(p[0]), iterations: 150000, hash: "SHA-256" }, k, { name: "AES-GCM", length: 256 }, false, ["decrypt"]); })
+    .then(function (k) { return crypto.subtle.decrypt({ name: "AES-GCM", iv: b64u(p[1]) }, k, b64u(p[2])); })
+    .then(function (b) { return JSON.parse(new TextDecoder().decode(b)); });
+}
+function keyHtml(id) { if (!KEYS) return '<span class="hint">ใส่รหัสเฉลยเพื่อดู</span>'; var c = cardAt(id).c, v = KEYS[id]; return v == null ? "" : pickHtml(c, v); }
+function liveWatch() {
+  document.body.classList.add("watch"); show("scrWatch");
+  var list = allPos(), BACK = {};
+  var askKey = function () {
+    var saved = ""; try { saved = localStorage.getItem(CLS + "-keypw") || ""; } catch (e) {}
+    var pw = saved || prompt("รหัสเฉลย (ดูได้ในไฟล์ของโปรเจกต์ light-mission4/phone)");
+    if (!pw) return;
+    openKey(pw.trim()).then(function (k) { KEYS = k; try { localStorage.setItem(CLS + "-keypw", pw.trim()); } catch (e) {} $("wkey").classList.add("hidden"); render(); },
+      function () { try { localStorage.removeItem(CLS + "-keypw"); } catch (e) {} if (!saved) alert("รหัสเฉลยไม่ถูก"); else askKey(); });
+  };
+  $("wkey").onclick = askKey; askKey();
+  function cardBlock(u, id, live) {
+    var k = cardAt(id); if (!k) return "";
+    var c = k.c, d = ROOM[u], a = (d.a || {})[id];
+    if (c.type === "teach") return '<div class="wcard"><div class="tag">Part ' + (k.li + 1) + ' · card ' + (k.ci + 1) + ' · teaching card</div><b>' + esc(c.title) + '</b></div>';
+    var st = !a ? "ยังไม่ส่ง" : a.ok1 ? "ถูกตั้งแต่ครั้งแรก" : a.ok ? "ถูกในครั้งที่ " + a.tries : "ยังไม่ถูก (ส่ง " + a.tries + " ครั้ง)";
+    return '<div class="wcard ' + (!a ? "" : a.ok1 ? "ok" : a.ok ? "fix" : "no") + '"><div class="tag">Part ' + (k.li + 1) + ' · card ' + (k.ci + 1) + ' · ' + st + '</div><div class="q">' + esc(c.q) + '</div>' +
+      (live ? '<div class="wl"><span>กำลังเลือก</span><div class="now">' + pickHtml(c, d.sel) + '</div></div>' : "") +
+      (a && !a.ok1 ? '<div class="wl"><span>ครั้งแรกเลือก</span><div>' + pickHtml(c, a.f) + '</div></div>' : "") +
+      (a && !a.ok ? '<div class="wl"><span>ล่าสุดเลือก</span><div>' + pickHtml(c, a.v) + '</div></div>' : "") +
+      '<div class="wl key"><span>เฉลย</span><div>' + keyHtml(id) + '</div></div>' +
+      (a && !a.ok1 ? '<div class="ex">อธิบายเรื่อง: ' + esc(c.tag) + ' · ' + esc(c.hint) + '</div>' : "") + '</div>';
+  }
+  function render() {
+    var now = BACK.now || {}, us = students(), h = '<div class="wsess">' + (now.mode === "part" ? "จอน้อง: Part " + (now.li + 1) + " ทำเอง" : now.mode === "one" ? "จอน้อง: ทีละข้อ ตามจอโชว์" : "จอน้อง: รอครู") + '</div>';
+    h += us.map(function (u) {
+      var d = ROOM[u], a = d.a || {}, done = list.filter(function (p) { return a[p]; }), first = done.filter(function (p) { return a[p].ok1; }).length;
+      var past = done.filter(function (p) { return p !== d.cur; }).sort(function (x, y) { return (a[y].at || 0) - (a[x].at || 0); });
+      return '<div class="wstu"><div class="wn"><b>' + esc(d.n) + '</b> ถูกครั้งแรก ' + first + '/' + done.length + ' ข้อ</div>' +
+        (d.cur ? '<div class="wh">ตอนนี้อยู่ที่</div>' + cardBlock(u, d.cur, true) : '<p class="hint">น้องรอครูอยู่</p>') +
+        (past.length ? '<details' + (past.length < 6 ? " open" : "") + '><summary>ข้อที่ทำแล้ว ' + past.length + ' ข้อ (ล่าสุดก่อน)</summary>' + past.map(function (p) { return cardBlock(u, p, false); }).join("") + '</details>' : "") + '</div>';
+    }).join("") || '<p class="hint">ยังไม่มีน้องเข้า (ให้น้องเปิดลิงก์ #live)</p>';
+    $("wbody").innerHTML = h;
+  }
+  var sent = {};
+  function relay() {   // the show screen's controls -> every phone; who answered -> the show screen
+    var shows = Object.keys(ROOM).filter(function (u) { return ROOM[u] && ROOM[u].show && ROOM[u].ctl; })
+      .sort(function (x, y) { return (ROOM[y].ctl.at || 0) - (ROOM[x].ctl.at || 0); });
+    if (!shows.length) return;
+    var c = ROOM[shows[0]].ctl, phone = c.mode === "part" ? { mode: "part", li: c.li } : c.mode === "one" ? { mode: "one", pos: c.pos } : { mode: "wait" }, batch = {}, sig;
+    sig = JSON.stringify(phone);
+    if (!BACK.now || BACK.now.at !== c.at) batch.now = c;
+    students().forEach(function (u) { if (sent[u] !== sig) { batch[u] = phone; sent[u] = sig; } });
+    var dots = students().map(function (u) { var d = ROOM[u]; return { n: d.n, a: !!(d.a && d.a[c.pos]), t: d.cur === c.pos }; }), ds = JSON.stringify(dots);
+    shows.forEach(function (s) { if (sent["s" + s] !== ds) { batch[s] = { dots: dots }; sent["s" + s] = ds; } });
+    if (Object.keys(batch).length) fbWrite("PATCH", "back", "", batch);
+  }
+  token().then(function () {
+    fbStream("live", "", function (t) { ROOM = t || {}; relay(); render(); });
+    fbStream("back", "", function (t) { BACK = t || {}; render(); });
+  });
+  $("wcopy").onclick = function () {
+    var lines = students().map(function (u) { var d = ROOM[u], a = d.a || {};
+      return d.n + "\n" + list.filter(function (p) { return a[p]; }).map(function (p) { var c = cardAt(p).c, r = a[p]; return (r.ok1 ? "✓ " : r.ok ? "~ " : "✗ ") + c.tag + (r.ok1 ? "" : " (first pick: " + r.f + ")"); }).join("\n"); });
+    if (navigator.clipboard) navigator.clipboard.writeText(lines.join("\n\n")); this.textContent = "คัดลอกแล้ว";
+  };
+  $("wclear").onclick = function () { if (confirm("ลบคำตอบทั้งหมดของห้องนี้ เพื่อเริ่มคาบใหม่?")) students().forEach(function (u) { fbWrite("DELETE", "live", "/" + u + "/a", null); }); };
+}
+
 load();
 document.title = DATA.title;
-if (S.name) pathScreen(); else nameScreen();
+if (MODE === "live") liveStudent();
+else if (MODE === "teach") liveTeacher();
+else if (MODE === "watch") liveWatch();
+else if (S.name) pathScreen(); else nameScreen();
 </script>
 </body>
 </html>

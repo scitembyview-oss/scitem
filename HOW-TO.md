@@ -79,8 +79,13 @@ npm run dev      # แล้วเปิด http://localhost:4321
 
 บทเรียนแบบ Duolingo ให้น้องทำในมือถือ 5 บท ตอบผิดจะได้คำใบ้ แล้วข้อนั้นจะวนกลับมาท้ายบท จบแต่ละบทจะส่งผลเข้าชีทครูเอง (ดูในหน้าครู หัวข้อ "Light Mission 4 บนมือถือ")
 ครูเปิด `scitem.net/light-m4-go/#open` เพื่อดูทุกบทโดยไม่ต้องทำตามลำดับ
+**เรียนสด 3 จอ** (ไปพร้อมครู):
+- มือถือน้อง: `scitem.net/light-m4-go/#live`
+- จอโชว์ (iPad แชร์จอ ไม่ต้องใส่รหัส): `scitem.net/light-m4-go/#teach` เลือก part แล้วกด "ทีละข้อ" (น้องเห็นข้อเดียวกับจอ เลื่อนด้วย ◀ ▶) หรือ "ทั้ง part" (น้องทำทั้ง part เอง) หรือ "พัก"; ปากกาเขียนบนจอได้
+- จอซ่อน (มือถือ/คอมครู): `scitem.net/light-m4-go/#watch` ใส่รหัส Firebase ครู กับรหัสเฉลยครั้งแรกครั้งเดียว เห็นน้องกำลังเลือกอะไร ส่งกี่ครั้ง และเฉลย **ต้องเปิดค้างไว้** เพราะเป็นตัวส่งคำสั่งจากจอโชว์ไปมือถือน้อง; ปุ่ม "เริ่มคาบใหม่" ล้างคำตอบเก่า
+
 แก้เนื้อหาที่ project files `worksheets/light-mission4/phone/content.mjs` (มีเฉลย ห้ามเอาเข้า repo) แล้วรัน
-`node tools/build-light-go.mjs <content.mjs> public/light-m4-go/index.html` แล้ว commit หน้าเว็บ
+`node tools/build-light-go.mjs <content.mjs> public/light-m4-go/index.html <รหัสเฉลย>` แล้ว commit หน้าเว็บ (รหัสอยู่ในไฟล์ `KEY-PASSWORD.txt` ข้าง content.mjs)
 
 ## สไลด์ Light Explorer · Mission 3 (scitem.net/light-p5-m3/)
 
