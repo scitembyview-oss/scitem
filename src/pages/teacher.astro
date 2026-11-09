@@ -183,8 +183,8 @@ const share = items.filter((it) => it.href && it.kind !== 'tool');
   }
   // Signs Check (public/signs-check/) is checked on the student's iPad and sends ready-made report lines
   const SIGNS_QUIZ = 'signs-1';
-  // Phone lessons (public/light-m4-go/): one text line per finished lesson, newest send has everything
-  const GO_TITLES: Record<string, string> = { 'go-light4': 'Light Mission 4 บนมือถือ' };
+  // Phone lessons (public/light-m3-go/, light-m4-go/): one text line per finished lesson, newest send has everything
+  const GO_TITLES: Record<string, string> = { 'go-light3': 'Light Mission 3 บนมือถือ', 'go-light4': 'Light Mission 4 บนมือถือ' };
   const score = (r: Row) => keys![r.quiz].questions.filter((q, i) => grade(q, r.answers[i] ?? '')).length;
   const when = (ms: number) => new Date(ms).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
 

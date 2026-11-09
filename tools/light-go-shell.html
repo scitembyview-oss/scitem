@@ -117,6 +117,7 @@ h2 { font-size:22px; margin:6px 0 10px; color:#3C3A8F; }
 .on path.fan { transition-delay:calc(var(--d) * 80ms + .3s); }
 .trace { stroke-dasharray:1; stroke-dashoffset:1; }
 .on .trace { transition:stroke-dashoffset 1.6s ease-in-out; stroke-dashoffset:0; }
+.dk .night { opacity:0; transition:opacity .6s; } .dk.off .night { opacity:1; }
 .band { cursor:pointer; }
 /* live mode */
 body.watch .wrap { max-width:640px; }
@@ -376,6 +377,147 @@ var TAPS = {
     el.querySelectorAll(".band").forEach(function (x) { x.setAttribute("opacity", x === b ? 1 : .55); });
   },
 };
+
+/* ---- Mission 3 pictures (how we see + light and materials) ---- */
+function eyeAt(x, y, s, look) {   // a realistic eye looking left (look=-1) or right (1)
+  var ir = gid("ir"); s = s || 1;
+  return '<g transform="translate(' + x + ' ' + y + ') scale(' + (s * (look > 0 ? -1 : 1)) + ' ' + s + ')"><defs><radialGradient id="' + ir + '" cx=".4" cy=".4"><stop offset="0" stop-color="#8FC1E8"/><stop offset=".6" stop-color="#3C7DB5"/><stop offset="1" stop-color="#1F4F7A"/></radialGradient></defs>' +
+    '<path d="M-22 0 Q0 -17 22 0 Q0 17 -22 0z" fill="#fff" stroke="#3B3B46" stroke-width="2"/><circle cx="-5" cy="0" r="8.5" fill="url(#' + ir + ')"/><circle cx="-5" cy="0" r="3.8" fill="#111"/><circle cx="-8" cy="-3" r="2" fill="#fff"/>' +
+    '<path d="M-20 -6 Q0 -21 20 -6" stroke="#3B3B46" stroke-width="2.4" fill="none" stroke-linecap="round"/></g>';
+}
+function bulb(x, y, on) {   // desk lamp bulb, glowing when on
+  var g = gid("bg"), c = gid("bc");
+  return '<defs><radialGradient id="' + g + '"><stop offset="0" stop-color="#FFF3B0" stop-opacity=".9"/><stop offset="1" stop-color="#FFE07A" stop-opacity="0"/></radialGradient>' +
+    '<radialGradient id="' + c + '" cx=".4" cy=".35"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".55" stop-color="#FFE57A"/><stop offset="1" stop-color="#F2B233"/></radialGradient></defs>' +
+    (on === false ? "" : '<circle cx="' + x + '" cy="' + y + '" r="38" fill="url(#' + g + ')"/>') +
+    '<circle cx="' + x + '" cy="' + y + '" r="15" fill="' + (on === false ? "#EEF0F2" : "url(#" + c + ")") + '" stroke="#C99A2E" stroke-width="1.6"/>' +
+    '<rect x="' + (x - 7) + '" y="' + (y + 12) + '" width="14" height="10" rx="2" fill="#9AA5B1" stroke="#6B7785"/><path d="M' + (x - 7) + ' ' + (y + 16) + ' h14 M' + (x - 7) + ' ' + (y + 19) + ' h14" stroke="#6B7785"/>';
+}
+function rayA(x1, y1, x2, y2, d, col) {   // a light ray that draws itself (.trace) and gets an arrow head
+  var a = Math.atan2(y2 - y1, x2 - x1), h = 9, p = function (t) { return (x2 - h * Math.cos(a + t)).toFixed(1) + " " + (y2 - h * Math.sin(a + t)).toFixed(1); };
+  col = col || "#F5A623";
+  return '<path class="trace" pathLength="1" style="transition-delay:' + (d || 0) + 's" d="M' + x1 + ' ' + y1 + ' L' + x2 + ' ' + y2 + '" stroke="' + col + '" stroke-width="3.5" fill="none" stroke-linecap="round"/>' +
+    '<path class="lit" style="transition-delay:' + ((d || 0) + 1.2) + 's" d="M' + x2 + ' ' + y2 + ' L' + p(.45) + ' L' + p(-.45) + 'z" fill="' + col + '"/>';
+}
+function lbl(x, y, t, col) { return '<text x="' + x + '" y="' + y + '" font-family="Fredoka" font-weight="600" font-size="13" fill="' + (col || "#3C3A8F") + '">' + t + '</text>'; }
+function seePic(kind) {   // picture options: how does Ben see the lamp?
+  var s = '<svg viewBox="0 0 150 90"><rect width="150" height="90" rx="10" fill="#FBF7EF"/>' + bulb(30, 40) + eyeAt(122, 44, .8, -1);
+  var ar = function (x1, y1, x2, y2) { var a = Math.atan2(y2 - y1, x2 - x1), p = function (t) { return (x2 - 9 * Math.cos(a + t)).toFixed(1) + " " + (y2 - 9 * Math.sin(a + t)).toFixed(1); };
+    return '<path d="M' + x1 + ' ' + y1 + ' L' + x2 + ' ' + y2 + '" stroke="#E8962E" stroke-width="3.2" stroke-linecap="round"/><path d="M' + x2 + ' ' + y2 + ' L' + p(.45) + ' L' + p(-.45) + 'z" fill="#E8962E"/>'; };
+  if (kind === 1) s += ar(50, 42, 98, 44);
+  else if (kind === 2) s += ar(98, 44, 50, 42);
+  else if (kind === 3) s += '<path d="M48 34 Q74 -4 100 32" stroke="#E8962E" stroke-width="3.2" fill="none" stroke-linecap="round"/>' + ar(96, 26, 100, 34);
+  else s += ar(44, 30, 70, 8) + ar(44, 52, 70, 78);
+  return s + '</svg>';
+}
+var PICS3 = {
+  moon: function () {
+    var sk = gid("sk"), mg = gid("mg"), mb = gid("mb");
+    var s = '<svg viewBox="0 0 320 180" class="draw"><defs>' + skyDefs(sk, "#0B1430", "#2C4170") +
+      '<radialGradient id="' + mg + '"><stop offset="0" stop-color="#F4F7FF" stop-opacity=".55"/><stop offset="1" stop-color="#F4F7FF" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="' + mb + '" cx=".35" cy=".35"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".7" stop-color="#E3E7EE"/><stop offset="1" stop-color="#B9C1CE"/></radialGradient></defs>' +
+      '<rect width="320" height="180" rx="14" fill="url(#' + sk + ')"/>';
+    for (var i = 0; i < 26; i++) s += '<circle cx="' + ((i * 67) % 300 + 10) + '" cy="' + ((i * 41) % 90 + 8) + '" r="' + (i % 3 ? .9 : 1.4) + '" fill="#fff" opacity=".7"/>';
+    s += sunGlow(26, 52, 18) + lbl(10, 98, "Sun", "#FFE07A") +
+      '<circle cx="176" cy="44" r="40" fill="url(#' + mg + ')"/><circle cx="176" cy="44" r="19" fill="url(#' + mb + ')"/><circle cx="170" cy="39" r="3.6" fill="#CCD3DD"/><circle cx="182" cy="50" r="4.6" fill="#CCD3DD"/>' + lbl(160, 82, "Moon", "#DDE6F5") +
+      '<path d="M0 150 Q60 138 120 148 Q190 134 250 146 Q290 140 320 144 V166 Q320 180 306 180 H14 Q0 180 0 166z" fill="#0A1022"/>' +
+      '<rect x="252" y="96" width="44" height="40" rx="10" fill="#2E3A55"/>' + eyeAt(274, 116, .75, -1) + lbl(240, 160, "your eye", "#DDE6F5") +
+      rayA(48, 50, 154, 44, 0, "#FFE07A") + rayA(192, 54, 252, 106, 1.1, "#FFE07A");
+    return s + '</svg>';
+  },
+  lampeye: function () {
+    return '<svg viewBox="0 0 300 150" class="draw"><rect width="300" height="150" rx="14" fill="#FBF3E4"/><path d="M0 118 H300 V136 Q300 150 286 150 H14 Q0 150 0 136z" fill="#D9C3A3"/>' +
+      '<path d="M54 92 L46 118 H86 L78 92" fill="#7A8592"/>' + bulb(62, 60) + lbl(44, 140, "lamp", "#5A4630") +
+      eyeAt(250, 64, 1, -1) + lbl(234, 104, "Ben's eye", "#5A4630") + rayA(84, 58, 222, 62, 0) + rayA(82, 72, 222, 68, .3) + '</svg>';
+  },
+  parrot: function () {
+    var sk = gid("sk"), pb = gid("pb");
+    return '<svg viewBox="0 0 320 180" class="draw"><defs>' + skyDefs(sk, "#86BCE6", "#E2F1FB") +
+      '<linearGradient id="' + pb + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3FBF5C"/><stop offset="1" stop-color="#1E8B3E"/></linearGradient></defs>' +
+      '<rect width="320" height="180" rx="14" fill="url(#' + sk + ')"/>' + sunGlow(34, 34, 16) + cloud(120, 26, .8, .7) +
+      '<path d="M90 120 Q150 112 190 122" stroke="#7A5232" stroke-width="7" fill="none" stroke-linecap="round"/>' +
+      '<path d="M150 116 Q136 120 132 150 L140 150 Q146 128 156 120z" fill="#2E86DE"/><path d="M146 116 Q122 112 128 80 Q138 64 156 72 Q170 82 164 106 Q160 118 146 116z" fill="url(#' + pb + ')"/>' +
+      '<path d="M152 74 Q164 62 176 72 Q172 84 162 86z" fill="#E53935"/><circle cx="164" cy="74" r="2.6" fill="#111"/><path d="M174 74 Q184 78 176 86 Q174 80 170 78z" fill="#F5C542"/>' +
+      '<path d="M134 92 Q128 104 140 112" stroke="#F5C542" stroke-width="5" fill="none" stroke-linecap="round"/>' + lbl(122, 168, "parrot", "#1F4F7A") +
+      '<rect x="252" y="84" width="48" height="44" rx="12" fill="#F2D2B6"/>' + eyeAt(270, 104, .75, -1) + lbl(240, 150, "girl's eye", "#1F4F7A") +
+      rayA(52, 44, 140, 86, 0) + rayA(170, 96, 250, 104, 1.1) + '</svg>';
+  },
+  disco: function () {
+    var bg = gid("bg"), ball = gid("ball");
+    var s = '<svg viewBox="0 0 300 180" class="draw"><defs><radialGradient id="' + bg + '" cx=".5" cy=".3"><stop offset="0" stop-color="#3B2A6B"/><stop offset="1" stop-color="#120B2A"/></radialGradient>' +
+      '<radialGradient id="' + ball + '" cx=".35" cy=".3"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".5" stop-color="#B9C3D0"/><stop offset="1" stop-color="#5D6878"/></radialGradient></defs>' +
+      '<rect width="300" height="180" rx="14" fill="url(#' + bg + ')"/><path d="M150 0 V34" stroke="#999" stroke-width="2"/><circle cx="150" cy="62" r="28" fill="url(#' + ball + ')"/>';
+    for (var r = 0; r < 6; r++) for (var c = 0; c < 6; c++) { var x = 128 + c * 8, y = 40 + r * 8; if ((x + 4 - 150) * (x + 4 - 150) + (y + 4 - 62) * (y + 4 - 62) < 26 * 26) s += '<rect x="' + x + '" y="' + y + '" width="7" height="7" fill="#fff" opacity="' + (.15 + ((r * 7 + c * 3) % 5) * .12) + '"/>'; }
+    s += '<path d="M20 170 L44 128 L68 170z" fill="#2B2F3A"/>' + bulb(44, 120) + lbl(26, 104, "lamp", "#FFE07A") + rayA(58, 112, 126, 72, 0, "#FFE07A");
+    var sp = [[230, 40], [260, 110], [210, 150], [90, 30], [262, 70]];
+    sp.forEach(function (p, i) { s += '<g class="lit" style="transition-delay:' + (1.3 + i * .12) + 's"><path d="M172 64 L' + p[0] + ' ' + p[1] + '" stroke="#FFF6C8" stroke-width="2" opacity=".8"/><circle cx="' + p[0] + '" cy="' + p[1] + '" r="5" fill="#FFF6C8"/><circle cx="' + p[0] + '" cy="' + p[1] + '" r="11" fill="#FFF6C8" opacity=".3"/></g>'; });
+    return s + lbl(126, 112, "disco ball", "#E6DDFF") + '</svg>';
+  },
+  mirrorboard: function () {
+    var mi = gid("mi"), wd = gid("wd");
+    var side = function (ox, mirror) {
+      var t = '<g transform="translate(' + ox + ' 0)"><rect x="4" y="4" width="152" height="172" rx="12" fill="#F4EEE3"/><rect x="4" y="4" width="152" height="22" rx="10" fill="#C9CED6"/>' + lbl(60, 20, "wall", "#3B4350") +
+        '<g transform="rotate(30 26 140)"><rect x="6" y="132" width="34" height="14" rx="5" fill="#59636F"/><rect x="38" y="130" width="6" height="18" rx="2" fill="#59636F"/></g>' +
+        '<path d="M42 126 L104 96" stroke="#FFF3B0" stroke-width="10" opacity=".55" stroke-linecap="round"/><path d="M42 126 L104 96" stroke="#FFE07A" stroke-width="3" stroke-linecap="round"/>' +
+        '<rect x="100" y="70" width="' + (mirror ? 10 : 13) + '" height="54" rx="2" transform="rotate(-24 106 96)" fill="url(#' + (mirror ? mi : wd) + ')" stroke="' + (mirror ? "#5F6B78" : "#7A4E26") + '" stroke-width="1.6"/>';
+      if (mirror) t += rayA(102, 92, 80, 32, .2, "#F5A623") + '<g class="lit" style="transition-delay:1.4s"><circle cx="78" cy="26" r="12" fill="#FFF3B0" opacity=".6"/><circle cx="78" cy="26" r="6" fill="#FFE07A"/></g>';
+      else [[60, 50], [130, 40], [140, 150], [70, 90], [100, 30]].forEach(function (p, i) { t += '<path class="trace" pathLength="1" style="transition-delay:' + (.2 + i * .1) + 's" d="M104 94 L' + p[0] + ' ' + p[1] + '" stroke="#F5A623" stroke-width="1.8" opacity=".55" fill="none"/>'; });
+      return t + lbl(14, 170, mirror ? "Sharif: mirror" : "Majid: wooden board", "#3C3A8F") + '</g>';
+    };
+    return '<svg viewBox="0 0 320 180" class="draw"><defs><linearGradient id="' + mi + '" x1="0" x2="1"><stop offset="0" stop-color="#F5F8FB"/><stop offset=".5" stop-color="#AEB9C6"/><stop offset="1" stop-color="#EEF2F6"/></linearGradient>' +
+      '<linearGradient id="' + wd + '" x1="0" x2="1"><stop offset="0" stop-color="#C08A57"/><stop offset=".5" stop-color="#A86F3D"/><stop offset="1" stop-color="#C99766"/></linearGradient></defs>' + side(0, true) + side(160, false) + '</svg>';
+  },
+  pass: function () {
+    var gl = gid("gl"), wd = gid("wd");
+    var cell = function (ox, kind, name) {
+      var t = '<g transform="translate(' + ox + ' 0)"><rect x="3" y="3" width="100" height="150" rx="10" fill="#2A3142"/>' +
+        '<g transform="translate(6 68)"><rect x="0" y="0" width="22" height="14" rx="4" fill="#59636F"/><rect x="20" y="-2" width="5" height="18" rx="2" fill="#59636F"/></g>' +
+        '<path class="lit" d="M31 75 L50 66 L50 90z" fill="#FFF3B0" opacity=".5"/>';
+      if (kind === "glass") t += '<path class="lit" d="M58 66 L100 60 L100 96 L58 90z" fill="#FFF3B0" opacity=".85"/><rect x="50" y="34" width="8" height="84" rx="2" fill="url(#' + gl + ')" stroke="#9EC6E6"/>';
+      else if (kind === "paper") t += '<path class="lit" d="M58 62 L100 50 L100 106 L58 94z" fill="#FFF3B0" opacity=".3"/><rect x="50" y="34" width="8" height="84" rx="1" fill="#F4F1E6" opacity=".9" stroke="#C9C3B0"/>';
+      else t += '<rect x="50" y="34" width="10" height="84" rx="1" fill="url(#' + wd + ')" stroke="#7A4E26"/>';
+      return t + '<text x="53" y="140" text-anchor="middle" font-family="Fredoka" font-weight="600" font-size="12" fill="#fff">' + name + '</text></g>';
+    };
+    return '<svg viewBox="0 0 320 156" class="draw"><defs><linearGradient id="' + gl + '" x1="0" x2="1"><stop offset="0" stop-color="#E8F4FD" stop-opacity=".6"/><stop offset=".5" stop-color="#FFFFFF" stop-opacity=".9"/><stop offset="1" stop-color="#CFE6F7" stop-opacity=".6"/></linearGradient>' +
+      '<linearGradient id="' + wd + '" x1="0" x2="1"><stop offset="0" stop-color="#C08A57"/><stop offset="1" stop-color="#A86F3D"/></linearGradient></defs>' +
+      cell(0, "glass", "clear glass") + cell(107, "paper", "tracing paper") + cell(214, "wood", "wood") + '</svg>';
+  },
+  dark: function () {
+    var wl = gid("wl");
+    return '<svg viewBox="0 0 300 170" class="dk"><defs><linearGradient id="' + wl + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBF3E4"/><stop offset="1" stop-color="#EADFC9"/></linearGradient></defs>' +
+      '<rect width="300" height="170" rx="14" fill="url(#' + wl + ')"/><path d="M0 128 H300 V156 Q300 170 286 170 H14 Q0 170 0 156z" fill="#C8A57E"/>' +
+      '<path d="M150 0 V20" stroke="#6B7785" stroke-width="2"/><path d="M128 20 H172 L164 34 H136z" fill="#7A8592"/>' + bulb(150, 44) +
+      '<g transform="translate(110 104)"><rect width="80" height="22" rx="3" fill="#E53935"/><rect x="4" y="3" width="72" height="16" fill="#fff" opacity=".85"/><rect x="0" y="0" width="8" height="22" fill="#B71C1C"/>' + lbl(18, 16, "BOOK", "#B71C1C") + '</g>' +
+      '<rect x="252" y="62" width="22" height="34" rx="4" fill="#fff" stroke="#9AA5B1"/><rect x="258" y="70" width="10" height="18" rx="2" fill="#C9CED6"/>' + lbl(240, 112, "switch", "#5A4630") +
+      '<rect class="night" width="300" height="170" rx="14" fill="#05060B"/><text class="night" x="150" y="92" text-anchor="middle" font-family="Fredoka" font-weight="600" font-size="15" fill="#3A3F52">no light at all…</text></svg>';
+  },
+  pinhole: function () {
+    var bx = gid("bx");
+    var flame = function (x, y, flip) { var k = flip ? -1 : 1; return '<path d="M' + x + ' ' + y + ' q' + 8 + ' ' + (-12 * k) + ' 0 ' + (-26 * k) + ' q-8 ' + (14 * k) + ' 0 ' + (26 * k) + 'z" fill="#FFB300"/><path d="M' + x + ' ' + (y - 4 * k) + ' q4 ' + (-6 * k) + ' 0 ' + (-13 * k) + ' q-4 ' + (7 * k) + ' 0 ' + (13 * k) + 'z" fill="#FFF3B0"/>'; };
+    return '<svg viewBox="0 0 320 160" class="draw"><defs><linearGradient id="' + bx + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9A27A"/><stop offset="1" stop-color="#9A7048"/></linearGradient></defs>' +
+      '<rect width="320" height="160" rx="14" fill="#1E2433"/><circle cx="40" cy="44" r="30" fill="#FFE07A" opacity=".15"/>' +
+      '<rect x="32" y="56" width="16" height="56" rx="3" fill="#F4EEE3"/>' + flame(40, 56) + lbl(22, 136, "candle", "#E6DDFF") +
+      '<path d="M150 22 H300 V126 H150z" fill="url(#' + bx + ')" opacity=".35" stroke="#C9A27A" stroke-width="3"/><path d="M150 22 V68 M150 78 V126" stroke="#C9A27A" stroke-width="5"/>' +
+      '<rect x="292" y="26" width="6" height="96" fill="#F4EEE3" opacity=".9"/>' +
+      '<g transform="translate(286 0)"><rect x="-8" y="36" width="8" height="50" rx="2" fill="#F4EEE3" opacity=".75"/>' + flame(-4, 86, true).replace(/#FFB300/, "#FFB300") + '</g>' +
+      lbl(150, 144, "pinhole", "#E6DDFF") + lbl(262, 144, "screen", "#E6DDFF") +
+      rayA(40, 34, 284, 108, 0, "#FF7043") + rayA(40, 112, 284, 36, .4, "#FFE07A") + '</svg>';
+  },
+  frosted: function () {
+    var fg = gid("fg"), bl = gid("bl");
+    return '<svg viewBox="0 0 300 170"><defs><linearGradient id="' + fg + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#EEF4F8"/><stop offset="1" stop-color="#D3E0EA"/></linearGradient>' +
+      '<filter id="' + bl + '"><feGaussianBlur stdDeviation="5"/></filter></defs>' +
+      '<rect width="300" height="170" rx="14" fill="#E7EDF2"/><rect x="20" y="16" width="120" height="140" rx="6" fill="#fff" stroke="#9AA5B1" stroke-width="3"/>' +
+      '<g filter="url(#' + bl + ')"><circle cx="80" cy="66" r="16" fill="#C98D6B"/><rect x="60" y="84" width="40" height="60" rx="14" fill="#3E7CB1"/></g>' +
+      '<rect x="24" y="20" width="112" height="132" rx="4" fill="url(#' + fg + ')" opacity=".6"/>' + lbl(34, 166, "frosted glass", "#3C3A8F") +
+      '<rect x="160" y="16" width="120" height="140" rx="6" fill="#fff" stroke="#9AA5B1" stroke-width="3"/><circle cx="220" cy="66" r="16" fill="#C98D6B"/><circle cx="214" cy="63" r="2" fill="#222"/><circle cx="226" cy="63" r="2" fill="#222"/><path d="M214 72 q6 5 12 0" stroke="#222" stroke-width="1.8" fill="none"/><rect x="200" y="84" width="40" height="60" rx="14" fill="#3E7CB1"/>' +
+      '<path d="M176 30 L196 22 M176 44 L210 28" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".8"/>' + lbl(180, 166, "window glass", "#3C3A8F") + '</svg>';
+  },
+  see1: function () { return seePic(1); }, see2: function () { return seePic(2); }, see3: function () { return seePic(3); }, see4: function () { return seePic(4); },
+};
+for (var pk in PICS3) PICS[pk] = PICS3[pk];
+["moon", "lampeye", "parrot", "disco", "mirrorboard", "pass", "pinhole"].forEach(function (k) { TAPS[k] = function (el) { el.querySelector("svg").classList.toggle("on"); }; });
+TAPS.dark = function (el) { el.querySelector("svg").classList.toggle("off"); };
 
 /* ---------- screens ---------- */
 function show(id) { ["scrName", "scrPath", "scrLesson", "scrDone", "scrTeach", "scrWatch"].forEach(function (s) { $(s).classList.toggle("hidden", s !== id); });

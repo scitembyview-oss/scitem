@@ -129,7 +129,7 @@ pages.append(page(4, "How do we see a source of light?", bubble(f"A {K('source o
 task(2, "Ben looks at a lamp, which is a source of light. Which picture shows how Ben sees the lamp? Circle it.",
      '<div class="rgrid">' + seecell("in", "A") + seecell("out", "B") + seecell("curve", "C") + seecell("away", "D") + '</div>') +
 task(1, "Fill in the blank.", f'<p class="fill">We see a lamp because its light goes into our {blank(110)}.</p>') +
-task(3, "Mali closes her eyes and faces a bright lamp. Can she see the lamp? Explain.", lines(2)) +
+task(3, "Mali holds a thick book in front of her face. A bright lamp is behind the book. Can she see the lamp? Explain.", lines(2)) +
 task(2, "Glow says, \"My eyes send out light so I can see.\" Is Glow right? Why?", lines(2))))
 
 # 5 seeing non-sources
@@ -171,7 +171,7 @@ def bounce(name, surf):
         b += ('<rect x="132" y="40" width="14" height="52" rx="2" transform="rotate(-24 138 66)" fill="#C9A27A" stroke="#8A5A2B" stroke-width="2.5"/>' +
               ray(40, 92, 128, 64) + "".join(ray(132, 60, x, y, .8, 1, 2) for x, y in ((110, 32), (100, 66), (150, 30), (118, 90))))
     return f'<div class="dcell">{svg(200, 145, b, 210)}</div>'
-pages.append(page(8, "Mirror or board?", bubble(f"Every object reflects some light. {K('Smooth')}, {K('shiny')} surfaces like mirrors send the light off neatly in one direction. Rough, dull surfaces spread the light out in many directions.") +
+pages.append(page(8, "Mirror or board?", bubble(f"All objects reflect some light. A {K('smooth')}, {K('shiny')} mirror sends the light back together, in one direction. A rough, dull board sends it back all over the place.") +
 '<div class="dgrid two2">' + bounce("Sharif: mirror", "mirror") + bounce("Majid: wooden board", "board") + '</div>' +
 task(2, "Sharif shines a torch at a mirror. Majid shines a torch at a wooden board. Who sees a bright spot of light on the wall?",
      f'<p class="fill">{choose("Sharif","Majid")} sees a bright spot.</p>') +
@@ -193,14 +193,14 @@ def sheet(kind, num):
     b += label(8, 18, num)
     names = {"glass": "clear glass", "paper": "tracing paper", "wood": "wood"}
     return f'<div class="dcell">{svg(190, 112, b, 170)}<div class="cap">{names[kind]}</div></div>'
-left9 = ["transparent", "translucent", "opaque", "reflects light"]
-right9 = ["Some light passes through. Things look blurry.", "Light bounces off it.", "We can see clearly through it.", "No light passes through it."]
-rows9 = "".join(f'<tr><td>{i+1}.</td><td class="yt9">{l}</td><td class="mb"></td><td class="r9">{"abcd"[i]}. {right9[i]}</td></tr>' for i, l in enumerate(left9))
+left9 = ["transparent", "translucent", "opaque", ""]
+right9 = ["Some light passes through. Things look blurry.", "Light bends around it.", "No light passes through it.", "We can see clearly through it."]
+rows9 = "".join(f'<tr><td>{f"{i+1}." if l else ""}</td><td class="yt9">{l}</td><td class="{"mb" if l else ""}"></td><td class="r9">{"abcd"[i]}. {right9[i]}</td></tr>' for i, l in enumerate(left9))
 pages.append(page(9, "Can light pass through?", bubble(f"{K('Transparent')} materials let almost all light through. {K('Translucent')} materials let only some light through. {K('Opaque')} materials let no light through.") +
 '<div class="dgrid">' + sheet("paper", "1") + sheet("wood", "2") + sheet("glass", "3") + '</div>' +
 task(1, "Label each material. Use the words in the box.", '<div class="wbox">opaque · transparent · translucent</div>' +
      f'<p class="fill">1 {blank(150)} &nbsp; 2 {blank(130)} &nbsp; 3 {blank(150)}</p>') +
-task(2, "Match each word to what it means. Write the letter.", f'<table class="match m9">{rows9}</table>') +
+task(2, "Match each word to what it means. Write the letter. One meaning is extra!", f'<table class="match m9">{rows9}</table>') +
 task(2, "Glow shines a torch at tracing paper. What will he see on the other side?", lines(1))))
 
 # 10 sort the materials + shadow strength
@@ -210,13 +210,13 @@ rows10b = "".join(f'<tr><td>{i+1}.</td><td class="yt">{o}</td><td>{choose3(("dar
 pages.append(page(10, "Sort the materials", bubble(f"Every material lets light through in its own way. Sort these like a scientist. Then think about their {K('shadows')}!") +
 task(2, "Write each material in the correct column.", '<div class="wbox">frosted glass · cardboard · window glass · wax paper · a metal spoon · clear plastic · a wooden door · clean water · tracing paper</div>' +
      f'<table class="sort"><tr><th>Transparent</th><th>Translucent</th><th>Opaque</th></tr>{rows10}</table>') +
-task(2, "A torch shines on each object. What kind of shadow does it make? Circle one answer.", f'<table class="tf circ3">{rows10b}</table>') +
+task(2, "A torch shines on each object. Will it make a dark shadow, a pale shadow or almost no shadow? Circle one.", f'<table class="tf circ3">{rows10b}</table>') +
 task(3, "Bathroom windows are often made of frosted glass. Why?", lines(2))))
 
 # 11 true/false -> badge 1
 tf11 = ["We see the Moon because it gives out its own light.", "A mirror is not a source of light.",
         "Light from a lamp travels into our eyes.", "Our eyes send out light so that we can see.",
-        "Tracing paper is transparent.", "Frosted glass makes a paler shadow than wood.",
+        "We see a white wall because it gives out light.", "A mirror sends light back better than a towel.",
         "A disco ball is a source of light.", "We see a book because light reflects off it into our eyes."]
 rows11 = "".join(f'<tr><td>{i+1}.</td><td class="yt">{t}</td><td class="yn">True</td><td class="yn">False</td></tr>' for i, t in enumerate(tf11))
 pages.append(page(11, "Eye Expert", bubble(f"Careful, Explorer! Some of these are {K('tricks')}. Get {K('7 or more')} right to win your first badge!") +
@@ -224,12 +224,12 @@ task(2, "Circle True or False.", f'<table class="tf tfw">{rows11}</table>') +
 badge_row("#2E8B57", "Eye Expert", 'My score: <span class="sline"></span> / 8', "7 or more? Colour your badge on page 1!")))
 
 # 12 detective -> badge 2
-clues12 = ["You can see yourself in me.", "Things look blurry through me.", "I shine at night with the Sun's light.", "I let no light through at all."]
+clues12 = ["You can see yourself in me.", "Light gets through me, but things look blurry.", "At night, sunlight bounces off me.", "No light gets through me."]
 rows12 = "".join(f'<tr><td>{i+1}.</td><td class="yt">“{c}”</td><td class="wa">{blank(150)}</td></tr>' for i, c in enumerate(clues12))
 jobs12 = ["a fish tank window", "curtains for a dark bedroom", "a lampshade for soft light"]
 rows12b = "".join(f'<tr><td>{i+1}.</td><td class="yt">{j}</td><td class="wa">{blank(130)}</td></tr>' for i, j in enumerate(jobs12))
 pages.append(page(12, "Material Detective", bubble(f"Detective time! Solve the {K('mystery words')}. Then choose the best material for each job.") +
-task(2, "Who am I? Write the answer.", f'<table class="tf who">{rows12}</table>') +
+task(2, "Who am I? Use the words in the box. One word is extra!", '<div class="wbox">a wooden door · a firefly · the Moon · frosted glass · a mirror</div>' + f'<table class="tf who">{rows12}</table>') +
 task(2, "Choose the best material for each job. Use the words in the box.", '<div class="wbox">thin paper · glass · thick cloth</div>' + f'<table class="tf who">{rows12b}</table>') +
 badge_row("#2F80C9", "Material Detective", "All correct?", "Colour your badge on page 1!")))
 
@@ -249,10 +249,10 @@ pin = (f'<g class="tap" data-act="ray">{candle_svg(40, 80)}</g>' +
 sun14 = ('<svg viewBox="0 0 80 80" width="96" height="96"><g class="src tap" data-act="flash"><circle class="halo" cx="40" cy="40" r="30" fill="#FFE68A"/>'
          '<circle cx="40" cy="40" r="17" fill="#FFF" stroke="#E8962E" stroke-width="3"/><g stroke="#E8962E" stroke-width="3" stroke-linecap="round">'
          '<path d="M40 8v10M40 62v10M8 40h10M62 40h10M17 17l7 7M56 56l7 7M63 17l-7 7M24 56l-7 7"/></g></g></svg>')
-pages.append(page(14, "Mixed challenge", bubble("Last page! Here is the boss question. Then get ready for your next mission.") +
-task(2, "Glow wants to hide a present so nobody can see it. Should he use a glass box or a cardboard box? Why?", lines(1)) +
-task(3, '<b class="go">Boss question!</b> In this pinhole camera, the picture of the candle on the screen is upside down. Use what you know about light to explain why.',
-     f'<div class="center">{svg(340, 118, pin, 330)}</div>' + lines(2)) +
+pages.append(page(14, "Mixed challenge", bubble("Last page! Use everything you learned today for the boss question. Then get ready for your next mission.") +
+task(2, "In this pinhole camera, the picture of the candle on the screen is upside down. Light travels in straight lines. Use this to explain why.",
+     f'<div class="center">{svg(340, 118, pin, 270)}</div>' + lines(2)) +
+task(3, '<b class="go">Boss question!</b> At night, Ploy sees a cat outside her clear window. A street lamp is on. Explain step by step how she sees the cat. Use the words <i>reflects</i> and <i>transparent</i>.', lines(3)) +
 f'''<div class="next"><div class="nimg">{sun14}</div>
 <div><b class="nm">Next mission:</b> Sunlight looks white. Is white light really just one colour? What do you think?<br>My guess: {blank(150)}</div></div>'''))
 
