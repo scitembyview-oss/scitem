@@ -9,16 +9,14 @@ interface Props {
   questions: Question[];
   /** show √ π π² buttons under every number answer (on all of them, so the buttons don't hint which answers have a root) */
   symbols?: boolean;
-  /** replaces the default "ทำก่อนเรียน…" line, e.g. for a post-test */
-  lead?: string;
 }
 // Answers are NOT here: they live encrypted in src/data/check-keys.json and are only opened on the teacher page.
-const { id, title, questions, symbols = false, lead } = Astro.props;
+const { id, title, questions, symbols = false } = Astro.props;
 ---
 <section class="quiz" data-id={id} data-sheet={SHEET_URL}>
   <a class="crumb" href="/students/">← สำหรับนักเรียน · เช็คพื้นฐานก่อนเรียน</a>
   <h1>{title}</h1>
-  <p class="lead">{lead ?? 'ทำก่อนเรียน เพื่อให้ครูรู้ว่าต้องทวนพื้นฐานตรงไหน ไม่มีผลกับคะแนน ตอบตามที่คิดได้เลย ทำไม่ได้ก็ข้ามได้'}</p>
+  <p class="lead">ทำก่อนเรียน เพื่อให้ครูรู้ว่าต้องทวนพื้นฐานตรงไหน ไม่มีผลกับคะแนน ตอบตามที่คิดได้เลย ทำไม่ได้ก็ข้ามได้</p>
 
   <form class="card" id="start">
     <label for="name">ชื่อเล่น</label>
