@@ -11,6 +11,39 @@ export interface Question {
   options?: string[];
 }
 
+// Work and Power pre/post test (Pelangi 6.1, ม.2): item k of the pre-test and item k of the post-test are the same type and level.
+const gk = 'Take g = 10 N/kg.';
+const WORK_PRE: Question[] = [
+  { label: '1 · Work or no work (L1)', kind: 'mc', text: 'In which case is work done on the object?',
+    options: ['A girl holds a heavy bag still for 5 minutes.', 'A man pushes hard on a wall that does not move.', 'A boy lifts a box from the floor onto a shelf.', 'A student carries a bag along a flat corridor at the same height.'] },
+  { label: '2 · Unit of power (L1)', kind: 'mc', text: 'A machine does 1 joule of work every second. What is its power?',
+    options: ['1 N', '1 W', '1 J', '1 N·m'] },
+  { label: '3 · W = F × s, units (L1)', kind: 'num', text: 'A boy pushes a box with a force of 40 N. The box moves 250 cm in the direction of the force. How much work does he do?', parts: [{ unit: 'J' }] },
+  { label: '4 · P = W ÷ t, units (L1)', kind: 'num', text: 'A motor does 12 000 J of work in 2 minutes. What is its power?', parts: [{ unit: 'W' }] },
+  { label: '5 · Find the force (L2)', kind: 'num', text: '800 J of work is done to push a crate 20 m along the floor. The force is in the direction of motion. What force is used?', parts: [{ unit: 'N' }] },
+  { label: '6 · Mass → weight (L2)', kind: 'num', text: `A 6 kg box is lifted straight up 1.5 m at a steady speed. How much work is done? ${gk}`, parts: [{ unit: 'J' }] },
+  { label: '7 · Two stages (L2)', kind: 'num', text: `A worker lifts a 20 kg sack 2 m up onto his shoulder. Then he carries it 10 m along a flat path at the same height. How much work does he do on the sack in total? ${gk}`, parts: [{ unit: 'J' }] },
+  { label: '8 · Friction + power (L2)', kind: 'num', text: 'A sledge is pulled at a constant speed for 30 m. The friction on it is 50 N. It takes 20 s. What is the power of the pull?', parts: [{ unit: 'W' }] },
+  { label: '9 · Climbing stairs (L2)', kind: 'num', text: `A 50 kg student runs up 24 steps. Each step is 15 cm high. It takes 9 s. What is the student's power? ${gk}`, parts: [{ unit: 'W' }] },
+  { label: '10 · Compare power (L2)', kind: 'mc', text: 'Ann and Ben each weigh 500 N. They climb the same stairs. Ann takes 10 s and Ben takes 8 s. Which is correct?',
+    options: ['Ann does more work, because she takes longer.', 'They do the same work, and Ben has more power.', 'They do the same work, and Ann has more power.', 'Ben does more work, and they have the same power.'] },
+];
+const WORK_POST: Question[] = [
+  { label: '1 · Work or no work (L1)', kind: 'mc', text: 'In which case is work done on the object?',
+    options: ['A waiter holds a tray still while he waits.', 'A boy carries a box along a flat path at the same height.', 'A man pushes hard on a parked truck that does not move.', 'A girl pulls a sledge across the snow.'] },
+  { label: '2 · Unit of power (L1)', kind: 'mc', text: 'Which unit is the same as 1 watt?',
+    options: ['1 J·s', '1 N·m', '1 J/s', '1 N/s'] },
+  { label: '3 · W = F × s, units (L1)', kind: 'num', text: 'A girl pulls a trolley with a force of 60 N. The trolley moves 150 cm in the direction of the force. How much work does she do?', parts: [{ unit: 'J' }] },
+  { label: '4 · P = W ÷ t, units (L1)', kind: 'num', text: 'A pump does 36 000 J of work in 3 minutes. What is its power?', parts: [{ unit: 'W' }] },
+  { label: '5 · Find the force (L2)', kind: 'num', text: '450 J of work is done to push a cart 15 m along the floor. The force is in the direction of motion. What force is used?', parts: [{ unit: 'N' }] },
+  { label: '6 · Mass → weight (L2)', kind: 'num', text: `An 8 kg bag is lifted straight up 1.2 m at a steady speed. How much work is done? ${gk}`, parts: [{ unit: 'J' }] },
+  { label: '7 · Two stages (L2)', kind: 'num', text: `A porter lifts a 15 kg box 1.6 m up onto his shoulder. Then he carries it 12 m along a flat corridor at the same height. How much work does he do on the box in total? ${gk}`, parts: [{ unit: 'J' }] },
+  { label: '8 · Friction + power (L2)', kind: 'num', text: 'A box is pushed at a constant speed for 24 m. The friction on it is 60 N. It takes 16 s. What is the power of the push?', parts: [{ unit: 'W' }] },
+  { label: '9 · Climbing stairs (L2)', kind: 'num', text: `A 45 kg student runs up 20 steps. Each step is 18 cm high. It takes 6 s. What is the student's power? ${gk}`, parts: [{ unit: 'W' }] },
+  { label: '10 · Compare power (L2)', kind: 'mc', text: 'Kim and Lee each lift an identical 10 kg box onto the same shelf. Kim takes 4 s and Lee takes 8 s. Which is correct?',
+    options: ['They do the same work, and Kim has more power.', 'Lee does more work, because he takes longer.', 'They do the same work, and Lee has more power.', 'Kim does more work, and they have the same power.'] },
+];
+
 const g = 'ใช้ g = 10 m/s², sin 37° = 0.6, cos 37° = 0.8';
 
 export const checks: Record<string, { title: string; questions: Question[] }> = {
@@ -57,4 +90,6 @@ export const checks: Record<string, { title: string; questions: Question[] }> = 
     { label: 'แนว 3.1 วงกลมแนวดิ่ง + พลังงาน', kind: 'num', text: 'ลูกบอล 0.2 kg ผูกเชือกยาว 0.5 m แกว่งเป็นวงกลมในแนวดิ่ง เร็วพอให้ผ่านจุดบนสุดได้พอดี (เชือกเกือบหย่อน) ที่จุดต่ำสุดลูกบอลมีอัตราเร็วเท่าใด และแรงตึงเชือกเท่าใด (g = 10 m/s²)',
       parts: [{ label: 'v =', unit: 'm/s' }, { label: 'T =', unit: 'N' }] },
   ] },
+  'work-pre': { title: 'Work and Power · Pre-test', questions: WORK_PRE },
+  'work-post': { title: 'Work and Power · Post-test', questions: WORK_POST },
 };

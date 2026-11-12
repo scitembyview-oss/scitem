@@ -1,0 +1,11 @@
+---
+import Base from '../../layouts/Base.astro';
+import BasicCheck from '../../components/BasicCheck.astro';
+import { checks } from '../../data/checks';
+
+// Questions: src/data/checks.ts · answer key + solutions: encrypted in src/data/check-keys.json under "work-pre".
+const { title, questions } = checks['work-pre'];
+---
+<Base title="Work and Power Pre-test · scitem" description="Work and Power Pre-test, 10 questions" noindex>
+  <BasicCheck id="work-pre" title={title} questions={questions} lead="Do this before the lesson. It does not count for marks. Answer what you can, and skip any question you cannot do. Use the working space on paper if you need it; a calculator is not needed." />
+</Base>
