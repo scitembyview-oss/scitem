@@ -98,7 +98,6 @@ h2 { font-size: 1.2rem; margin: 0 0 6px }
     <input id="code" placeholder="Y7P-XXXX-XXXX" autocapitalize="characters" spellcheck="false" required>
     <p class="err" id="gErr" role="alert"></p>
     <button class="pill main" id="gGo">เข้าเรียน</button>
-    <p class="muted" style="margin:0">ยังไม่มีรหัส? <a id="gShop" href="/shop/">ดูคอร์สที่ร้าน</a></p>
   </form>
 </div>
 
@@ -160,7 +159,6 @@ h2 { font-size: 1.2rem; margin: 0 0 6px }
   document.title = CFG.title + ' · scitem';
   $('gTitle').textContent = $('hTitle').textContent = CFG.title;
   $('gTh').textContent = $('hTh').textContent = CFG.th;
-  $('gShop').href = CFG.shop;
 
   // ================= unlock (same steps as tools/build-course.mjs) =================
   let D = null;   // the decrypted course: { title, th, deck, pages, key, quiz }
