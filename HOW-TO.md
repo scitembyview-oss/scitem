@@ -1,7 +1,7 @@
 # วิธีแก้เว็บ scitem.net (สำหรับใช้กับ Cursor)
 
-เว็บนี้สร้างด้วย Astro และขึ้นเว็บอัตโนมัติผ่าน GitHub Pages
-ทุกครั้งที่ push ขึ้น branch `main` เว็บจริงจะอัปเดตเองภายในไม่กี่นาที
+เว็บนี้สร้างด้วย Astro ส่วน repo บน GitHub ใช้เก็บโค้ดและสำรองเท่านั้น (ปิด GitHub Pages แล้ว)
+เว็บจริงอยู่บน Cloudflare การ push ขึ้น GitHub ไม่ได้เปลี่ยนเว็บจริง
 
 ## ไฟล์สำคัญ
 
@@ -36,10 +36,10 @@ npm install      # ครั้งแรกครั้งเดียว
 npm run dev      # แล้วเปิด http://localhost:4321
 ```
 
-## ห้ามลบ
+## ห้ามเพิ่มกลับมา
 
-- `public/CNAME` (ทำให้ scitem.net ชี้มาที่เว็บนี้)
-- `.github/workflows/deploy.yml` (ตัวที่เอาเว็บขึ้นอัตโนมัติ)
+- ไม่มี `public/CNAME` และ `.github/workflows/deploy.yml` แล้ว ห้ามเพิ่มกลับ (ไม่ใช้ GitHub Pages)
+- ไม่มีหน้าขาย/ร้านใน repo นี้
 
 ## Answer Vault (หน้าปลดล็อกเฉลย)
 
