@@ -63,7 +63,7 @@ export const items: Item[] = [
     meta: '48 หน้า · ช่องคำตอบทุกข้อ', href: '/class/cb2h/', course: 'physics-lower',
     note: 'เขียนทดบนชีทใน iPad ใส่คำตอบพร้อมหน่วย ครูตรวจและส่งคำใบ้กลับมาในคาบ' },
   { title: 'ชีทเรียนสด: ไฟฟ้า คาบ 1', th: 'กระแส กฎของโอห์ม ความต้านทานของลวด', kind: 'sheet', grade: 'ม.ต้น',
-    meta: '13 หน้า · ช่องคำตอบทุกข้อ', href: '/class/el1/', course: 'physics-lower',
+    meta: '19 หน้า · 30 ข้อ · ภาพเคลื่อนไหว 3 ชุด', href: '/class/el1/', course: 'physics-lower',
     note: 'เขียนทดบนชีทใน iPad ใส่คำตอบพร้อมหน่วย ครูตรวจและส่งคำใบ้กลับมาในคาบ' },
   { title: 'เช็คพื้นฐาน: แรงลอยตัว', th: 'แรงลอยตัว', kind: 'check', grade: 'ม.ต้น',
     meta: '10 ข้อ', href: '/check/buoyancy/', course: 'physics-lower', note: 'ทำก่อนเรียน' },
