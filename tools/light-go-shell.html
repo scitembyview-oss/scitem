@@ -516,6 +516,37 @@ var PICS3 = {
   see1: function () { return seePic(1); }, see2: function () { return seePic(2); }, see3: function () { return seePic(3); }, see4: function () { return seePic(4); },
 };
 for (var pk in PICS3) PICS[pk] = PICS3[pk];
+
+/* ---- Ratio workshop (Math P5): Ratio Bot instead of Glow + bar-model pictures ---- */
+var BOT = '<svg viewBox="0 0 80 84" aria-label="Ratio Bot"><rect x="12" y="22" width="56" height="46" rx="13" fill="#E8F6F3" stroke="#2A9D8F" stroke-width="3"/><path d="M40 22 v-10" stroke="#2A9D8F" stroke-width="3"/><circle cx="40" cy="9" r="5" fill="#FFD23F" stroke="#D99A00" stroke-width="2"/><circle cx="29" cy="41" r="4.5" fill="#1F2A44"/><circle cx="51" cy="41" r="4.5" fill="#1F2A44"/><path d="M30 53 q10 8 20 0" stroke="#1F2A44" stroke-width="2.8" fill="none" stroke-linecap="round"/><text x="40" y="82" text-anchor="middle" font-family="Fredoka" font-weight="600" font-size="12" fill="#E8962E">2 : 3</text></svg>';
+if (DATA.mascot === "bot") GLOW = BOT;
+function rbars(rows, w) {   // rows = [[name, units, colour], ...] -> a bar model, one box = 1 unit
+  w = w || 34; var h = 40 + rows.length * 40, most = Math.max.apply(null, rows.map(function (r) { return r[1]; }));
+  var out = '<svg viewBox="0 0 ' + Math.max(160, 80 + most * w) + ' ' + h + '">';
+  rows.forEach(function (r, i) { var y = 20 + i * 40;
+    out += '<text x="58" y="' + (y + 21) + '" text-anchor="end" font-family="Fredoka" font-weight="600" font-size="15" fill="#3C3A8F">' + r[0] + '</text>';
+    for (var k = 0; k < r[1]; k++) out += '<rect x="' + (68 + k * w) + '" y="' + y + '" width="' + w + '" height="28" rx="3" fill="' + r[2] + '" stroke="#3C3A8F" stroke-width="2"/>'; });
+  return out + '</svg>'; }
+function rkid(x, girl) { var c = girl ? "#E86FA0" : "#4A90D9";
+  return '<circle cx="' + x + '" cy="30" r="9" fill="#FFDDBE"/><path d="M' + (x - 9) + ' 29 q9 -12 18 0" fill="#3B2A1A"/><path d="M' + (x - 11) + ' 66 q0 -24 11 -24 q11 0 11 24z" fill="' + c + '"/>'; }
+function rgroup(x0) { var g = '<rect x="' + x0 + '" y="10" width="128" height="66" rx="10" fill="none" stroke="#2E8B57" stroke-width="1.6" stroke-dasharray="5 4"/>';
+  for (var i = 0; i < 5; i++) g += rkid(x0 + 18 + i * 23, i >= 2); return g; }
+function rshape(kind, x, y) { return kind === "star"
+  ? '<path transform="translate(' + x + ' ' + y + ')" d="M15 3l3.5 7.4 8 .9-6 5.4 1.7 7.9L15 20.6 7.8 24.6l1.7-7.9-6-5.4 8-.9z" fill="#FFD23F" stroke="#D99A00" stroke-width="1.5"/>'
+  : '<path transform="translate(' + x + ' ' + y + ')" d="M15 26 C4 18 2 12 5 7 c3-4 8-3 10 1 c2-4 7-5 10-1 c3 5 1 11-10 19z" fill="#E86FA0"/>'; }
+var PICSR = {
+  bar23: function () { return rbars([["Mia", 2, "#FFE3E3"], ["Jay", 3, "#E3F0FF"]]); },
+  bar41: function () { return rbars([["Sam", 4, "#FFF6D6"], ["Lin", 1, "#FFF6D6"]]); },
+  bar31: function () { return rbars([["Tom", 3, "#FFF6D6"], ["Ann", 1, "#FFF6D6"]]); },
+  bar34: function () { return rbars([["Tom", 3, "#FFF6D6"], ["Ann", 4, "#FFF6D6"]]); },
+  bar123: function () { return rbars([["A", 1, "#FFE3E3"], ["B", 2, "#E3F0FF"], ["C", 3, "#E6F4EA"]]); },
+  bar74: function () { return rbars([["Kim", 7, "#FFE3E3"], ["Lee", 4, "#E3F0FF"]], 28); },
+  kids: function () { return '<svg viewBox="0 0 300 86">' + rgroup(12) + rgroup(160) + '</svg>'; },
+  starheart: function () { var s = '<svg viewBox="0 0 300 50">'; for (var i = 0; i < 3; i++) s += rshape("star", 20 + i * 32, 10);
+    for (var j = 0; j < 5; j++) s += rshape("heart", 140 + j * 30, 12); return s + '</svg>'; },
+  colon: function () { return '<svg viewBox="0 0 300 70"><text x="150" y="50" text-anchor="middle" font-family="Fredoka" font-weight="600" font-size="44" fill="#3C3A8F">2 <tspan fill="#E8962E">:</tspan> 3</text></svg>'; }
+};
+for (var rk in PICSR) PICS[rk] = PICSR[rk];
 ["moon", "lampeye", "parrot", "disco", "mirrorboard", "pass", "pinhole"].forEach(function (k) { TAPS[k] = function (el) { el.querySelector("svg").classList.toggle("on"); }; });
 TAPS.dark = function (el) { el.querySelector("svg").classList.toggle("off"); };
 
@@ -661,7 +692,7 @@ function finish() {
   var all = DATA.lessons.every(function (_, i) { return S.done[i]; });
   var h = '<div class="glowbig pop">' + GLOW + '</div><h1>Lesson complete!</h1><p>' + esc(L.title) + '</p>' +
     '<div class="stats"><div class="stat"><b style="color:#E8962E">+' + LS.xp + '</b><span>XP</span></div><div class="stat"><b style="color:#2E8B57">' + LS.first + '/' + LS.nq + '</b><span>right first try</span></div><div class="stat"><b style="color:#2F80C9">' + mins + '</b><span>min</span></div></div>';
-  if (all && (!prev || LS.i === DATA.lessons.length - 1)) h += '<div class="badge pop">' + badgeSvg("#E8962E", true) + '</div><h2>You are a ' + esc(DATA.badge) + '!</h2><p>You finished every lesson of the Light unit.</p>';
+  if (all && (!prev || LS.i === DATA.lessons.length - 1)) h += '<div class="badge pop">' + badgeSvg("#E8962E", true) + '</div><h2>You are a ' + esc(DATA.badge) + '!</h2><p>You finished every lesson of ' + esc(DATA.unit || "the Light unit") + '.</p>';
   h += '<button class="btn" id="back">Continue</button>';
   $("scrDone").innerHTML = h; show("scrDone");
   $("back").onclick = LS.live ? liveWait : pathScreen;
