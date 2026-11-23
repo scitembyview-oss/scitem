@@ -961,7 +961,8 @@ function qShowBoard(){
   $("sumBox").dataset.q="board";$("sumBox").hidden=false;
 }
 // her answer card: tries left, right/wrong
-function qTries(id){const d=MYANS[id]||{},tr=(QG&&QG.tr&&QG.tr[id])||{};return {n:Math.max(d.n||0,Object.keys(tr).length),tr};}
+// Firebase hands {1:false} back as the array [null,false]: count only the tries that are there (View 2026-11-23: 1 wrong try showed "no tries left")
+function qTries(id){const d=MYANS[id]||{},tr=(QG&&QG.tr&&QG.tr[id])||{};return {n:Math.max(d.n||0,Object.keys(tr).filter(k=>tr[k]!=null).length),tr};}
 function questStatus(card,d,b){
   const id=card.dataset.q,st=card.querySelector(".st"),go=card.querySelector(".go");
   const {n,tr}=qTries(id),sent=!!d&&!!d.k,fresh=sent&&b&&b.for===d.k,cur=JSON.stringify(readCard(card)),changed=!sent||cur!==d.sent;
@@ -1019,11 +1020,17 @@ function qView(u){                         // what screen u may see
   if(!show){g.me=qCoins(Q,u);const mk=(Q.mk&&Q.mk[u])||{};if(Object.keys(mk).length)g.tr=mk;}
   return g;
 }
+// Firebase hands back keys sorted and {1:x} as [null,x]: compare in one form, or every copy looks new and #live writes forever
+function qCanon(x){
+  const f=v=>{if(Array.isArray(v)){const o={};v.forEach((y,i)=>{if(y!=null)o[i]=f(y);});return f(o);}
+    if(v&&typeof v==="object"){const o={};for(const k of Object.keys(v).sort())if(v[k]!=null)o[k]=f(v[k]);return o;}return v;};
+  return JSON.stringify(f(x));
+}
 async function qFan(){
   if(!BLOADED)return;if(qBusy){qAgain=true;return;}
   const body={};
   for(const u of Object.keys(TREE)){if(!TREE[u]||typeof TREE[u]!=="object")continue;
-    const g=qView(u),old=BTREE[u]&&BTREE[u]._g;if(JSON.stringify(g)!==JSON.stringify(old||null))body[u+"/_g"]=g;}
+    const g=qView(u),old=BTREE[u]&&BTREE[u]._g;if(qCanon(g)!==qCanon(old||null))body[u+"/_g"]=g;}
   if(!Object.keys(body).length)return;
   qBusy=true;
   try{const r=await fetch(fbUrl("",await fbToken(),"back"),{method:"PATCH",body:JSON.stringify(body)});if(!r.ok)throw new Error("HTTP "+r.status);}
