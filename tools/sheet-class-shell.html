@@ -966,14 +966,15 @@ function questStatus(card,d,b){
   const id=card.dataset.q,st=card.querySelector(".st"),go=card.querySelector(".go");
   const {n,tr}=qTries(id),sent=!!d&&!!d.k,fresh=sent&&b&&b.for===d.k,cur=JSON.stringify(readCard(card)),changed=!sent||cur!==d.sent;
   const won=tr[1]===true||tr[2]===true||fresh&&b.ok===true,left=QTRIES-n,over=won||left<=0,wait=sent&&!fresh&&!changed;
-  card.querySelectorAll("input").forEach(x=>x.disabled=over||wait);
+  // View 2026-11-23: she may change it and send her 2nd try while the 1st is still being marked (no #live open = no lock)
+  card.querySelectorAll("input").forEach(x=>x.disabled=over);
   card.classList.toggle("ok",won);card.classList.toggle("no",!won&&fresh&&b.ok===false&&!changed);
   go.innerHTML=icon("send")+(over?"จบข้อนี้แล้ว":wait?"ส่งแล้ว":n?"ส่งใหม่":"ส่งคำตอบ");
   go.disabled=over||wait||!changed||!readCard(card).every(o=>o.n);
   const tl=`<span class="qleft">ส่งได้อีก ${Math.max(left,0)} ครั้ง</span>`;
   const gain=tr[1]===true?2:tr[2]===true?1:fresh&&b.ok?(n<=1?2:1):0;
   if(won)st.innerHTML=icon("check")+`<span>ถูก! ได้ ${gain} เหรียญ</span>`;
-  else if(wait)st.innerHTML=icon("clock")+"<span>ส่งแล้ว กำลังตรวจ…</span>";
+  else if(wait)st.innerHTML=icon("clock")+"<span>ส่งแล้ว รอตรวจ</span>"+(left>0?`<span class="qleft"> · ถ้าคิดว่าผิด แก้แล้วส่งใหม่ได้อีก ${left} ครั้ง</span>`:"");
   else if(left<=0)st.innerHTML=icon("x")+"<span>ยังไม่ถูก หมดสิทธิ์ส่งข้อนี้แล้ว</span>";
   else if(fresh&&b.ok===false&&!changed)st.innerHTML=icon("x")+`<span>ยังไม่ถูก แก้แล้วส่งใหม่ได้ (ถูกได้ 1 เหรียญ)</span>`+tl;
   else st.innerHTML=(changed&&sent?"<span>แก้แล้ว ยังไม่ได้ส่ง</span> ":"")+tl+(n?"":'<span class="qleft"> · ถูกครั้งแรกได้ 2 เหรียญ</span>');
@@ -982,7 +983,6 @@ async function questSend(card){
   const id=card.dataset.q,v=readCard(card),d=ansDraft(id),{n,tr}=qTries(id);
   if(!v.every(o=>o.n)){flash("ใส่คำตอบก่อน");return;}
   if(tr[1]===true||tr[2]===true||n>=QTRIES)return;
-  if(d.k&&!(BACK[id]&&BACK[id].for===d.k))return;   // the last try is still being marked
   const t=n+1;d.v=v;d.k=Date.now();d.sent=JSON.stringify(v);d.n=t;save(K.ans,MYANS);ansStatus();
   try{
     const tok=await fbToken();
