@@ -988,7 +988,16 @@ async function questSend(card){
     const tok=await fbToken();
     const r=await fetch(fbUrl("/"+FBA.uid,tok),{method:"PATCH",body:JSON.stringify({n:ME.name||"",pg:idx,at:{".sv":"timestamp"},["ans/"+id]:{v,k:d.k,t}})});
     if(!r.ok)throw new Error("HTTP "+r.status);
+    qLift(qStageOf(id),v[0].n);
   }catch(e){d.k=0;d.n=t-1;save(K.ans,MYANS);ansStatus();setNet("ส่งคำตอบไม่ได้ ลองกดส่งใหม่");}
+}
+// View 2026-11-23: after she sends, her answer plays out (anims.js SC_ANIMS.quest: the animal under that many balloons rises or not)
+function qLift(st,val){
+  const A=window.SC_ANIMS;if(!A||!A.quest)return;
+  if(ANIMSTOP){try{ANIMSTOP();}catch(e){}ANIMSTOP=null;}
+  HB=null;$("hbT").textContent=A.questTitle?A.questTitle(st):"";$("hbTabs").innerHTML="";$("hbBody").innerHTML="";
+  $("hintBox").hidden=false;document.body.classList.add("hbOpen");
+  try{ANIMSTOP=A.quest($("hbBody"),{stage:st,v:evalAns(val)})||null;}catch(e){console.error(e);}
 }
 
 /* #live: the teacher's panel and the copy of the state to every screen */
