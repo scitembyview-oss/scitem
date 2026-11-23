@@ -365,7 +365,7 @@ body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:v
 <script>
 (function(){
 "use strict";
-const CFG={"id":"bdog1","title":"ลูกโป่งยกหมา","pages":5,"sheet":"https://script.google.com/macros/s/AKfycbzIaVMqROaTFaDN36SwCif7pWF_KEE7GroEUj2V5c9BM2gg4Y2v3wXbUOf-P4T0aBygnw/exec","fb":{"key":"AIzaSyClZhItG5C3aaz413ToeXPDKzh6Aw5y9CU","db":"https://scitem-live-default-rtdb.asia-southeast1.firebasedatabase.app"},"qs":{"p02":[{"id":"S2","name":"ด่าน 2 · หมาลอย","parts":[{"l":"จำนวนลูกโป่ง (ลูก)","nu":1}]}],"p03":[{"id":"S3","name":"ด่าน 3 · เปลี่ยนเป็นแมว","parts":[{"l":"จำนวนลูกโป่ง (ลูก)","nu":1}]}],"p04":[{"id":"S4","name":"ด่าน 4 · อากาศร้อน","parts":[{"l":"จำนวนลูกโป่ง (ลูก)","nu":1}]}],"p05":[{"id":"S5","name":"ด่านบอส · ชนเพดาน","boss":1,"parts":[{"l":"เวลา (s)","nu":1}]}]},"quest":{"info":{"V":{"l":"ปริมาตรลูกโป่ง V","v":"0.015 m³/ลูก"},"ra":{"l":"ρ อากาศ","v":"1.2 kg/m³"},"rh":{"l":"ρ ฮีเลียม","v":"0.2 kg/m³"},"mr":{"l":"มวลยางลูกโป่ง","v":"3.0 g/ลูก"},"md":{"l":"มวลหมา","v":"7.5 kg"},"g":{"l":"g","v":"10 m/s²"},"mc":{"l":"มวลแมว","v":"4.2 kg"},"rt":{"l":"ρ อากาศร้อน","v":"0.9 kg/m³"},"n":{"l":"จำนวนลูกโป่ง","v":"1250 ลูก"},"h":{"l":"ระยะถึงเพดาน","v":"10 m"}},"cards":["V","ra","rh","mr","md","g"],"stages":[{"n":"ด่าน 1","t":"ตามหาข้อมูล","page":0,"info":["V","ra","rh","mr","md","g"],"fresh":[],"cards":1},{"n":"ด่าน 2","t":"หมาลอย","page":1,"info":["V","ra","rh","mr","md","g"],"fresh":[],"q":"S2"},{"n":"ด่าน 3","t":"เปลี่ยนเป็นแมว","page":2,"info":["V","ra","rh","mr","mc","g"],"fresh":["mc"],"q":"S3"},{"n":"ด่าน 4","t":"อากาศร้อน","page":3,"info":["V","ra","rt","mr","md","g"],"fresh":["rt"],"q":"S4"},{"n":"ด่านบอส","t":"ชนเพดาน","page":4,"info":["V","ra","rh","mr","md","g","n","h"],"fresh":["n","h"],"q":"S5","boss":1}]},"anims":32007430};
+const CFG={"id":"bdog1","title":"ลูกโป่งยกหมา","pages":5,"sheet":"https://script.google.com/macros/s/AKfycbzIaVMqROaTFaDN36SwCif7pWF_KEE7GroEUj2V5c9BM2gg4Y2v3wXbUOf-P4T0aBygnw/exec","fb":{"key":"AIzaSyClZhItG5C3aaz413ToeXPDKzh6Aw5y9CU","db":"https://scitem-live-default-rtdb.asia-southeast1.firebasedatabase.app"},"qs":{"p02":[{"id":"S2","name":"ด่าน 2 · หมาลอย","parts":[{"l":"จำนวนลูกโป่ง (ลูก)","nu":1}]}],"p03":[{"id":"S3","name":"ด่าน 3 · เปลี่ยนเป็นแมว","parts":[{"l":"จำนวนลูกโป่ง (ลูก)","nu":1}]}],"p04":[{"id":"S4","name":"ด่าน 4 · อากาศร้อน","parts":[{"l":"จำนวนลูกโป่ง (ลูก)","nu":1}]}],"p05":[{"id":"S5","name":"ด่านบอส · ชนเพดาน","boss":1,"parts":[{"l":"เวลา (s)","nu":1}]}]},"quest":{"info":{"V":{"l":"ปริมาตรลูกโป่ง V","v":"0.015 m³/ลูก"},"ra":{"l":"ρ อากาศ","v":"1.2 kg/m³"},"rh":{"l":"ρ ฮีเลียม","v":"0.2 kg/m³"},"mr":{"l":"มวลยางลูกโป่ง","v":"3.0 g/ลูก"},"md":{"l":"มวลหมา","v":"7.5 kg"},"g":{"l":"g","v":"10 m/s²"},"mc":{"l":"มวลแมว","v":"4.2 kg"},"rt":{"l":"ρ อากาศร้อน","v":"0.9 kg/m³"},"n":{"l":"จำนวนลูกโป่ง","v":"1250 ลูก"},"h":{"l":"ระยะถึงเพดาน","v":"10 m"}},"cards":["V","ra","rh","mr","md","g"],"stages":[{"n":"ด่าน 1","t":"ตามหาข้อมูล","page":0,"info":["V","ra","rh","mr","md","g"],"fresh":[],"cards":1},{"n":"ด่าน 2","t":"หมาลอย","page":1,"info":["V","ra","rh","mr","md","g"],"fresh":[],"q":"S2"},{"n":"ด่าน 3","t":"เปลี่ยนเป็นแมว","page":2,"info":["V","ra","rh","mr","mc","g"],"fresh":["mc"],"q":"S3"},{"n":"ด่าน 4","t":"อากาศร้อน","page":3,"info":["V","ra","rt","mr","md","g"],"fresh":["rt"],"q":"S4"},{"n":"ด่านบอส","t":"ชนเพดาน","page":4,"info":["V","ra","rh","mr","md","g","n","h"],"fresh":["n","h"],"q":"S5","boss":1}]},"anims":38941476};
 const SHEET=CFG.sheet;                     // Google Apps Script URL (tools/check-sheet.gs); null = this browser only (try-out in two tabs)
 const CLASS=CFG.id,N=CFG.pages;
 const $=id=>document.getElementById(id);
@@ -966,14 +966,15 @@ function questStatus(card,d,b){
   const id=card.dataset.q,st=card.querySelector(".st"),go=card.querySelector(".go");
   const {n,tr}=qTries(id),sent=!!d&&!!d.k,fresh=sent&&b&&b.for===d.k,cur=JSON.stringify(readCard(card)),changed=!sent||cur!==d.sent;
   const won=tr[1]===true||tr[2]===true||fresh&&b.ok===true,left=QTRIES-n,over=won||left<=0,wait=sent&&!fresh&&!changed;
-  card.querySelectorAll("input").forEach(x=>x.disabled=over||wait);
+  // View 2026-11-23: she may change it and send her 2nd try while the 1st is still being marked (no #live open = no lock)
+  card.querySelectorAll("input").forEach(x=>x.disabled=over);
   card.classList.toggle("ok",won);card.classList.toggle("no",!won&&fresh&&b.ok===false&&!changed);
   go.innerHTML=icon("send")+(over?"จบข้อนี้แล้ว":wait?"ส่งแล้ว":n?"ส่งใหม่":"ส่งคำตอบ");
   go.disabled=over||wait||!changed||!readCard(card).every(o=>o.n);
   const tl=`<span class="qleft">ส่งได้อีก ${Math.max(left,0)} ครั้ง</span>`;
   const gain=tr[1]===true?2:tr[2]===true?1:fresh&&b.ok?(n<=1?2:1):0;
   if(won)st.innerHTML=icon("check")+`<span>ถูก! ได้ ${gain} เหรียญ</span>`;
-  else if(wait)st.innerHTML=icon("clock")+"<span>ส่งแล้ว กำลังตรวจ…</span>";
+  else if(wait)st.innerHTML=icon("clock")+"<span>ส่งแล้ว รอตรวจ</span>"+(left>0?`<span class="qleft"> · ถ้าคิดว่าผิด แก้แล้วส่งใหม่ได้อีก ${left} ครั้ง</span>`:"");
   else if(left<=0)st.innerHTML=icon("x")+"<span>ยังไม่ถูก หมดสิทธิ์ส่งข้อนี้แล้ว</span>";
   else if(fresh&&b.ok===false&&!changed)st.innerHTML=icon("x")+`<span>ยังไม่ถูก แก้แล้วส่งใหม่ได้ (ถูกได้ 1 เหรียญ)</span>`+tl;
   else st.innerHTML=(changed&&sent?"<span>แก้แล้ว ยังไม่ได้ส่ง</span> ":"")+tl+(n?"":'<span class="qleft"> · ถูกครั้งแรกได้ 2 เหรียญ</span>');
@@ -982,7 +983,6 @@ async function questSend(card){
   const id=card.dataset.q,v=readCard(card),d=ansDraft(id),{n,tr}=qTries(id);
   if(!v.every(o=>o.n)){flash("ใส่คำตอบก่อน");return;}
   if(tr[1]===true||tr[2]===true||n>=QTRIES)return;
-  if(d.k&&!(BACK[id]&&BACK[id].for===d.k))return;   // the last try is still being marked
   const t=n+1;d.v=v;d.k=Date.now();d.sent=JSON.stringify(v);d.n=t;save(K.ans,MYANS);ansStatus();
   try{
     const tok=await fbToken();
