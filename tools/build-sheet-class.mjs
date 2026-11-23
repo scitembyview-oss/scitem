@@ -6,6 +6,8 @@
 // FIREBASE in catalog.ts (when filled in) also streams every stroke live to the hidden #live screen (rules: tools/firebase-rules.json).
 // A game class (heat5): the answers file also has skills: [names] and level: {item: easy/hard}, each question sec 'A' | 'D' | 'B'
 // (pre-test / drill with coin bets / post-test), stage, boss, skill (= its item number in A and B). See tools/sheet-class-shell.html GAME.
+// A quest class (bdog1): the answers file also has quest: {info, cards, stages} (public: the data bar, one stage a page) and
+// sol: {stage: {a, lines}} (into key.json only). The teacher moves the stages and gives coins on #live. See QUEST in the shell.
 // Answer boxes: --answers <answers.json> (kept OUT of the repo, e.g. project files) = {q: [{id, page, name, parts: [{l, v, u, tol?} | {l, c: [choices], a} | {l, t: 1}]}]}; a part with nu: 1 is a number with no unit box (maths).
 // The labels and choices go into the page; the values (v, u, a) only into key.json. Use "-" as key.pdf for a class without key pages.
 // Usage: node tools/build-sheet-class.mjs <student.pdf> <key.pdf|-> <title> <teacher code> <out dir> <class id> [--local] [--answers <file>]
@@ -101,7 +103,8 @@ for (const q of ansQ) {
 }
 // kmap[student page] = the key page to open for it (the first question on that page, else the page before's)
 if (kpaged) for (let i = 0, last = 0; i < sp.length; i++) { const q = ansQ.find((x) => x.page === i + 1); if (q) last = q.kpage - 1; kmap.push(last); }
-const plain = new TextEncoder().encode(JSON.stringify({ pages: kp.map((f) => readFileSync(join(tmpK, f)).toString('base64')), answers, ...(kpaged ? { kmap, kq, kh } : {}) }));
+// a quest class (bdog1): the worked solution of each stage (shown on the students' screens when the teacher opens it) stays in the key
+const plain = new TextEncoder().encode(JSON.stringify({ pages: kp.map((f) => readFileSync(join(tmpK, f)).toString('base64')), answers, ...(kpaged ? { kmap, kq, kh } : {}), ...(ansAll.sol ? { sol: ansAll.sol } : {}) }));
 rmSync(tmpS, { recursive: true }); rmSync(tmpK, { recursive: true });
 
 writeFileSync(join(out, 'key.json'), JSON.stringify(await seal(tCode, plain)));
@@ -109,6 +112,7 @@ writeFileSync(join(out, 'key.json'), JSON.stringify(await seal(tCode, plain)));
 const sheet = local ? null : /CLASS_SHEET_URL\s*=\s*'([^']*)'/.exec(readFileSync(new URL('../src/data/catalog.ts', import.meta.url), 'utf8'))[1];
 if (!local && !sheet) throw new Error('CLASS_SHEET_URL is empty in src/data/catalog.ts (or build with --local)');
 const cfg = { id, title, pages: sp.length, sheet, fb: local ? null : firebase(), ...(ansFile ? { qs } : {}), ...(ansAll.skills ? { game: { skills: ansAll.skills, level: ansAll.level || {}, ...(ansAll.neg ? { neg: 1 } : {}), ...(ansAll.manual ? { manual: 1 } : {}), ...(ansAll.regrade ? { regrade: ansAll.regrade } : {}) } } : {}),
+  ...(ansAll.quest ? { quest: ansAll.quest } : {}),   // a quest class: stages the teacher moves through, the data bar, coins 2/1/0 (see GAME QUEST in the shell)
   ...(existsSync(join(out, 'anims.js')) ? { anims: Date.now() % 1e8 } : {}) };
 const shell = readFileSync(new URL('./sheet-class-shell.html', import.meta.url), 'utf8');
 writeFileSync(join(out, 'index.html'), shell.replace(/\/\*__CFG__\*\/\{[^\n]*?\}(?=;)/, JSON.stringify(cfg)).replace('<title>Scitem Class</title>', `<title>${title}</title>`));
