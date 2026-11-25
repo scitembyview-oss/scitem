@@ -8,6 +8,8 @@
 // (pre-test / drill with coin bets / post-test), stage, boss, skill (= its item number in A and B). See tools/sheet-class-shell.html GAME.
 // A quest class (bdog1): the answers file also has quest: {info, cards, stages} (public: the data bar, one stage a page) and
 // sol: {stage: {a, lines}} (into key.json only). The teacher moves the stages and gives coins on #live. See QUEST in the shell.
+// An exam class (close1): the answers file also has exam: {pass, mins} (no skills): every question is set A (one answer, final, results
+// hidden until the teacher opens them on #live), no coins, a countdown of mins from leaving the cover, #live scores against pass. See EXAM in the shell.
 // Answer boxes: --answers <answers.json> (kept OUT of the repo, e.g. project files) = {q: [{id, page, name, parts: [{l, v, u, tol?} | {l, c: [choices], a} | {l, t: 1}]}]}; a part with nu: 1 is a number with no unit box (maths).
 // The labels and choices go into the page; the values (v, u, a) only into key.json. Use "-" as key.pdf for a class without key pages.
 // Usage: node tools/build-sheet-class.mjs <student.pdf> <key.pdf|-> <title> <teacher code> <out dir> <class id> [--local] [--answers <file>]
@@ -96,6 +98,7 @@ for (const q of ansQ) {
   const pid = 'p' + String(q.page).padStart(2, '0');
   // sec/stage/boss/skill: a game class (the answers file has "skills"); public, no answers in them
   const meta = Object.fromEntries(['sec', 'stage', 'boss', 'skill', 'bets'].filter((k) => q[k] != null).map((k) => [k, q[k]]));
+  if (ansAll.exam && !meta.sec) meta.sec = 'A';   // an exam class: every question is one answer, results hidden until the teacher opens them
   (qs[pid] ||= []).push({ id: q.id, name: q.name, ...meta, parts: q.parts.map((p) => (p.c ? { l: p.l, c: p.c } : p.nu ? { l: p.l, nu: 1 } : { l: p.l })) });
   if (q.kpage) kq[q.id] = q.kpage - 1;
   if (q.hint) kh[q.id] = q.hint;                    // [top, bottom] of its worked-solution box on the key page, 0..1
@@ -111,7 +114,8 @@ writeFileSync(join(out, 'key.json'), JSON.stringify(await seal(tCode, plain)));
 
 const sheet = local ? null : /CLASS_SHEET_URL\s*=\s*'([^']*)'/.exec(readFileSync(new URL('../src/data/catalog.ts', import.meta.url), 'utf8'))[1];
 if (!local && !sheet) throw new Error('CLASS_SHEET_URL is empty in src/data/catalog.ts (or build with --local)');
-const cfg = { id, title, pages: sp.length, sheet, fb: local ? null : firebase(), ...(ansFile ? { qs } : {}), ...(ansAll.skills ? { game: { skills: ansAll.skills, level: ansAll.level || {}, ...(ansAll.neg ? { neg: 1 } : {}), ...(ansAll.manual ? { manual: 1 } : {}), ...(ansAll.regrade ? { regrade: ansAll.regrade } : {}) } } : {}),
+const cfg = { id, title, pages: sp.length, sheet, fb: local ? null : firebase(), ...(ansFile ? { qs } : {}), ...(ansAll.exam && !ansAll.skills ? { game: { skills: [], level: {}, exam: { pass: ansAll.exam.pass || 0, mins: ansAll.exam.mins || 0 } } } : {}),
+  ...(ansAll.skills ? { game: { skills: ansAll.skills, level: ansAll.level || {}, ...(ansAll.neg ? { neg: 1 } : {}), ...(ansAll.manual ? { manual: 1 } : {}), ...(ansAll.regrade ? { regrade: ansAll.regrade } : {}) } } : {}),
   ...(ansAll.quest ? { quest: ansAll.quest } : {}),   // a quest class: stages the teacher moves through, the data bar, coins 2/1/0 (see GAME QUEST in the shell)
   ...(existsSync(join(out, 'anims.js')) ? { anims: Date.now() % 1e8 } : {}) };
 const shell = readFileSync(new URL('./sheet-class-shell.html', import.meta.url), 'utf8');
