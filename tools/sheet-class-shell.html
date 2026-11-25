@@ -126,6 +126,7 @@ body.hbOpen #work,body.hbOpen #fWork{visibility:hidden}
 .qa .bets.ask{animation:betask .5s 2;border-radius:22px}.qa .bets.ask button{border-color:#d9822b;box-shadow:0 0 0 3px #f5b30155}
 @keyframes betask{0%,100%{transform:none}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 .qa .boss{font:700 13px var(--display);color:#fff;background:#c2410c;border-radius:8px;padding:2px 8px;align-self:flex-start}
+body.nocoin #coins{display:none}
 .coin{display:inline-block;width:1em;height:1em;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe58a,#f5b301 60%,#c98a00);box-shadow:inset 0 0 0 1.5px #b07800;vertical-align:-.12em}
 #coins{display:none;align-items:center;gap:6px;font:700 20px var(--display);background:#fff8e1;border:2px solid #f5b301;border-radius:22px;padding:2px 12px 2px 8px;color:#3b2a00;position:relative;min-height:40px}
 body.game #coins{display:inline-flex}body.game.show:not(.pulling) #coins{display:none}
@@ -657,6 +658,7 @@ for(const [pid,list] of Object.entries(QS))for(const q of list){QINFO[q.id]=Obje
 const GAME=CFG.game||null;if(GAME)document.body.classList.add("game");
 const QUEST=CFG.quest||null;if(QUEST)document.body.classList.add("quest");   // a quest class: see QUEST below
 const secOf=q=>GAME&&QINFO[q]?QINFO[q].sec||"":"";
+const NOCOIN=!!GAME&&!QORDER.some(q=>secOf(q)==="D");if(NOCOIN)document.body.classList.add("nocoin");   // an exam only (close1): set A, no drill, no coins
 const allChoice=q=>QINFO[q].parts.every(p=>p.c);
 const ICONS={"pen": "<path d=\"M12 20h9\"/><path d=\"M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z\"/>", "eraser": "<path d=\"m7 21-4.3-4.3a1 1 0 0 1 0-1.4l10-10a1 1 0 0 1 1.4 0l5.6 5.6a1 1 0 0 1 0 1.4L13 21\"/><path d=\"M22 21H7\"/><path d=\"m5 11 9 9\"/>", "lasso": "<path d=\"M7 22a5 5 0 0 1-2-4\"/><path d=\"M3.3 14A6.8 6.8 0 0 1 2 10c0-4.4 4.5-8 10-8s10 3.6 10 8-4.5 8-10 8a12 12 0 0 1-5-1\"/><circle cx=\"5\" cy=\"16\" r=\"2\"/>", "hand": "<path d=\"M18 11V6a2 2 0 0 0-4 0v5\"/><path d=\"M14 10V4a2 2 0 0 0-4 0v6\"/><path d=\"M10 10.5V6a2 2 0 0 0-4 0v8\"/><path d=\"M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-5.9-2.4L3.4 16a2 2 0 0 1 3-2.8L8 15\"/>", "undo": "<path d=\"M9 14 4 9l5-5\"/><path d=\"M4 9h10.5a5.5 5.5 0 0 1 0 11H11\"/>", "trash": "<path d=\"M3 6h18\"/><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\"/><path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"/>", "left": "<path d=\"m15 18-6-6 6-6\"/>", "right": "<path d=\"m9 18 6-6-6-6\"/>", "grid": "<rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/>", "follow": "<circle cx=\"12\" cy=\"12\" r=\"3\"/><circle cx=\"12\" cy=\"12\" r=\"8\"/><path d=\"M12 2v2M12 20v2M2 12h2M20 12h2\"/>", "inbox": "<path d=\"M22 12h-6l-2 3h-4l-2-3H2\"/><path d=\"M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1Z\"/>", "print": "<path d=\"M6 9V2h12v7\"/><path d=\"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2\"/><rect x=\"6\" y=\"14\" width=\"12\" height=\"8\"/>", "check": "<path d=\"M20 6 9 17l-5-5\"/>", "x": "<path d=\"M18 6 6 18M6 6l12 12\"/>", "clock": "<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 6v6l4 2\"/>", "send": "<path d=\"m22 2-7 20-4-9-9-4Z\"/><path d=\"M22 2 11 13\"/>", "help": "<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3\"/><path d=\"M12 17h.01\"/>"};
 const icon=k=>'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+ICONS[k]+'</svg>';
@@ -864,8 +866,8 @@ function sumHtml(rows,name,coins,drill){
   if(!rows.length)return `<h2><span>${esc(name||"ผลของฉัน")}</span><button type="button" data-x="1" aria-label="ปิด">✕</button></h2>
     <div class="big3"><div>เหรียญ<b><span class="coin"></span> ${coins}</b>${drill?drill:""}</div></div>`;
   return `<h2><span>${esc(name||"ผลของฉัน")}</span><button type="button" data-x="1" aria-label="ปิด">✕</button></h2>
-    <div class="big3"><div>ก่อนเรียน (A)<b>${openA?nA+"/"+rows.length:"รอผล"}</b></div><div>หลังเรียน (B)<b>${anyB?nB+"/"+rows.length:"–"}</b></div>
-    <div>เหรียญ<b><span class="coin"></span> ${coins}</b>${drill?drill:""}</div></div>
+    <div class="big3"><div>${NOCOIN?"คะแนน":"ก่อนเรียน (A)"}<b>${openA?nA+"/"+rows.length:"รอผล"}</b></div>${NOCOIN?"":`<div>หลังเรียน (B)<b>${anyB?nB+"/"+rows.length:"–"}</b></div>`}
+    ${NOCOIN?"":`<div>เหรียญ<b><span class="coin"></span> ${coins}</b>${drill?drill:""}</div>`}</div>
     ${openA&&anyB?`<div style="font:700 17px var(--display);text-align:center">${nB>nA?"เก่งขึ้น +"+(nB-nA)+" ข้อ":nB===nA?"เท่าเดิม":"ลดลง "+(nA-nB)+" ข้อ"}</div>`:""}
     <table><tr><th>#</th><th>ทักษะ</th><th>A</th><th>B</th></tr>${rows.map(r=>`<tr><td>${r.n}</td><td>${esc(r.skill)}</td>${t(r.a)}${t(r.b)}</tr>`).join("")}</table>`;
 }
