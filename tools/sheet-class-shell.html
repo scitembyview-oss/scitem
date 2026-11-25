@@ -132,6 +132,13 @@ body.game #coins{display:inline-flex}body.game.show:not(.pulling) #coins{display
 #coins .fire{display:none;color:#c2410c;font-size:15px;align-items:center;gap:2px}#coins .fire.on{display:inline-flex}
 #coins .fire svg{width:18px;height:18px;fill:#ea580c;stroke:none}
 #coins.shake{animation:shake .45s}
+/* an exam class (CFG.game.exam; close1): no coins, one answer a question, results hidden until the teacher opens them, a countdown */
+body.exam #coins{display:none!important}
+#timer{display:none;align-items:center;gap:6px;font:700 18px var(--display);background:var(--card);border:2px solid var(--line);border-radius:22px;padding:2px 12px;min-height:40px;font-variant-numeric:tabular-nums}
+body.exam:not(.show) #timer{display:inline-flex}#timer .ic{width:18px;height:18px}
+#timer.low{border-color:#e9b949;background:#fff8e1}#timer.up{border-color:var(--bad);color:var(--bad);background:#fdecea}
+#sumBox .pass{font:800 18px var(--display);text-align:center;border-radius:12px;padding:8px}#sumBox .pass.y{background:var(--mint);color:var(--good)}#sumBox .pass.n{background:#fdecea;color:var(--bad)}
+.card .ch .exs{color:var(--fg);font-weight:700;margin-left:6px}.card .ch .exs.y{color:var(--good)}
 @keyframes shake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
 .pop{position:fixed;z-index:60;font:800 34px var(--display);pointer-events:none;animation:pop 1.3s ease-out forwards;text-shadow:0 2px 0 #fff,0 0 12px #fff}
 .pop.y{color:#16a34a}.pop.n{color:#dc2626}
@@ -305,6 +312,7 @@ body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:v
   <div id="bar">
     <h1 id="title"></h1><span id="who"></span>
     <button type="button" id="coins" title="คะแนนของฉัน"><span class="coin"></span><span id="coinN">10</span><span class="fire" id="fire"><svg viewBox="0 0 24 24"><path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-4-1-6 1-9.5Z"/></svg><span id="fireN"></span></span></button>
+    <span id="timer" role="timer" aria-live="off"></span>
     <select id="stu" hidden aria-label="นักเรียน"></select>
     <span class="sp"></span>
     <button class="b i" id="tPen" aria-pressed="true" aria-label="Pen" title="Pen"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span class="sw" id="penSw"></span></button>
@@ -655,6 +663,8 @@ for(const [pid,list] of Object.entries(QS))for(const q of list){QINFO[q.id]=Obje
 /* a game class (CFG.game = {skills, level}; heat5): each question has sec A (pre-test: marked on #live, shown when the teacher opens set A),
    D (the drill: bet 1–3 coins, boss ×2, first try counts) or B (post-test: marked at once); answers are final once sent in A and B */
 const GAME=CFG.game||null;if(GAME)document.body.classList.add("game");
+const EXAM=GAME&&GAME.exam||null;if(EXAM)document.body.classList.add("exam");   // {pass, mins}: see EXAM below
+const SETA=EXAM?"ผลสอบ":"ชุด A";
 const QUEST=CFG.quest||null;if(QUEST)document.body.classList.add("quest");   // a quest class: see QUEST below
 const secOf=q=>GAME&&QINFO[q]?QINFO[q].sec||"":"";
 const allChoice=q=>QINFO[q].parts.every(p=>p.c);
@@ -705,7 +715,8 @@ function drawAns(){
   box.hidden=!qs.length||!(FB||SHOW);
   if(box.hidden){box.innerHTML="";return;}
   const SYM=["√","π","²","×10^","/","(",")"];if(qs.some(q=>q.parts.some(p=>p.nu)))SYM.unshift("−");   // a maths class: a minus key
-  box.innerHTML='<div class="sym">'+SYM.map(t=>`<button type="button" data-ins="${t}">${t==="×10^"?"×10ⁿ":t}</button>`).join("")+"</div>"+qs.map(q=>{
+  const noSym=EXAM&&qs.every(q=>q.parts.every(p=>p.c));   // an exam of ก ข ค ง only: no maths keys
+  box.innerHTML=(noSym?"":'<div class="sym">'+SYM.map(t=>`<button type="button" data-ins="${t}">${t==="×10^"?"×10ⁿ":t}</button>`).join("")+"</div>")+qs.map(q=>{
     const d=SHOW?{v:[]}:ansDraft(q.id);
     const g=secOf(q.id);
     return `<div class="qa" data-q="${esc(q.id)}"><h3>${esc(q.name)}</h3>`+(g==="D"&&q.boss?'<span class="boss">บอส · เหรียญ ×2</span>':"")+q.parts.map((p,k)=>{const v=d.v[k]||{};
@@ -735,7 +746,7 @@ function ansStatus(){
     if(!st)continue;
     if(secOf(id)){gameStatus(card,d,b);continue;}
     const cur=JSON.stringify(readCard(card)),fresh=!!d&&d.k&&b&&b.for===d.k,changed=!d||!d.k||cur!==d.sent;
-    card.classList.toggle("ok",fresh&&!changed&&b.ok===true);card.classList.toggle("no",fresh&&!changed&&b.ok===false);
+    card.classList.toggle("ok",!!(fresh&&!changed&&b.ok===true));card.classList.toggle("no",!!(fresh&&!changed&&b.ok===false));
     go.innerHTML=icon("send")+(!changed?"ส่งแล้ว":d&&d.k?"ส่งใหม่":"ส่งคำตอบ");go.disabled=!changed;
     if(!d||!d.k)st.innerHTML="";
     else if(changed)st.innerHTML="แก้แล้ว ยังไม่ได้ส่ง";
@@ -752,6 +763,7 @@ async function sendAns(card){
   if(g&&v.some(o=>!o.c&&!o.n)){flash("ตอบให้ครบทุกช่องก่อน");return;}
   if(g==="D"&&!d.first&&!d.bet){flash("ลงเหรียญก่อน 1, 2 หรือ 3");const bs=card.querySelector(".bets");if(bs){bs.classList.remove("ask");void bs.offsetWidth;bs.classList.add("ask");}return;}
   if((g==="A"||g==="B")&&d.k)return;               // the exams: one answer, final
+  if(EXAM&&examLeft()<=0){flash("หมดเวลาแล้ว");ansStatus();return;}
   d.v=v;d.k=Date.now();d.sent=JSON.stringify(v);if(g==="D"&&!d.first)d.sbet=d.bet;save(K.ans,MYANS);ansStatus();
   try{
     const tok=await fbToken();
@@ -792,24 +804,28 @@ function startAns(){
 function gameStatus(card,d,b){
   const id=card.dataset.q,g=secOf(id),st=card.querySelector(".st"),go=card.querySelector(".go");
   const sent=!!d&&!!d.k,fresh=sent&&b&&b.for===d.k,cur=JSON.stringify(readCard(card)),changed=!sent||cur!==d.sent;
-  const lock=(g==="A"||g==="B")&&sent||g==="D"&&fresh&&b.ok===true&&!changed;
+  const late=!!EXAM&&!sent&&examLeft()<=0;   // time is up: what was not sent stays unsent
+  const lock=(g==="A"||g==="B")&&sent||g==="D"&&fresh&&b.ok===true&&!changed||late;
   card.querySelectorAll(".ch4 button,input").forEach(x=>x.disabled=lock);
   const first=d&&d.first;
   const bets=card.querySelector(".bets");
   if(bets&&first)bets.innerHTML=`<span>ลงไว้ ${first.bet} เหรียญ · ${first.gain>0?"ได้ +"+first.gain:"เสีย "+(-first.gain)}</span>`;
   else if(bets)bets.querySelectorAll("button").forEach(x=>{x.disabled=lock||sent&&!changed||!GAME.neg&&+x.dataset.bet>1&&+x.dataset.bet>+($("coinN").textContent||10);});
-  card.classList.toggle("ok",fresh&&!changed&&b.ok===true);card.classList.toggle("no",fresh&&!changed&&b.ok===false);
+  card.classList.toggle("ok",!!(fresh&&!changed&&b.ok===true));card.classList.toggle("no",!!(fresh&&!changed&&b.ok===false));   // !!: toggle(x, undefined) flips
   const nobet=g==="D"&&!first&&!d.bet&&!sent;   // the send key stays live and asks for the bet (a grey key with no reason looked broken)
   go.innerHTML=icon("send")+(lock||sent&&!changed?"ส่งแล้ว":sent?"ส่งใหม่ (ไม่คิดเหรียญ)":nobet?"ลงเหรียญก่อน แล้วส่ง":"ส่งคำตอบ");
   go.disabled=lock||!changed||!readCard(card).every(o=>o.c||o.n);
-  if(!sent)st.innerHTML=g==="D"&&!first?(allChoice(id)?"เลือกคำตอบ":"ใส่คำตอบ")+" ลงเหรียญ แล้วกดส่ง":"";
+  if(late)st.innerHTML=icon("clock")+"<span>หมดเวลา ส่งไม่ได้แล้ว</span>";
+  else if(!sent)st.innerHTML=g==="D"&&!first?(allChoice(id)?"เลือกคำตอบ":"ใส่คำตอบ")+" ลงเหรียญ แล้วกดส่ง":"";
   else if(changed)st.innerHTML="แก้แล้ว ยังไม่ได้ส่ง";
   else if(fresh)st.innerHTML=b.ok?icon("check")+"<span>ถูก</span>":icon("x")+"<span>"+(g==="D"?"ยังไม่ถูก ลองใหม่ได้ (ไม่คิดเหรียญ)":"ผิด")+"</span>";
   else st.innerHTML=icon("clock")+"<span>"+(g==="A"?"ส่งแล้ว รอครูเปิดผล":"ส่งแล้ว กำลังตรวจ…")+"</span>";
+  if(EXAM&&!sent&&!late)go.innerHTML=icon("send")+"ส่งคำตอบ (ส่งได้ครั้งเดียว)";
 }
 const BOSSX=q=>QINFO[q]&&QINFO[q].boss?2:1;
 let COINS=10,STREAK=0,lastRevA=-1;
 function score(quiet){
+  if(EXAM)return examScore(quiet);
   // the first marked answer of each drill question, in the order she sent them
   let fresh=null;
   for(const id of QORDER){if(secOf(id)!=="D")continue;const d=MYANS[id],b=BACK[id];
@@ -871,6 +887,7 @@ function sumHtml(rows,name,coins,drill){
 }
 function openSum(){
   if(!GAME)return;
+  if(EXAM)return examSum();
   const res=id=>{const d=MYANS[id],b=BACK[id];return d&&d.k&&b&&b.for===d.k?!!b.ok:null;};
   const dr=QORDER.filter(id=>secOf(id)==="D"),ok=dr.filter(id=>MYANS[id]&&MYANS[id].first&&MYANS[id].first.ok).length;
   $("sumIn").innerHTML=sumHtml(abRows(res),ME.name,COINS,`<span>ลุยโจทย์ถูกรอบแรก ${ok}/${dr.length}</span>`);
@@ -878,6 +895,59 @@ function openSum(){
 }
 $("sumBox").onclick=e=>{if(e.target===$("sumBox")||e.target.closest("[data-x]"))$("sumBox").hidden=true;
   const cp=e.target.closest("[data-copy]");if(cp&&window.AB_TEXT)navigator.clipboard.writeText(window.AB_TEXT).then(()=>{cp.textContent="คัดลอกแล้ว";},()=>{});};
+/* ---------- an exam class (CFG.game.exam = {pass, mins}; close1 ข้อสอบปิดบท, View 2026-11-25): every question is set A
+   (one answer, final, results hidden until the teacher presses "เปิดผลสอบ" on #live), no coins. The countdown starts when she first
+   leaves the cover (page 1) and is kept on the iPad (ME.t0, also sent to #live as t0); at 0 the questions she has not sent lock.
+   #live marks against the key by itself and shows each student's score against the pass mark (the score table). ---------- */
+const EXMS=EXAM?(+EXAM.mins||0)*60000:0;
+const examLeft=()=>!EXAM||!EXMS?Infinity:ME.t0?ME.t0+EXMS-Date.now():EXMS;
+const mmss=ms=>{ms=Math.max(0,Math.ceil(ms/1000)*1000);const m=Math.floor(ms/60000),s=Math.floor(ms/1000)%60;return m+":"+String(s).padStart(2,"0");};
+let examWasUp=false;
+function examTick(){
+  if(!EXAM||STAFF||!EXMS)return;
+  if(!ME.t0&&idx>0){ME.t0=Date.now();save(K.me,ME);livePatch({t0:ME.t0});}
+  const left=examLeft(),el=$("timer");
+  el.innerHTML=examOpened>0?icon("check")+"ดูคะแนน":icon("clock")+(left<=0?"หมดเวลา":ME.t0?"เหลือ "+mmss(left):mmss(EXMS)+" (เริ่มเมื่อเปิดข้อ 1)");
+  el.style.cursor=examOpened>0?"pointer":"";
+  el.classList.toggle("low",left>0&&left<=5*60000);el.classList.toggle("up",left<=0);
+  if(left<=0&&!examWasUp){examWasUp=true;ansStatus();flash("หมดเวลาแล้ว");}
+}
+let examOpened=-1;
+function examScore(quiet){                 // the student: when the teacher opens the results, her score comes up once
+  const ids=QORDER.filter(id=>secOf(id)==="A"),n=ids.filter(id=>BACK[id]&&BACK[id].for).length;
+  if(examOpened===0&&n>0)setTimeout(()=>examSum(),900);   // also after a reload once the results are open
+  examOpened=n;
+}
+function examSum(){
+  const ids=QORDER.filter(id=>secOf(id)==="A");
+  const res=id=>{const d=MYANS[id],b=BACK[id];return d&&d.k&&b&&b.for===d.k?!!b.ok:null;};
+  const open=ids.some(id=>res(id)!=null),ok=ids.filter(id=>res(id)===true).length;
+  const t=x=>x===true?'<td class="c y">✓</td>':x===false?'<td class="c n">✗</td>':'<td class="c">–</td>';
+  $("sumIn").innerHTML=`<h2><span>${esc(ME.name||"ผลของฉัน")}</span><button type="button" data-x="1" aria-label="ปิด">✕</button></h2>`
+    +`<div class="big3"><div>คะแนน<b>${open?ok+"/"+ids.length:"รอผล"}</b></div><div>ส่งแล้ว<b>${ids.filter(id=>MYANS[id]&&MYANS[id].k).length}/${ids.length}</b></div><div>เกณฑ์ผ่าน<b>${EXAM.pass||"–"}</b></div></div>`
+    +(open&&EXAM.pass?`<div class="pass ${ok>=EXAM.pass?"y":"n"}">${ok>=EXAM.pass?"ผ่าน":"ยังไม่ผ่าน"}</div>`:"")
+    +(open?`<table><tr><th>ข้อ</th><th>ผล</th><th>ข้อ</th><th>ผล</th><th>ข้อ</th><th>ผล</th><th>ข้อ</th><th>ผล</th></tr>`+
+      Array.from({length:Math.ceil(ids.length/4)},(_,r)=>"<tr>"+[0,1,2,3].map(c=>{const id=ids[r+c*Math.ceil(ids.length/4)];return id?`<td>${esc(QINFO[id].name)}</td>${t(res(id))}`:"<td></td><td></td>";}).join("")+"</tr>").join("")+"</table>":"");
+  $("sumBox").hidden=false;
+}
+/* #live: the key decides (a mark the teacher changed wins), whether or not the results are open yet */
+function examOf(u){
+  const a=(TREE[u]&&TREE[u].ans)||{},b=BTREE[u]||{},ids=QORDER.filter(q=>secOf(q)==="A");let ok=0,sent=0;
+  for(const q of ids){const an=a[q];if(!an)continue;sent++;const bk=b[q];if(bk&&bk.for===an.k&&!bk.auto?bk.ok:markOf(q,an))ok++;}
+  return {ok,sent,n:ids.length};
+}
+function examUsed(u){const t0=+(TREE[u]&&TREE[u].t0)||0;if(!t0)return "ยังไม่เริ่ม";const ms=Date.now()-t0;return EXMS&&ms>=EXMS?"หมดเวลา":"เหลือ "+mmss(EXMS-ms);}
+function openScores(){
+  const us=Object.keys(CARDS).filter(u=>!dupOf(u)).sort((x,y)=>String(TREE[x].n||"").localeCompare(String(TREE[y].n||""),"th"));
+  if(!us.length){lNet("ยังไม่มีน้องในห้อง");return;}
+  const rows=us.map(u=>({u,name:TREE[u].n||"",...examOf(u)})),P=EXAM.pass||0,np=rows.filter(r=>r.ok>=P).length;
+  window.AB_TEXT=["ชื่อ\tคะแนน\tเต็ม\tส่งแล้ว\tผ่าน (≥"+P+")"].concat(rows.map(r=>[r.name,r.ok,r.n,r.sent,r.ok>=P?"ผ่าน":"ไม่ผ่าน"].join("\t"))).join("\n");
+  $("sumIn").innerHTML=`<h2><span>คะแนนรวม · เกณฑ์ผ่าน ${P}/${rows[0].n}</span><button type="button" data-x="1" aria-label="ปิด">✕</button></h2>`
+    +`<div class="big3"><div>เข้าสอบ<b>${rows.length}</b></div><div>ผ่าน<b>${np}</b></div><div>ยังไม่ผ่าน<b>${rows.length-np}</b></div></div>`
+    +`<table><tr><th>ชื่อ</th><th>คะแนน</th><th>ส่งแล้ว</th><th>ผล</th><th>เวลา</th></tr>${rows.map(r=>`<tr><td>${esc(r.name)}</td><td class="c">${r.ok}/${r.n}</td><td class="c">${r.sent}/${r.n}</td>${r.ok>=P?'<td class="c y">ผ่าน</td>':'<td class="c n">ไม่ผ่าน</td>'}<td>${esc(examUsed(r.u))}</td></tr>`).join("")}</table>`
+    +'<div class="row"><button type="button" data-copy="1">คัดลอกเป็นตาราง (วางใน Sheets/Docs)</button></div><div style="font-size:13px;color:var(--muted)">ตรวจกับเฉลยอัตโนมัติ (ถ้าครูกดแก้ผลข้อไหน ใช้ผลที่ครูกด) · น้องเห็นคะแนนหลังกด "เปิดผลสอบ"</div>';
+  $("sumBox").hidden=false;
+}
 /* ---------- a quest class (CFG.quest; bdog1 "ลูกโป่งยกหมา", View 2026-11-23): one stage a page, the teacher moves the stages on #live.
    A data bar over the sheet shows the values of the stage (new ones yellow); stage 1 is said out loud: its data cards stay "? ? ?" until
    the teacher opens one on #live and names who said it first (+1 coin), and stay open after. Each calculated stage: 2 tries, right on the
@@ -1274,9 +1344,9 @@ async function revealA(){
   for(const u of Object.keys(TREE)){if(!TREE[u]||TREE[u].show)continue;const a=TREE[u].ans||{};
     for(const q of ids){const an=a[q];if(!an)continue;const bk=BTREE[u]&&BTREE[u][q];if(bk&&bk.for===an.k)continue;
       body[u+"/"+q]={ok:markOf(q,an),hint:"",for:an.k,at:{".sv":"timestamp"}};n++;}}
-  if(!n){lNet("ชุด A ไม่มีข้อที่ต้องส่งผล");return;}
-  if(!confirm("ส่งผลชุด A ("+n+" ข้อ) ให้น้องเห็นตอนนี้?"))return;
-  try{const r=await fetch(fbUrl("",await fbToken(),"back"),{method:"PATCH",body:JSON.stringify(body)});if(!r.ok)throw new Error("HTTP "+r.status);lNet("เปิดผลชุด A แล้ว");}
+  if(!n){lNet(SETA+" ไม่มีข้อที่ต้องส่งผล");return;}
+  if(!confirm("ส่ง"+SETA+" ("+n+" ข้อ) ให้น้องเห็นตอนนี้?"))return;
+  try{const r=await fetch(fbUrl("",await fbToken(),"back"),{method:"PATCH",body:JSON.stringify(body)});if(!r.ok)throw new Error("HTTP "+r.status);lNet(EXAM?"เปิดผลสอบแล้ว":"เปิดผลชุด A แล้ว");}
   catch(e){lNet("เปิดผลไม่ได้ ("+e.message+")");}
 }
 // the A/B table of the student on screen (for the pre/post report): the key decides, a mark the teacher changed wins
@@ -1314,7 +1384,7 @@ function drawLive(){
     if(!d||typeof d!=="object"||d.show){if(c){c.el.remove();delete CARDS[u];}continue;}
     if(!c){c=CARDS[u]=makeCard(u);clearTimeout(cuT);cuT=setTimeout(catchUpHints,1500);}
     const i=Math.min(Math.max(+d.pg||0,0),N-1),src="p/"+P(i)+".jpg";
-    c.name.textContent=d.n||"(ไม่มีชื่อ)";const nw=waiting(u).length;c.where.innerHTML="หน้า "+(i+1)+(nw?`<span class="wait">${nw}</span>`:"");
+    c.name.textContent=d.n||"(ไม่มีชื่อ)";const nw=waiting(u).length;c.where.innerHTML="หน้า "+(i+1)+(nw?`<span class="wait">${nw}</span>`:"")+(EXAM?(e=>`<span class="exs${e.ok>=(EXAM.pass||0)?" y":""}">${e.ok}/${e.n}</span>`)(examOf(u)):"");
     if(c.img.getAttribute("src")!==src)c.img.src=src;
     // View 2026-11-01 (#live beside Google Meet lagged): the cards are painted only while "ดูรวม" shows them
     if(!FOC){const w=c.el.clientWidth-12||cw;paintInk(c.cv,w,w*RATIO,inkOf(u,i));c.stale=false;}else c.stale=true;
@@ -1380,7 +1450,7 @@ function drawFocus(){
   const here=Math.min(Math.max(+d.pg||0,0),N-1);
   if(FOC.follow)FOC.i=here;
   const i=FOC.i,img=$("fImg"),src="p/"+P(i)+".jpg";
-  $("fWhere").textContent=(d.n||"")+" · หน้า "+(i+1)+"/"+N+(here===i?" · น้องอยู่หน้านี้":" · น้องอยู่หน้า "+(here+1))+(GAME?" · เหรียญ "+(d.sc??10):"");
+  $("fWhere").textContent=(d.n||"")+" · หน้า "+(i+1)+"/"+N+(here===i?" · น้องอยู่หน้านี้":" · น้องอยู่หน้า "+(here+1))+(EXAM?(e=>" · คะแนน "+e.ok+"/"+e.n+" (ส่ง "+e.sent+") · "+examUsed(FOC.u))(examOf(FOC.u)):GAME?" · เหรียญ "+(d.sc??10):"");
   const dots=$("fDots");
   if(dots.children.length!==N)dots.innerHTML="";
   if(dots.children.length!==N)for(let k=0;k<N;k++){const b=document.createElement("button");b.textContent=k+1;
@@ -1418,7 +1488,7 @@ function drawRev(force){
       return `<span class="k">${esc(p.l)}</span><span class="v">${esc(showA(v))}</span>${m}`;}).join("");
     const h=HINTS[u+"|"+q]??(bk&&!wait?bk.hint||"":"");
     if(g==="A")return `<div class="rq" data-q="${q}"><h3>${esc(info.name)}<span>หน้า ${info.pg+1}</span></h3><div class="pa">${parts}</div>
-      <div class="sent">${wait?"ชุด A: น้องยังไม่เห็นผล (กด เปิดผลชุด A)":"ส่งผลแล้ว: "+(bk.ok?"ถูก":"ผิด")}</div></div>`;
+      <div class="sent">${wait?(EXAM?"น้องยังไม่เห็นผล (กด เปิดผลสอบ)":"ชุด A: น้องยังไม่เห็นผล (กด เปิดผลชุด A)"):"ส่งผลแล้ว: "+(bk.ok?"ถูก":"ผิด")}</div></div>`;
     const bet=g==="D"&&an.bet?`<span class="m a">ลง ${an.bet} เหรียญ${info.boss?" · บอส ×2":""}</span>`:"";
     return `<div class="rq${wait?" waiting":""}" data-q="${q}"><h3>${esc(info.name)}<span>${QUEST?"ครั้งที่ "+(+an.t||1)+"/"+QTRIES:"หน้า "+(info.pg+1)}</span></h3><div class="pa">${parts}${bet}</div>
       <textarea placeholder="คำใบ้ (ถ้ามี)">${esc(h)}</textarea>
@@ -1483,7 +1553,9 @@ function startLive(){
   {const b=document.createElement("button");b.className="b";b.id="fInkBack";b.type="button";b.textContent="กู้ลายมือจากชีท";
     b.title="ส่งลายมือที่สำรองไว้ใน Google Sheet คืนให้น้องคนนี้ (หน้าที่น้องยังมีลายมืออยู่จะไม่ถูกแตะ)";
     $("fWait").after(b);b.onclick=()=>inkFromSheet(b);}
-  if(GAME&&QORDER.some(q=>secOf(q)==="A")){$("fRevA").hidden=false;$("fAB").hidden=false;$("fRevA").onclick=revealA;$("fAB").onclick=openAB;}
+  if(GAME&&QORDER.some(q=>secOf(q)==="A")){$("fRevA").hidden=false;$("fAB").hidden=false;$("fRevA").onclick=revealA;$("fAB").onclick=EXAM?openScores:openAB;}
+  if(EXAM){$("fRevA").textContent="เปิดผลสอบ";$("fRevA").title="ส่งผลสอบให้น้องเห็น";$("fAB").textContent="คะแนนรวม";
+    const b=document.createElement("button");b.className="b";b.type="button";b.textContent="คะแนนรวม";b.onclick=openScores;$("lClear").before(b);}
   $("rev").addEventListener("input",e=>{const c=e.target.closest(".rq");if(c&&FOC)HINTS[FOC.u+"|"+c.dataset.q]=e.target.value;});
   $("rev").addEventListener("focusout",()=>setTimeout(()=>{if(revLater)drawRev();},0));
   $("rev").addEventListener("click",e=>{
@@ -1541,6 +1613,7 @@ function start(){
     document.addEventListener("visibilitychange",()=>{if(document.hidden)autoSave(true);else{flush();pullRed();}});
     if(!SHEET)addEventListener("storage",e=>{if(e.key===K.red)pullRed();});
     // View 2026-10-26: no Send button; the ink goes live to #live, and each page saves to the Sheet by itself as a backup
+    if(EXAM&&EXMS){examTick();setInterval(examTick,1000);if(ME.t0)livePatch({t0:ME.t0});$("timer").onclick=()=>{if(examOpened>0)examSum();};}
     $("send").hidden=true;
     liveTouch();
   }
