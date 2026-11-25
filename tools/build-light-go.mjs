@@ -45,9 +45,9 @@ for (const [li, L] of content.lessons.entries()) {
     } else throw new Error(`${id}: unknown type ${c.type}`);
     key[id] = { k: canon, why: c.why };
     if (!c.hint || !c.why || !c.tag) throw new Error(`${id}: needs tag, hint and why`);
-    cards.push({ type: c.type, tag: c.tag, q: c.q, pic: c.pic, boss: c.boss, hint: c.hint, ...pub, h: await hashOf(id, canon), x: await lock(id, canon, c.why) });
+    cards.push({ type: c.type, tag: c.tag, q: c.q, pic: c.pic, boss: c.boss, sheet: c.sheet, hint: c.hint, ...pub, h: await hashOf(id, canon), x: await lock(id, canon, c.why) });
   }
-  lessons.push({ title: L.title, color: L.color, cards });
+  lessons.push({ title: L.title, color: L.color, photo: L.photo, cards });
 }
 // answer key for #watch: AES-GCM, key from the password with PBKDF2 (same numbers as openKey() in the shell)
 async function lockKey(obj, pw) {
@@ -57,7 +57,9 @@ async function lockKey(obj, pw) {
   const ct = await subtle.encrypt({ name: 'AES-GCM', iv }, k, enc.encode(JSON.stringify(obj)));
   return [salt, iv, new Uint8Array(ct)].map((b) => Buffer.from(b).toString('base64')).join('.');
 }
-const data = { id: content.id, title: content.title, sub: content.sub, badge: content.badge, lessons, key: await lockKey(key, keyPw) };
+// optional: unit (end text), mascot ("bot") or mascotSvg, pics {name: svg} for card.pic, photo (send a photo of the sheet page
+// after each lesson; lesson.photo names the page), card.sheet (the "from your sheet" chip)
+const data = { id: content.id, title: content.title, sub: content.sub, badge: content.badge, unit: content.unit, mascot: content.mascot, mascotSvg: content.mascotSvg, pics: content.pics, photo: content.photo, lessons, key: await lockKey(key, keyPw) };
 const shell = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'light-go-shell.html'), 'utf8');
 const html = shell.replace('/*DATA*/null', JSON.stringify(data)).replace('<!--TITLE-->', content.title);
 mkdirSync(dirname(resolve(out)), { recursive: true });

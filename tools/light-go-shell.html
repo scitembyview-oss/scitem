@@ -137,6 +137,7 @@ body.teach .wrap { max-width:none; padding:0; }
 .tgrp { display:inline-flex; gap:4px; margin-left:8px; }
 .sd { font-size:14px; border:1.5px solid var(--line); border-radius:99px; padding:2px 10px; color:var(--mute); }
 .sd.in { border-color:#9DBFE0; color:var(--blue); }
+.sd[data-stu] { cursor:pointer; } .sd.pick { background:#1F2A44; border-color:#1F2A44; color:#fff; }
 #tstage { position:relative; flex:1; }
 #tcard { max-width:900px; margin:0 auto; padding:10px 28px 60px; font-size:22px; }
 #tcard .q { font-size:28px; } #tcard h2 { font-size:32px; } #tcard .pic svg { max-width:520px; }
@@ -163,6 +164,28 @@ body.watch .wrap { max-width:640px; }
 .wpage { padding:10px 0; }
 .wwhy { border:2px dashed #F5C4C4; border-radius:14px; padding:10px 14px; margin:8px 0 40px; background:#FFFBFB; font-family:'Sarabun',sans-serif; font-size:16px; }
 .wwhy b { color:var(--red); } .wwhy p { margin:2px 0 10px; }
+
+/* sheet-linked lessons (cells-go, 2026-11-25): a "from your sheet" chip, the sheet photo box, the teacher's #sheets screen */
+.sheetchip { display:flex; gap:8px; align-items:center; background:#FFF8E1; border:2px dashed #E8962E; border-radius:12px; padding:6px 10px; margin:4px 0 10px; font-family:'Fredoka'; font-weight:600; font-size:15px; color:#8A5A00; }
+.sheetchip svg { width:22px; height:22px; flex:none; }
+.say .bub.sheetbub { border-color:#E8962E; background:#FFF8E1; }
+.phbox { display:flex; gap:12px; align-items:flex-start; text-align:left; border:2px solid #E8962E; background:#FFF8E1; border-radius:16px; padding:12px 14px; margin:14px 0; }
+.phbox > svg { width:34px; height:34px; flex:none; }
+.phbox p { margin:4px 0 10px; font-size:16px; }
+.phbox .btn { margin:0; }
+.phst { font-family:'Fredoka'; font-weight:600; color:#2E8B57; margin-top:6px; min-height:1em; }
+.phst.bad { color:var(--red); }
+.node .phadd { display:inline-block; margin-top:4px; border:1.5px solid #E8962E; background:#FFF8E1; color:#8A5A00; border-radius:999px; padding:2px 12px; font-size:14px; }
+#scrSheets { padding-bottom:40px; }
+body.sheets .wrap { max-width:1100px; }
+.phrow { border-top:1px solid var(--line); padding:10px 0; }
+.phrow h3 { margin:4px 0 8px; font-family:'Fredoka'; color:#3C3A8F; }
+.phgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; }
+.phcell { font-size:13px; color:var(--mute); }
+.phcell img { width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:10px; border:1.5px solid var(--line); cursor:zoom-in; display:block; }
+.phnone { aspect-ratio:3/4; border:1.5px dashed var(--line); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:22px; }
+.phbig { position:fixed; inset:0; background:rgba(20,24,32,.92); display:flex; align-items:center; justify-content:center; z-index:50; cursor:zoom-out; }
+.phbig img { max-width:96vw; max-height:94vh; border-radius:8px; }
 </style>
 </head>
 <body>
@@ -171,7 +194,7 @@ body.watch .wrap { max-width:640px; }
 <section id="scrName" class="hidden">
   <div class="glowbig" id="glowBig"></div>
   <h1 id="ttl"></h1>
-  <p><span id="sub"></span> in 5 short lessons.<br>What is your name?</p>
+  <p><span id="sub"></span> in short lessons.<br>What is your name?</p>
   <input id="nm" maxlength="30" autocomplete="off" placeholder="Your name">
   <button class="btn" id="go" disabled>Start</button>
 </section>
@@ -192,11 +215,12 @@ body.watch .wrap { max-width:640px; }
 <section id="scrTeach" class="hidden">
   <div class="tbar"><select id="tsel"></select><button id="tprev" aria-label="Back">◀</button><span id="tno"></span><button id="tnext" aria-label="Next">▶</button>
     <span class="tgrp"><button data-mode="one">ทีละข้อ</button><button data-mode="part">ทั้ง part</button><button data-mode="wait">พัก</button></span>
-    <span class="tsp"></span><button id="tpen">Pen</button><button class="sw" data-c="#C62828" style="background:#C62828"></button><button class="sw" data-c="#2F80C9" style="background:#2F80C9"></button><button class="sw" data-c="#1F2A44" style="background:#1F2A44"></button><button id="ter">Eraser</button><button id="tclr">Clear</button></div>
+    <span class="tsp"></span><button id="tpen">Pen</button><button class="sw" data-c="#C62828" style="background:#C62828"></button><button class="sw" data-c="#2F80C9" style="background:#2F80C9"></button><button class="sw" data-c="#1F2A44" style="background:#1F2A44"></button><button id="ter">Eraser</button><button id="tclr">Clear</button><button id="tpalm" title="เปิด: เขียนได้เฉพาะ Apple Pencil นิ้วใช้แตะและเลื่อนหน้า วางมือได้ · ปิด: นิ้วเขียนได้ด้วย">✋ กันฝ่ามือ</button></div>
   <div class="tinfo"><span id="tmode"></span><span id="tdots"></span></div>
   <div id="tstage"><div id="tcard"></div><canvas id="ink"></canvas></div>
 </section>
 
+<section id="scrSheets" class="hidden"></section>
 <section id="scrWatch" class="hidden">
   <div class="wbar"><select id="wsel"></select><button id="wprev" aria-label="Back">◀</button><span id="wno"></span><button id="wnext" aria-label="Next">▶</button><span class="tsp"></span><b class="fred">เฉลย</b></div>
   <div id="wbody"></div>
@@ -516,11 +540,99 @@ var PICS3 = {
   see1: function () { return seePic(1); }, see2: function () { return seePic(2); }, see3: function () { return seePic(3); }, see4: function () { return seePic(4); },
 };
 for (var pk in PICS3) PICS[pk] = PICS3[pk];
+
+/* ---- Ratio workshop (Math P5): Ratio Bot instead of Glow + bar-model pictures ---- */
+var BOT = '<svg viewBox="0 0 80 84" aria-label="Ratio Bot"><rect x="12" y="22" width="56" height="46" rx="13" fill="#E8F6F3" stroke="#2A9D8F" stroke-width="3"/><path d="M40 22 v-10" stroke="#2A9D8F" stroke-width="3"/><circle cx="40" cy="9" r="5" fill="#FFD23F" stroke="#D99A00" stroke-width="2"/><circle cx="29" cy="41" r="4.5" fill="#1F2A44"/><circle cx="51" cy="41" r="4.5" fill="#1F2A44"/><path d="M30 53 q10 8 20 0" stroke="#1F2A44" stroke-width="2.8" fill="none" stroke-linecap="round"/><text x="40" y="82" text-anchor="middle" font-family="Fredoka" font-weight="600" font-size="12" fill="#E8962E">2 : 3</text></svg>';
+if (DATA.mascot === "bot") GLOW = BOT;
+if (DATA.mascotSvg) GLOW = DATA.mascotSvg;
+if (DATA.pics) Object.keys(DATA.pics).forEach(function (k) { PICS[k] = function () { return DATA.pics[k]; }; });   // pictures shipped with the content
+var PAPER = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h8.5l4 4V21a.5.5 0 0 1-.5.5H6a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5z" fill="#fff" stroke="#E8962E" stroke-width="1.6" stroke-linejoin="round"/><path d="M14.5 2.5v4h4" fill="none" stroke="#E8962E" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4.5" stroke="#8A5A00" stroke-width="1.5" stroke-linecap="round"/></svg>';
+var CAM = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h3l1.5-2.5h6L16.5 7h3A1.5 1.5 0 0 1 21 8.5v10a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z" fill="#fff" stroke="#E8962E" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13.3" r="3.8" fill="none" stroke="#8A5A00" stroke-width="1.6"/></svg>';
+function sheetChip(c) { return c.sheet ? '<div class="sheetchip">' + PAPER + '<span>' + esc(c.sheet) + '</span></div>' : ""; }
+function rbars(rows, w) {   // rows = [[name, units, colour], ...] -> a bar model, one box = 1 unit
+  w = w || 34; var h = 40 + rows.length * 40, most = Math.max.apply(null, rows.map(function (r) { return r[1]; }));
+  var out = '<svg viewBox="0 0 ' + Math.max(160, 80 + most * w) + ' ' + h + '">';
+  rows.forEach(function (r, i) { var y = 20 + i * 40;
+    out += '<text x="58" y="' + (y + 21) + '" text-anchor="end" font-family="Fredoka" font-weight="600" font-size="15" fill="#3C3A8F">' + r[0] + '</text>';
+    for (var k = 0; k < r[1]; k++) out += '<rect x="' + (68 + k * w) + '" y="' + y + '" width="' + w + '" height="28" rx="3" fill="' + r[2] + '" stroke="#3C3A8F" stroke-width="2"/>'; });
+  return out + '</svg>'; }
+function rkid(x, girl) { var c = girl ? "#E86FA0" : "#4A90D9";
+  return '<circle cx="' + x + '" cy="30" r="9" fill="#FFDDBE"/><path d="M' + (x - 9) + ' 29 q9 -12 18 0" fill="#3B2A1A"/><path d="M' + (x - 11) + ' 66 q0 -24 11 -24 q11 0 11 24z" fill="' + c + '"/>'; }
+function rgroup(x0) { var g = '<rect x="' + x0 + '" y="10" width="128" height="66" rx="10" fill="none" stroke="#2E8B57" stroke-width="1.6" stroke-dasharray="5 4"/>';
+  for (var i = 0; i < 5; i++) g += rkid(x0 + 18 + i * 23, i >= 2); return g; }
+function rshape(kind, x, y) { return kind === "star"
+  ? '<path transform="translate(' + x + ' ' + y + ')" d="M15 3l3.5 7.4 8 .9-6 5.4 1.7 7.9L15 20.6 7.8 24.6l1.7-7.9-6-5.4 8-.9z" fill="#FFD23F" stroke="#D99A00" stroke-width="1.5"/>'
+  : '<path transform="translate(' + x + ' ' + y + ')" d="M15 26 C4 18 2 12 5 7 c3-4 8-3 10 1 c2-4 7-5 10-1 c3 5 1 11-10 19z" fill="#E86FA0"/>'; }
+var PICSR = {
+  bar23: function () { return rbars([["Mia", 2, "#FFE3E3"], ["Jay", 3, "#E3F0FF"]]); },
+  bar41: function () { return rbars([["Sam", 4, "#FFF6D6"], ["Lin", 1, "#FFF6D6"]]); },
+  bar31: function () { return rbars([["Tom", 3, "#FFF6D6"], ["Ann", 1, "#FFF6D6"]]); },
+  bar34: function () { return rbars([["Tom", 3, "#FFF6D6"], ["Ann", 4, "#FFF6D6"]]); },
+  bar123: function () { return rbars([["A", 1, "#FFE3E3"], ["B", 2, "#E3F0FF"], ["C", 3, "#E6F4EA"]]); },
+  bar74: function () { return rbars([["Kim", 7, "#FFE3E3"], ["Lee", 4, "#E3F0FF"]], 28); },
+  kids: function () { return '<svg viewBox="0 0 300 86">' + rgroup(12) + rgroup(160) + '</svg>'; },
+  starheart: function () { var s = '<svg viewBox="0 0 300 50">'; for (var i = 0; i < 3; i++) s += rshape("star", 20 + i * 32, 10);
+    for (var j = 0; j < 5; j++) s += rshape("heart", 140 + j * 30, 12); return s + '</svg>'; },
+  colon: function () { return '<svg viewBox="0 0 300 70"><text x="150" y="50" text-anchor="middle" font-family="Fredoka" font-weight="600" font-size="44" fill="#3C3A8F">2 <tspan fill="#E8962E">:</tspan> 3</text></svg>'; }
+};
+for (var rk in PICSR) PICS[rk] = PICSR[rk];
+/* ---- Material Master (Science P5 Unit 3): property tables drawn as SVG ---- */
+function mtab(heads, rows, cw, first) {   // rows = [[name, "1010"]] (1 = tick, 0 = cross) or [[name, "text", ...]]
+  cw = cw || 70; first = first || 62; var n = heads.length - 1, W = first + n * cw + 4, hh = 44, rh = 34, H = hh + rows.length * rh + 4;
+  var o = '<svg viewBox="0 0 ' + W + ' ' + H + '"><rect x="2" y="2" width="' + (W - 4) + '" height="' + (H - 4) + '" rx="8" fill="#fff" stroke="#2E8B57" stroke-width="2"/><rect x="2" y="2" width="' + (W - 4) + '" height="' + hh + '" rx="8" fill="#F3FAF6"/>';
+  heads.forEach(function (t, i) { var x = i ? first + (i - 1) * cw + cw / 2 : first / 2 + 2, ls = String(t).split("|");
+    ls.forEach(function (l, k) { o += '<text x="' + x + '" y="' + (hh / 2 + 6 - (ls.length - 1) * 7 + k * 14) + '" text-anchor="middle" font-family="Fredoka" font-weight="600" font-size="11.5" fill="#3C3A8F">' + l + '</text>'; });
+    if (i) o += '<path d="M' + (first + (i - 1) * cw) + ' 2 V' + (H - 2) + '" stroke="#2E8B57" stroke-width="1.2"/>'; });
+  rows.forEach(function (r, j) { var y = hh + j * rh; o += '<path d="M2 ' + y + ' H' + (W - 2) + '" stroke="#2E8B57" stroke-width="1.2"/>';
+    o += '<text x="' + (first / 2 + 2) + '" y="' + (y + 23) + '" text-anchor="middle" font-family="Fredoka" font-weight="600" font-size="15" fill="#3C3A8F">' + r[0] + '</text>';
+    var cells = r.length === 2 && /^[01]+$/.test(r[1]) ? r[1].split("") : r.slice(1);
+    cells.forEach(function (c, i) { var x = first + i * cw + cw / 2;
+      if (c === "1") o += '<path d="M' + (x - 8) + ' ' + (y + 18) + ' l6 7 l11 -14" stroke="#2E8B57" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+      else if (c === "0") o += '<path d="M' + (x - 6) + ' ' + (y + 11) + ' l12 12 M' + (x + 6) + ' ' + (y + 11) + ' l-12 12" stroke="#8A929B" stroke-width="2.6" stroke-linecap="round"/>';
+      else o += '<text x="' + x + '" y="' + (y + 22) + '" text-anchor="middle" font-family="Andika" font-size="13.5" fill="#22262B">' + c + '</text>'; }); });
+  return o + '</svg>'; }
+var MH4 = ["", "Elastic", "Tough", "Conducts|electricity", "Conducts|heat well"];
+var PICSM = {
+  mscratch: function () { return '<svg viewBox="0 0 300 96"><rect x="6" y="6" width="288" height="84" rx="12" fill="#FAFCFF" stroke="#2F80C9" stroke-width="1.6" stroke-dasharray="5 4"/><text font-family="Andika" font-size="15" fill="#22262B"><tspan x="150" y="32" text-anchor="middle">P scratches Q.</tspan><tspan x="150" y="54" text-anchor="middle">R scratches P.</tspan><tspan x="150" y="76" text-anchor="middle">Q scratches S.</tspan></text></svg>'; },
+  mbands: function () { return mtab(["Band", "Length|at start", "Length|with weight", "Length|after"], [["A", "10 cm", "16 cm", "10 cm"], ["B", "10 cm", "22 cm", "15 cm"], ["C", "10 cm", "11 cm", "10 cm"]], 80); },
+  mspoons: function () { return mtab(["Spoon", "Time for the|butter to melt"], [["metal", "25 s"], ["plastic", "140 s"], ["wooden", "170 s"]], 150); },
+  mcircuit: function () { return '<svg viewBox="0 0 340 168"><path d="M60 40 H300 V130 H230 M150 130 H60 V40" fill="none" stroke="#4A5560" stroke-width="2.5"/><rect x="36" y="64" width="48" height="42" rx="5" fill="#FFF6D6" stroke="#E8962E" stroke-width="2.5"/><path d="M52 85 h16 M60 77 v16" stroke="#E8962E" stroke-width="2.5" stroke-linecap="round"/><circle cx="180" cy="40" r="17" fill="#FFE68A" stroke="#E8962E" stroke-width="2.5"/><path d="M170 30 l20 20 M190 30 l-20 20" stroke="#E8962E" stroke-width="2"/><circle cx="150" cy="130" r="5" fill="#4A5560"/><circle cx="230" cy="130" r="5" fill="#4A5560"/><path d="M158 130 H222" stroke="#2F80C9" stroke-width="2.5" stroke-dasharray="6 5"/><text font-family="Fredoka" font-weight="600" font-size="15" fill="#3C3A8F"><tspan x="8" y="126">battery</tspan><tspan x="204" y="28">bulb</tspan><tspan x="134" y="158">test object here</tspan></text></svg>'; },
+  mtababc: function () { return mtab(MH4, [["A", "0000"], ["B", "0111"], ["C", "1100"]]); },
+  mtabbac: function () { return mtab(MH4, [["A", "0111"], ["B", "1100"], ["C", "0000"]]); },
+  mtab5: function () { return mtab(["", "Hard", "Elastic", "Conducts|electricity", "Water-|proof", "Trans-|parent"], [["W", "10110"], ["X", "10011"], ["Y", "01010"], ["Z", "00000"]], 60); },
+  miron: function () { return '<svg viewBox="0 0 440 140"><path d="M40 112 Q44 62 120 56 L236 56 Q262 58 262 112z" fill="#EEF2F7" stroke="#6B7785" stroke-width="2.5" stroke-linejoin="round"/><path d="M30 112 H270 V124 H30z" fill="#C9D2DB" stroke="#6B7785" stroke-width="2.5" stroke-linejoin="round"/><path d="M112 56 Q118 16 170 16 H236 Q252 18 250 34 Q246 44 232 42 H176 Q150 42 146 56" fill="none" stroke="#2F80C9" stroke-width="11" stroke-linecap="round"/><path d="M326 30 H262 M326 118 H278" stroke="#8A929B" stroke-width="2"/><text font-family="Fredoka" font-weight="600" font-size="20" fill="#3C3A8F"><tspan x="332" y="36">handle</tspan><tspan x="332" y="124">soleplate</tspan></text></svg>'; },
+  mcups: function () { return mtab(["Cup", "At the|start", "After|10 minutes"], [["metal", "80 °C", "46 °C"], ["glass", "80 °C", "55 °C"], ["foam", "80 °C", "72 °C"]], 110); },
+  mcloths: function () { return mtab(["Cloth", "Water|poured on", "Water that|went through"], [["F1", "50 ml", "0 ml"], ["F2", "50 ml", "12 ml"], ["F3", "50 ml", "45 ml"]], 110); },
+  mcocoa: function () { return mtab(["", "Thermal|insulator", "Trans-|parent", "Tough"], [["P", "001"], ["Q", "110"], ["R", "111"], ["S", "101"]], 84); }
+};
+for (var mk in PICSM) PICS[mk] = PICSM[mk];
+/* Champion round (parts 7-11) */
+function mkey() {
+  function box(x, y, w, t) { return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="30" rx="8" fill="#F2F8FD" stroke="#2F80C9" stroke-width="2"/><text x="' + (x + w / 2) + '" y="' + (y + 20) + '" text-anchor="middle" font-family="Andika" font-size="13.5" fill="#22262B">' + t + '</text>'; }
+  function leaf(x, y, l) { return '<rect x="' + x + '" y="' + y + '" width="60" height="40" rx="8" fill="#fff" stroke="#E8962E" stroke-width="2"/><text x="' + (x + 35) + '" y="' + (y + 27) + '" text-anchor="middle" font-family="Fredoka" font-weight="600" font-size="19" fill="#3C3A8F">' + l + '</text>'; }
+  function ln(x1, y1, x2, y2, t) { return '<path d="M' + x1 + ' ' + y1 + ' L' + x2 + ' ' + y2 + '" stroke="#8A929B" stroke-width="2"/><text x="' + ((x1 + x2) / 2 + (x2 > x1 ? 8 : -8)) + '" y="' + ((y1 + y2) / 2 - 2) + '" text-anchor="' + (x2 > x1 ? "start" : "end") + '" font-family="Fredoka" font-weight="600" font-size="12.5" fill="#2E8B57">' + t + '</text>'; }
+  return '<svg viewBox="0 0 380 246">' + box(70, 4, 240, "Does it conduct electricity?") + ln(130, 34, 84, 66, "yes") + ln(250, 34, 296, 66, "no") +
+    box(4, 66, 160, "Is it magnetic?") + box(206, 66, 170, "Is it transparent?") + ln(50, 96, 38, 130, "yes") + ln(118, 96, 122, 130, "no") + leaf(8, 130, "A") + leaf(92, 130, "B") +
+    ln(250, 96, 216, 130, "yes") + ln(330, 96, 330, 130, "no") + leaf(182, 130, "C") + box(256, 130, 120, "Is it elastic?") + ln(286, 160, 270, 196, "yes") + ln(346, 160, 346, 196, "no") + leaf(236, 196, "D") + leaf(314, 196, "E") + '</svg>'; }
+var PICSM2 = {
+  mhard: function () { return mtab(["", "Scratched by|a fingernail", "Scratched|by a coin", "Scratched by|a steel nail"], [["A", "111"], ["B", "011"], ["C", "001"], ["D", "000"]], 86, 44); },
+  mstretch: function () { return mtab(["Weights", "Length with|weights", "Length|after"], [["0", "10 cm", "10 cm"], ["1", "12 cm", "10 cm"], ["2", "14 cm", "10 cm"], ["3", "16 cm", "10 cm"], ["4", "23 cm", "13 cm"]], 100, 70); },
+  mcans: function () { return mtab(["Can", "Start", "5 min", "10 min", "15 min"], [["no wrap", "70 °C", "58 °C", "49 °C", "42 °C"], ["paper", "70 °C", "60 °C", "52 °C", "46 °C"], ["bubble wrap", "70 °C", "65 °C", "61 °C", "58 °C"], ["wool", "70 °C", "66 °C", "63 °C", "60 °C"]], 58, 104); },
+  mpairs: function () { return mtab(["Test", "Objects in the gap", "Bulb"], [["1", "iron nail + copper coin", "on"], ["2", "iron nail + object X", "off"], ["3", "copper coin + object Y", "on"], ["4", "object X + object Y", "off"]], 170, 48); },
+  mtab6: function () { return mtab(["", "Hard", "Elastic", "Trans-|parent", "Water-|proof", "Conducts|electricity", "Magnetic"], [["P", "100111"], ["Q", "100110"], ["R", "101100"], ["S", "010100"], ["T", "000000"]], 56, 40); },
+  mkey: mkey,
+  mtrade: function () { return mtab(["", "Strong", "Light", "Does not|rust or rot", "Cheap"], [["steel", "1001"], ["aluminium", "1110"], ["wood", "0101"]], 62, 92); },
+  mtowel: function () { return mtab(["Towel", "Size of towel", "Time in|water", "Water|squeezed out"], [["A", "20 cm × 20 cm", "10 s", "12 ml"], ["B", "20 cm × 20 cm", "10 s", "21 ml"], ["C", "30 cm × 30 cm", "10 s", "24 ml"]], 98, 52); },
+  mflask: function () { return mtab(["", "Thermal|insulator", "Tough", "Water-|proof", "Elastic"], [["J", "0110"], ["K", "1000"], ["L", "1011"], ["M", "1110"]], 70, 44); },
+  mvw: function () { return mtab(["Can", "At the|start", "After|10 minutes"], [["V", "80 °C", "68 °C"], ["W", "80 °C", "51 °C"]], 110, 50); },
+  mjk: function () { return mtab(["Band", "Length|at start", "Length|with weight", "Length|after"], [["J", "8 cm", "20 cm", "12 cm"], ["K", "8 cm", "13 cm", "8 cm"]], 84, 52); }
+};
+for (var mk2 in PICSM2) PICS[mk2] = PICSM2[mk2];
 ["moon", "lampeye", "parrot", "disco", "mirrorboard", "pass", "pinhole"].forEach(function (k) { TAPS[k] = function (el) { el.querySelector("svg").classList.toggle("on"); }; });
 TAPS.dark = function (el) { el.querySelector("svg").classList.toggle("off"); };
 
 /* ---------- screens ---------- */
-function show(id) { ["scrName", "scrPath", "scrLesson", "scrDone", "scrTeach", "scrWatch"].forEach(function (s) { $(s).classList.toggle("hidden", s !== id); });
+function show(id) { ["scrName", "scrPath", "scrLesson", "scrDone", "scrTeach", "scrWatch", "scrSheets"].forEach(function (s) { $(s).classList.toggle("hidden", s !== id); });
   $("foot").classList.toggle("hidden", id !== "scrLesson"); window.scrollTo(0, 0); }
 
 function nameScreen() {
@@ -538,12 +650,13 @@ function pathScreen() {
   DATA.lessons.forEach(function (L, i) {
     var d = S.done[i], open = unlocked(i), next = open && !d && !nextShown; if (next) nextShown = true;
     h += '<div class="node l' + (i % 4) + (open ? "" : " locked") + (next ? " next" : "") + '"><button class="dot" data-i="' + i + '" style="background:' + L.color + '"' + (open ? "" : " disabled") + '>' + (d ? '<svg viewBox="0 0 24 24" width="40" height="40"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' : i + 1) + (d && d.first === d.total ? CROWN : "") + '</button>' +
-      '<div class="lab">' + esc(L.title) + '</div><div class="sub">' + (d ? d.first + "/" + d.total + " right first try" : open ? "Tap to start" : "Locked") + '</div></div>';
+      '<div class="lab">' + esc(L.title) + '</div><div class="sub">' + (d ? d.first + "/" + d.total + " right first try" : open ? "Tap to start" : "Locked") + '</div>' + (DATA.photo && d ? (S.ph && S.ph[i] ? '<div class="sub">Sheet photo sent</div>' : '<button class="phadd" data-ph="' + i + '">Send sheet photo</button>') : "") + '</div>';
   });
   var all = DATA.lessons.every(function (_, i) { return S.done[i]; });
-  h += '<div class="node"><div class="badge">' + badgeSvg("#E8962E", all) + '</div><div class="lab">' + esc(DATA.badge) + '</div><div class="sub">' + (all ? "You won the badge!" : "Finish all 5 lessons") + '</div></div>';
+  h += '<div class="node"><div class="badge">' + badgeSvg("#E8962E", all) + '</div><div class="lab">' + esc(DATA.badge) + '</div><div class="sub">' + (all ? "You won the badge!" : "Finish all " + DATA.lessons.length + " lessons") + '</div></div>';
   $("path").innerHTML = h;
   $("path").querySelectorAll(".dot").forEach(function (b) { b.onclick = function () { startLesson(+b.getAttribute("data-i")); }; });
+  $("path").querySelectorAll("[data-ph]").forEach(function (b) { b.onclick = function () { photoScreen(+b.getAttribute("data-ph")); }; });
   var sl = $("sendline");
   sl.className = "sendline" + (S.sendErr ? " bad" : "");
   sl.textContent = S.sendErr ? "Could not send your results. Open this page again with internet." : S.sentAt ? "Results sent to Teacher View." : "";
@@ -572,7 +685,7 @@ function next() {
   var it = LS.queue[0], c = it.c, h = "";
   CUR_GET = null; if (LS.live) liveCur(it.id);
   if (c.type === "teach") {
-    h = '<h2>' + esc(c.title) + '</h2><div class="say"><div class="me">' + GLOW + '</div><div class="bub">' + c.text + '</div></div>';
+    h = sheetChip(c) + '<h2>' + esc(c.title) + '</h2><div class="say"><div class="me">' + GLOW + '</div><div class="bub' + (c.sheet ? " sheetbub" : "") + '">' + c.text + '</div></div>';
     if (c.pic) h += '<div class="pic' + (TAPS[c.pic] ? " tap" : "") + '" id="pic">' + PICS[c.pic]() + '</div>' + (TAPS[c.pic] ? '<div class="tapme">Tap the picture</div>' : "");
     if (c.tap) h += '<div class="tip hidden" id="tip">' + esc(c.tap) + '</div>';
     $("card").innerHTML = h;
@@ -582,7 +695,7 @@ function next() {
     $("act").onclick = function () { LS.queue.shift(); LS.done++; next(); };
     return;
   }
-  h = '<div class="tag' + (c.boss ? " boss" : "") + '">' + (it.tries ? "Try again" : c.boss ? "Boss question" : c.type === "order" ? "Put in order" : c.type === "match" ? "Match" : "Choose") + '</div><div class="q">' + esc(c.q) + '</div>';
+  h = sheetChip(c) + '<div class="tag' + (c.boss ? " boss" : "") + '">' + (it.tries ? "Try again" : c.boss ? "Boss question" : c.type === "order" ? "Put in order" : c.type === "match" ? "Match" : "Choose") + '</div><div class="q">' + esc(c.q) + '</div>';
   if (c.pic) h += '<div class="pic">' + PICS[c.pic]() + '</div>';
   $("card").innerHTML = h + '<div id="ans"></div>';
   var getCanon = CUR_GET = ({ choice: renderChoice, order: renderOrder, match: renderMatch })[c.type](c, $("ans"));
@@ -661,17 +774,87 @@ function finish() {
   var all = DATA.lessons.every(function (_, i) { return S.done[i]; });
   var h = '<div class="glowbig pop">' + GLOW + '</div><h1>Lesson complete!</h1><p>' + esc(L.title) + '</p>' +
     '<div class="stats"><div class="stat"><b style="color:#E8962E">+' + LS.xp + '</b><span>XP</span></div><div class="stat"><b style="color:#2E8B57">' + LS.first + '/' + LS.nq + '</b><span>right first try</span></div><div class="stat"><b style="color:#2F80C9">' + mins + '</b><span>min</span></div></div>';
-  if (all && (!prev || LS.i === DATA.lessons.length - 1)) h += '<div class="badge pop">' + badgeSvg("#E8962E", true) + '</div><h2>You are a ' + esc(DATA.badge) + '!</h2><p>You finished every lesson of the Light unit.</p>';
-  h += '<button class="btn" id="back">Continue</button>';
-  $("scrDone").innerHTML = h; show("scrDone");
+  if (all && (!prev || LS.i === DATA.lessons.length - 1)) h += '<div class="badge pop">' + badgeSvg("#E8962E", true) + '</div><h2>You are a ' + esc(DATA.badge) + '!</h2><p>You finished every lesson of ' + esc(DATA.unit || "the Light unit") + '.</p>';
+  h += photoBox(LS.i) + '<button class="btn" id="back">Continue</button>';
+  $("scrDone").innerHTML = h; show("scrDone"); photoWire(LS.i);
   $("back").onclick = LS.live ? liveWait : pathScreen;
+}
+
+
+/* ---------- photo of the sheet page (DATA.photo): the student writes in the paper sheet, then sends a photo.
+   Firebase: live/<CLS>ph/<uid>/<lesson> = {d: JPEG data URL, at, n}. +20 XP the first time per lesson.
+   The teacher sees them on #sheets. ---------- */
+function photoBox(li) {
+  if (!DATA.photo) return "";
+  var L = DATA.lessons[li], got = S.ph && S.ph[li], what = L.photo || "your sheet page";
+  return '<div class="phbox" id="phbox">' + CAM + '<div><b>' + (got ? "Sheet photo sent" : "Photo of your sheet") + '</b><p>' +
+    (got ? "Teacher View can see " + esc(what) + ". You can send a new photo if you fixed something." : "Take a photo of " + esc(what) + " so Teacher View can see your writing. <b>+20 XP</b>") +
+    '</p><label class="btn ghost"><input type="file" accept="image/*" capture="environment" id="phin" hidden>' + (got ? "Send a new photo" : "Take a photo") + '</label><div class="phst" id="phst"></div></div></div>';
+}
+function shrink(f) {
+  return new Promise(function (ok, no) {
+    var img = new Image(), u = URL.createObjectURL(f);
+    img.onload = function () { var k = Math.min(1, 1400 / Math.max(img.width, img.height)), c = document.createElement("canvas");
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(u); ok(c.toDataURL("image/jpeg", 0.7)); };
+    img.onerror = function () { URL.revokeObjectURL(u); no(new Error("not a photo")); };
+    img.src = u;
+  });
+}
+function photoWire(li) {
+  var inp = $("phin"); if (!inp) return;
+  inp.onchange = function () {
+    var f = inp.files && inp.files[0]; if (!f) return;
+    var st = $("phst"); st.className = "phst"; st.textContent = "Sending…";
+    shrink(f).then(function (d) { return token().then(function (t) {
+      return fetch(FB.db + "/live/" + CLS + "ph/" + AUTH.uid + "/" + li + ".json?auth=" + encodeURIComponent(t), { method: "PUT", body: JSON.stringify({ d: d, at: Date.now(), n: S.name || "No name" }) }); }); })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        S.ph = S.ph || {}; var first = !S.ph[li]; S.ph[li] = Date.now(); if (first) S.xp += 20; save(); send();
+        var b = $("phbox"); if (b) { b.outerHTML = photoBox(li); photoWire(li); }
+        var s2 = $("phst"); if (s2) s2.textContent = first ? "Sent! +20 XP" : "Sent!";
+        var xp = $("xp"); if (xp) xp.textContent = S.xp + " XP";
+      })
+      .catch(function (e) { st.className = "phst bad"; st.textContent = "Could not send (" + e.message + "). Try again."; inp.value = ""; });
+  };
+}
+function photoScreen(li) {   // from the lesson path: send the photo of a lesson done earlier
+  var L = DATA.lessons[li];
+  $("scrDone").innerHTML = '<h1>' + esc(L.title) + '</h1>' + photoBox(li) + '<button class="btn" id="back">Back</button>';
+  show("scrDone"); photoWire(li); $("back").onclick = pathScreen;
+}
+function sheetsTeacher() {   // #sheets: the teacher's photo wall (signs in once as teacher@scitem.net)
+  document.body.classList.add("sheets"); show("scrSheets");
+  var el = $("scrSheets");
+  el.innerHTML = '<h2>รูปชีทของน้อง · ' + esc(DATA.title) + '</h2><p class="hint">น้องถ่ายรูปชีทท้ายแต่ละด่าน รูปล่าสุดของแต่ละด่านขึ้นที่นี่ แตะรูปเพื่อดูใหญ่</p>' +
+    '<button class="btn ghost" id="phref" style="max-width:220px">โหลดใหม่</button><div id="phlist">กำลังโหลด…</div><div id="phbig" class="phbig hidden"></div>';
+  function when(t) { var d = new Date(t); return d.toLocaleDateString("th-TH", { day: "numeric", month: "short" }) + " " + d.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }); }
+  function newest(d) { var t = 0; Object.keys(d || {}).forEach(function (k) { if (d[k] && d[k].at > t) t = d[k].at; }); return t; }
+  function draw(all) {
+    all = all || {};
+    var us = Object.keys(all).filter(function (u) { return all[u]; }).sort(function (a, b) { return newest(all[b]) - newest(all[a]); });
+    if (!us.length) { $("phlist").innerHTML = "<p>ยังไม่มีรูป</p>"; return; }
+    $("phlist").innerHTML = us.map(function (u) {
+      var d = all[u], name = "", n = 0; Object.keys(d).forEach(function (k) { if (d[k] && d[k].n) { name = d[k].n; n++; } });
+      return '<div class="phrow"><h3>' + esc(name || "?") + ' <span class="hint">· ' + n + '/' + DATA.lessons.length + ' ด่าน</span></h3><div class="phgrid">' + DATA.lessons.map(function (L, i) { var p = d[i];
+        return '<div class="phcell">' + (p ? '<img alt="" src="' + p.d + '">' : '<div class="phnone">—</div>') + '<span>' + (i + 1) + '. ' + esc(L.title) + (p ? '<br>' + when(p.at) : "") + '</span></div>'; }).join("") + '</div></div>';
+    }).join("");
+    $("phlist").querySelectorAll("img").forEach(function (im) { im.onclick = function () { var b = $("phbig"); b.innerHTML = '<img alt="" src="' + im.src + '">'; b.classList.remove("hidden"); b.onclick = function () { b.classList.add("hidden"); }; }; });
+  }
+  function load() {
+    $("phlist").textContent = "กำลังโหลด…";
+    token().then(function (t) { return fetch(FB.db + "/live/" + CLS + "ph.json?auth=" + encodeURIComponent(t)); })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(draw).catch(function (e) { $("phlist").textContent = "โหลดไม่ได้ (" + e.message + ")"; });
+  }
+  $("phref").onclick = load; load();
 }
 
 /* ---------- results to Teacher View (one line per lesson) ---------- */
 function resultLines() {
   var n = DATA.lessons.filter(function (_, i) { return S.done[i]; }).length, out = ["Lessons " + n + "/" + DATA.lessons.length + " · " + S.xp + " XP"];
   DATA.lessons.forEach(function (L, i) { var d = S.done[i]; if (!d) return;
-    out.push("L" + (i + 1) + " " + L.title + ": " + d.first + "/" + d.total + " first try · " + d.mins + " min" + (d.times > 1 ? " · done " + d.times + " times" : "") + (d.missed.length ? " · missed: " + d.missed.join("; ") : "")); });
+    out.push("L" + (i + 1) + " " + L.title + ": " + d.first + "/" + d.total + " first try · " + d.mins + " min" + (d.times > 1 ? " · done " + d.times + " times" : "") + (DATA.photo ? (S.ph && S.ph[i] ? " · sheet photo sent" : " · no sheet photo") : "") + (d.missed.length ? " · missed: " + d.missed.join("; ") : "")); });
   return out;
 }
 function send() {
@@ -696,7 +879,7 @@ function send() {
    Answer book: DATA.key, AES-GCM with a key from the key password (PBKDF2); the password stays outside the repo.
    ===================================================================== */
 var FB = { key: "AIzaSyClZhItG5C3aaz413ToeXPDKzh6Aw5y9CU", db: "https://scitem-live-default-rtdb.asia-southeast1.firebasedatabase.app" }; // = FIREBASE in src/data/catalog.ts
-var FB_TEACHER = "teacher@scitem.net", CLS = DATA.id.replace(/[^a-z0-9]/gi, ""), MODE = (location.hash.match(/^#(live|teach|watch)/) || [])[1] || "";
+var FB_TEACHER = "teacher@scitem.net", CLS = DATA.id.replace(/[^a-z0-9]/gi, ""), MODE = (location.hash.match(/^#(live|teach|watch|sheets)/) || [])[1] || "";
 var AUTH = null, AKEY = CLS + "-auth-" + MODE;
 function fbPost(url, body, form) {
   return fetch(url, { method: "POST", headers: { "Content-Type": form ? "application/x-www-form-urlencoded" : "application/json" }, body: form ? body : JSON.stringify(body) })
@@ -715,7 +898,7 @@ function token() {
 function token1() {
   var old = AUTH; if (!old) try { old = JSON.parse(localStorage.getItem(AKEY) || "null"); } catch (e) {}
   var fresh = function () {
-    if (MODE === "live") return fbPost("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=" + FB.key, { returnSecureToken: true }).then(authSet);
+    if (MODE === "live" || MODE === "") return fbPost("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=" + FB.key, { returnSecureToken: true }).then(authSet);
     var pw = prompt("รหัส Firebase ของ " + FB_TEACHER + " (รหัสเดียวกับจอ #live ของห้องเรียนสด) ใส่ครั้งเดียวในเครื่องนี้");
     if (!pw) return Promise.reject(new Error("no password"));
     return fbPost("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + FB.key, { email: FB_TEACHER, password: pw.trim(), returnSecureToken: true }).then(authSet);
@@ -763,11 +946,11 @@ function pickHtml(c, v) {   // a sent answer as the teacher reads it
 function staticCard(c, key) {   // a card laid out like the phone; key = the right answer to mark (answer book only)
   var h = "";
   if (c.type === "teach") {
-    h = '<h2>' + esc(c.title) + '</h2><div class="say"><div class="me">' + GLOW + '</div><div class="bub">' + c.text + '</div></div>';
+    h = sheetChip(c) + '<h2>' + esc(c.title) + '</h2><div class="say"><div class="me">' + GLOW + '</div><div class="bub' + (c.sheet ? " sheetbub" : "") + '">' + c.text + '</div></div>';
     if (c.pic) h += '<div class="pic' + (TAPS[c.pic] ? " tap" : "") + '" id="pic">' + PICS[c.pic]() + '</div>';
     return h;
   }
-  h = '<div class="tag' + (c.boss ? " boss" : "") + '">' + (c.boss ? "Boss question" : c.type === "order" ? "Put in order" : c.type === "match" ? "Match" : "Choose") + '</div><div class="q">' + esc(c.q) + '</div>';
+  h = sheetChip(c) + '<div class="tag' + (c.boss ? " boss" : "") + '">' + (c.boss ? "Boss question" : c.type === "order" ? "Put in order" : c.type === "match" ? "Match" : "Choose") + '</div><div class="q">' + esc(c.q) + '</div>';
   if (c.pic) h += '<div class="pic">' + PICS[c.pic]() + '</div>';
   if (c.type === "choice") { var pics = typeof c.opts[0] === "object";
     h += '<div class="opts' + (pics ? " pics" : "") + '">' + c.opts.map(function (o) { var k = pics ? o.k : o;
@@ -827,7 +1010,7 @@ function liveCard() {   // the card the teacher is on
   var c = k.c, a = LIVE.mine[k.id] || null, m = LIVE.marks[k.id], h = "";
   LS = null; CUR_GET = null; bare(); liveCur(k.id);
   if (c.type === "teach") {
-    h = '<h2>' + esc(c.title) + '</h2><div class="say"><div class="me">' + GLOW + '</div><div class="bub">' + c.text + '</div></div>';
+    h = sheetChip(c) + '<h2>' + esc(c.title) + '</h2><div class="say"><div class="me">' + GLOW + '</div><div class="bub' + (c.sheet ? " sheetbub" : "") + '">' + c.text + '</div></div>';
     if (c.pic) h += '<div class="pic' + (TAPS[c.pic] ? " tap" : "") + '" id="pic">' + PICS[c.pic]() + '</div>' + (TAPS[c.pic] ? '<div class="tapme">Tap the picture</div>' : "");
     $("card").innerHTML = h; $("foot").classList.add("hidden");
     var pic = $("pic"); if (pic && TAPS[c.pic]) pic.onclick = function (ev) { TAPS[c.pic](pic, ev); };
@@ -836,7 +1019,7 @@ function liveCard() {   // the card the teacher is on
   if (a && m && m.for === a.at && m.ok) a.ok = true;
   if (a && a.ok) { $("card").innerHTML = waitHtml("You got this one! Wait for the next card."); $("foot").classList.add("hidden"); return; }
   if (a && !(m && m.for === a.at)) return liveSent(k, a.v);   // sent, teacher still checking
-  h = '<div class="tag' + (c.boss ? " boss" : "") + '">' + (a ? "Try again" : c.boss ? "Boss question" : c.type === "order" ? "Put in order" : c.type === "match" ? "Match" : "Choose") + '</div><div class="q">' + esc(c.q) + '</div>';
+  h = sheetChip(c) + '<div class="tag' + (c.boss ? " boss" : "") + '">' + (a ? "Try again" : c.boss ? "Boss question" : c.type === "order" ? "Put in order" : c.type === "match" ? "Match" : "Choose") + '</div><div class="q">' + esc(c.q) + '</div>';
   if (c.pic) h += '<div class="pic">' + PICS[c.pic]() + '</div>';
   $("card").innerHTML = h + '<div id="ans"></div>';
   var get = CUR_GET = ({ choice: renderChoice, order: renderOrder, match: renderMatch })[c.type](c, $("ans"));
@@ -871,6 +1054,11 @@ function liveCardFresh(k) {   // try again: same card, a new answer
 /* ---------- show screen: controls the session and the phones; shows what she sent; the teacher marks it ---------- */
 var ROOM = {}, BACK = {};
 function students() { return Object.keys(ROOM).filter(function (u) { return ROOM[u] && ROOM[u].n; }); }
+function lastAt(d) { var t = d.at || 0; Object.keys(d.a || {}).forEach(function (k) { t = Math.max(t, (d.a[k] || {}).at || 0); }); return t; }
+function pickStu(all) {   // one student a class: the one picked on #teach, else the one active most recently; "*" = everyone
+  var s = null; try { s = localStorage.getItem(CLS + "-stu"); } catch (e) {}
+  if (s === "*") return null; if (s && all.indexOf(s) >= 0) return s;
+  return all.slice().sort(function (a, b) { return lastAt(ROOM[b]) - lastAt(ROOM[a]); })[0] || null; }
 function liveTeacher() {
   document.body.classList.add("teach"); show("scrTeach");
   var list = allPos(), ST = { mode: "wait", li: 0, pos: list[0] };
@@ -909,8 +1097,9 @@ function liveTeacher() {
   }
   function answers() {   // under the card: what each student sent for it, with ถูก / ยังไม่ถูก
     var k = cardAt(ST.pos), box = $("tans"); if (!k || !box) return;
-    var us = students();
-    $("tdots").innerHTML = us.map(function (u) { var d = ROOM[u]; return '<span class="sd' + (d.cur === k.id ? " in" : "") + '">' + esc(d.n) + (d.cur === k.id ? " · on this card" : d.cur ? " · card " + d.cur.replace(/^(\d+)-(\d+)$/, function (_, a, b) { return (+a + 1) + "." + (+b + 1); }) : " · waiting") + '</span>'; }).join("") || '<span class="sd">' + (AUTH ? "no phones yet" : "connecting…") + '</span>';
+    var all = students(), sel = pickStu(all), us = sel ? [sel] : all, many = all.length > 1;
+    $("tdots").innerHTML = (many ? '<span class="sd' + (sel ? "" : " pick") + '" data-stu="*">ทุกคน</span>' : "") + all.map(function (u) { var d = ROOM[u]; return '<span class="sd' + (d.cur === k.id ? " in" : "") + (many && u === sel ? " pick" : "") + '" data-stu="' + esc(u) + '">' + esc(d.n) + (d.cur === k.id ? " · on this card" : d.cur ? " · card " + d.cur.replace(/^(\d+)-(\d+)$/, function (_, a, b) { return (+a + 1) + "." + (+b + 1); }) : " · waiting") + '</span>'; }).join("") || '<span class="sd">' + (AUTH ? "no phones yet" : "connecting…") + '</span>';
+    $("tdots").querySelectorAll("[data-stu]").forEach(function (c) { c.onclick = function () { try { localStorage.setItem(CLS + "-stu", c.getAttribute("data-stu")); } catch (e) {} answers(); }; });
     if (k.c.type === "teach") { box.innerHTML = ""; return; }
     box.innerHTML = us.map(function (u) {
       var d = ROOM[u], a = (d.a || {})[k.id], m = ((BACK[u] || {}).mark || {})[k.id], done = a && m && m.for === a.at;
@@ -926,26 +1115,68 @@ function liveTeacher() {
     if (INK.size) INK.size();
   }
 }
-/* pen on the show screen: Apple Pencil / mouse draws; a finger still taps the pictures and buttons */
-var INK = { on: false, er: false, cv: null, cx: null, col: "#C62828", pen: false };
+/* pen on the show screen, with palm rejection (as in /light-p5/):
+   "กันฝ่ามือ" on (turns on by itself the first time an Apple Pencil touches): only the pencil / mouse writes,
+   a finger taps the pictures and buttons under the ink and scrolls the page; a resting palm does nothing.
+   Off: a finger writes too, but palm-sized contacts are ignored, touches right after the pencil are ignored,
+   and a stroke a resting palm started is wiped when the pencil lands. */
+var INK = { on: false, er: false, cv: null, cx: null, col: "#C62828", only: false };
 function inkSetup() {
-  var cv = INK.cv = $("ink"), cx = INK.cx = cv.getContext("2d"), down = false;
+  var cv = INK.cv = $("ink"), cx = INK.cx = cv.getContext("2d");
+  var cur = null, penDown = 0, penUpAt = 0, fing = {}, PALM = 36;
+  try { INK.only = localStorage.getItem("scitem-pen") === "1"; } catch (e) {}
+  function setOnly(on) { INK.only = on; try { localStorage.setItem("scitem-pen", on ? "1" : "0"); } catch (e) {} tools(); }
+  function contact(e) { var w = Math.max(e.width || 0, e.height || 0); return w > 1 ? w : 0; }
   function size() { var r = $("tstage").getBoundingClientRect(), d = window.devicePixelRatio || 1, h = Math.max(r.height, $("tcard").scrollHeight + 40);
     if (Math.abs(cv.height - h * d) < 2 && cv.width === Math.round(r.width * d)) return;
     var img = null; try { img = cx.getImageData(0, 0, cv.width, cv.height); } catch (e) {}
     cv.width = r.width * d; cv.height = h * d; cv.style.height = h + "px"; cx.setTransform(d, 0, 0, d, 0, 0); if (img) cx.putImageData(img, 0, 0); }
   INK.size = size; window.addEventListener("resize", size); setTimeout(size, 50);
   function pt(e) { var r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
-  cv.addEventListener("pointerdown", function (e) { if (e.pointerType === "pen") INK.pen = true; if (e.pointerType === "touch" && INK.pen) return;
-    down = true; cv.setPointerCapture(e.pointerId); var p = pt(e); cx.beginPath(); cx.moveTo(p[0], p[1]); });
-  cv.addEventListener("pointermove", function (e) { if (!down) return; var p = pt(e);
-    cx.globalCompositeOperation = INK.er ? "destination-out" : "source-over"; cx.strokeStyle = INK.col; cx.lineWidth = INK.er ? 26 : 3.5; cx.lineCap = cx.lineJoin = "round"; cx.lineTo(p[0], p[1]); cx.stroke(); });
-  cv.addEventListener("pointerup", function () { down = false; });
+  function under(x, y) { var l = document.elementsFromPoint(x, y); for (var i = 0; i < l.length; i++) if (l[i] !== cv) return l[i]; return null; }
+  function endStroke(undo) { if (cur && undo && cur.snap) { try { cx.putImageData(cur.snap, 0, 0); } catch (e) {} } cur = null; }
+  cv.addEventListener("pointerdown", function (e) {
+    if (e.pointerType === "pen") { penDown++; if (!INK.only) setOnly(true); endStroke(!!(cur && cur.touch)); fing = {}; }
+    else if (e.pointerType === "touch") {
+      var big = contact(e) > PALM, busy = penDown || performance.now() - penUpAt < 800;
+      if (INK.only || big || busy || cur) {          // not ink: a tap or a scroll (never a palm)
+        e.preventDefault();
+        if (!big && !busy && !cur) fing[e.pointerId] = { x: e.clientX, y: e.clientY, t: performance.now(), sy: window.scrollY };
+        return;
+      }
+    } else if (e.button) return;
+    e.preventDefault();
+    cur = { id: e.pointerId, touch: e.pointerType === "touch", snap: null };
+    if (cur.touch) { try { cur.snap = cx.getImageData(0, 0, cv.width, cv.height); } catch (er) {} }
+    try { cv.setPointerCapture(e.pointerId); } catch (er) {}
+    var p = pt(e); cx.beginPath(); cx.moveTo(p[0], p[1]);
+  });
+  window.addEventListener("pointermove", function (e) {
+    if (cur && e.pointerId === cur.id) { var p = pt(e);
+      cx.globalCompositeOperation = INK.er ? "destination-out" : "source-over"; cx.strokeStyle = INK.col; cx.lineWidth = INK.er ? 26 : 3.5; cx.lineCap = cx.lineJoin = "round"; cx.lineTo(p[0], p[1]); cx.stroke(); return; }
+    var f = fing[e.pointerId];
+    if (f && Object.keys(fing).length === 1 && !penDown) window.scrollTo(0, f.sy - (e.clientY - f.y));
+  });
+  function up(e) {
+    if (e.pointerType === "pen") { penDown = Math.max(0, penDown - 1); penUpAt = performance.now(); }
+    if (cur && e.pointerId === cur.id) cur = null;
+    var f = fing[e.pointerId]; delete fing[e.pointerId];
+    if (f && e.type === "pointerup" && !penDown && performance.now() - f.t < 400 && Math.hypot(e.clientX - f.x, e.clientY - f.y) < 10) {
+      var el = under(e.clientX, e.clientY);         // a finger tap goes to the picture / button under the ink
+      if (el) el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window, clientX: e.clientX, clientY: e.clientY }));
+    }
+  }
+  window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
+  // iPadOS: stop the long-press magnifier / double-tap zoom, and don't let it turn a pencil stroke into a scroll
+  cv.addEventListener("touchstart", function (e) { for (var i = 0; i < e.changedTouches.length; i++) if (e.changedTouches[i].touchType === "stylus" && !INK.only) setOnly(true); e.preventDefault(); }, { passive: false });
+  cv.addEventListener("touchmove", function (e) { e.preventDefault(); }, { passive: false });
   $("tpen").onclick = function () { INK.on = !(INK.on && !INK.er); INK.er = false; tools(); };
   $("ter").onclick = function () { INK.on = true; INK.er = !INK.er; tools(); };
   $("tclr").onclick = inkClear;
+  $("tpalm").onclick = function () { setOnly(!INK.only); };
   document.querySelectorAll(".sw").forEach(function (b) { b.onclick = function () { INK.col = b.getAttribute("data-c"); INK.on = true; INK.er = false; tools(); }; });
   function tools() { cv.style.pointerEvents = INK.on ? "auto" : "none"; $("tpen").classList.toggle("on", INK.on && !INK.er); $("ter").classList.toggle("on", INK.on && INK.er);
+    $("tpalm").classList.toggle("on", INK.only);
     document.querySelectorAll(".sw").forEach(function (b) { b.classList.toggle("on", INK.on && !INK.er && b.getAttribute("data-c") === INK.col); }); }
   tools();
 }
@@ -997,7 +1228,79 @@ document.title = DATA.title;
 if (MODE === "live") liveStudent();
 else if (MODE === "teach") liveTeacher();
 else if (MODE === "watch") liveWatch();
+else if (MODE === "sheets") sheetsTeacher();
 else if (S.name) pathScreen(); else nameScreen();
+</script>
+<script id="score-ext">
+/* Score on the show screen (#teach), View asked 2026-11-09.
+   Each student: XP like on the phone (10 = right first try, 5 = right after a wrong try) + cards right.
+   Tap a student's score to open their answers; the teacher can count a card as right first try
+   (a mis-tap) -> back/<cls>/<uid>/fix/<cardId> = true. Reads ROOM / BACK that liveTeacher() keeps
+   up to date and redraws every second, so it works on top of later patches to the page. */
+(function () {
+  if (typeof MODE === "undefined" || MODE !== "teach") return;
+  var css = document.createElement("style");
+  css.textContent = "#tscore{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}" +
+    "#tscore .sc{font:600 15px Fredoka,system-ui,sans-serif;background:#FFF6E8;border:1.5px solid #F5D6A8;border-radius:12px;padding:4px 12px;color:#1F2A44;cursor:pointer}" +
+    "#tscore .sc b{color:#E8962E;font-size:18px;margin:0 2px}#tscore .sc span{color:#5B6676;font-weight:500}" +
+    "#tfix{position:fixed;inset:0;background:rgba(20,28,45,.45);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}" +
+    "#tfix .bx{background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:86vh;overflow:auto;padding:16px 18px;font:16px system-ui,sans-serif;color:#1F2A44}" +
+    "#tfix h3{margin:0 0 4px;font:600 20px Fredoka,system-ui,sans-serif}#tfix p{margin:0 0 10px;color:#5B6676;font-size:14px}" +
+    "#tfix .rw{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #E6EAF0}#tfix .rw .t{flex:1}" +
+    "#tfix .st{font-size:13px;border-radius:99px;padding:2px 8px;white-space:nowrap}" +
+    "#tfix .g{background:#E3F4EA;color:#2E8B57}#tfix .y{background:#FFF1DC;color:#B26A00}#tfix .r{background:#FDE7E7;color:#C62828}" +
+    "#tfix button{font:inherit;font-size:14px;border:1.5px solid #CBD3DD;background:#fff;border-radius:10px;padding:5px 10px;cursor:pointer}" +
+    "#tfix button.on{background:#2E8B57;border-color:#2E8B57;color:#fff}#tfix .cl{float:right}";
+  document.head.appendChild(css);
+  function card(id) { var p = id.split("-"), L = DATA.lessons[+p[0]]; return L && L.cards[+p[1]]; }
+  function rows(u) {   // every non-teach card this student answered, in lesson order
+    var d = ROOM[u] || {}, a = d.a || {}, b = (BACK || {})[u] || {}, mk = b.mark || {}, fx = b.fix || {};
+    return Object.keys(a).filter(function (id) { var c = card(id); return a[id] && c && c.type !== "teach"; })
+      .sort(function (x, y) { var p = x.split("-"), q = y.split("-"); return (p[0] - q[0]) || (p[1] - q[1]); })
+      .map(function (id) {
+        var r = a[id], m = mk[id], ok = !!(r.ok || (m && m.ok && m.for === r.at)), fix = !!fx[id];
+        var pts = fix ? 10 : ok ? ((r.tries || 1) <= 1 ? 10 : 5) : 0;
+        return { id: id, c: card(id), tries: r.tries || 1, ok: ok || fix, first: fix || (ok && (r.tries || 1) <= 1), fix: fix, pts: pts };
+      });
+  }
+  function score(u) { var s = { xp: 0, right: 0, first: 0 }; rows(u).forEach(function (r) { s.xp += r.pts; if (r.ok) s.right++; if (r.first) s.first++; }); return s; }
+  var ALL = 0; DATA.lessons.forEach(function (L) { L.cards.forEach(function (c) { if (c.type !== "teach") ALL++; }); });
+  var last = "", openU = null;
+  function draw() {
+    var dots = document.getElementById("tdots"); if (!dots || typeof ROOM === "undefined") return;
+    var box = document.getElementById("tscore");
+    if (!box) { box = document.createElement("div"); box.id = "tscore"; dots.parentNode.insertBefore(box, dots.nextSibling);
+      box.onclick = function (e) { var t = e.target.closest(".sc"); if (t) { openU = t.getAttribute("data-u"); last = ""; panel(); } }; }
+    var us = Object.keys(ROOM).filter(function (u) { return ROOM[u] && ROOM[u].n; });
+    var sel = typeof pickStu === "function" ? pickStu(us) : null; if (sel) us = [sel];   // only the student picked on #teach (stu_patch)
+    var h = us.map(function (u) { var s = score(u);
+      return '<span class="sc" data-u="' + esc(u) + '" title="แตะเพื่อดู/แก้คะแนน">' + esc(ROOM[u].n) + ' <b>' + s.xp + '</b>XP <span>· ถูก ' + s.right + '/' + ALL + ' ข้อ · ถูกครั้งแรก ' + s.first + '</span></span>'; }).join("");
+    var key = h + "|" + (openU ? JSON.stringify(rows(openU)) : "");
+    if (key !== last) { box.innerHTML = h; last = key; panel(); }
+  }
+  function panel() {
+    var el = document.getElementById("tfix");
+    if (!openU || !ROOM[openU]) { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement("div"); el.id = "tfix"; document.body.appendChild(el);
+      el.onclick = function (e) {
+        if (e.target === el || e.target.closest(".cl")) { openU = null; el.remove(); return; }
+        var b = e.target.closest("[data-fix]"); if (!b) return;
+        var id = b.getAttribute("data-fix"), on = b.classList.contains("on");
+        b.disabled = true;
+        fbWrite(on ? "DELETE" : "PUT", "back", "/" + openU + "/fix/" + id, on ? null : true);
+      }; }
+    var s = score(openU), rs = rows(openU);
+    el.innerHTML = '<div class="bx"><button class="cl">ปิด</button><h3>' + esc(ROOM[openU].n) + ' · ' + s.xp + ' XP</h3>' +
+      '<p>ถูก ' + s.right + '/' + ALL + ' ข้อ · ถูกครั้งแรก ' + s.first + ' · น้องกดพลาด แตะ "นับว่าถูก" ข้อนั้นได้ 10 XP เหมือนถูกครั้งแรก</p>' +
+      (rs.length ? rs.map(function (r) {
+        var p = r.id.split("-"), st = r.fix ? '<span class="st g">ครูแก้เป็นถูก</span>' : r.first ? '<span class="st g">ถูกครั้งแรก</span>' :
+          r.ok ? '<span class="st y">ถูก (ลอง ' + r.tries + ' ครั้ง)</span>' : '<span class="st r">ยังไม่ถูก</span>';
+        var btn = r.first && !r.fix ? "" : '<button data-fix="' + r.id + '" class="' + (r.fix ? "on" : "") + '">' + (r.fix ? "นับว่าถูก ✓" : "นับว่าถูก") + '</button>';
+        return '<div class="rw"><span class="t">' + (+p[0] + 1) + '.' + (+p[1] + 1) + ' ' + esc(r.c.tag || r.c.q || "") + '</span>' + st + ' <b>' + r.pts + '</b>' + btn + '</div>';
+      }).join("") : '<p>ยังไม่ได้ตอบข้อไหน</p>') + '</div>';
+  }
+  setInterval(draw, 1000);
+})();
 </script>
 </body>
 </html>
