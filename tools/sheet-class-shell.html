@@ -378,7 +378,7 @@ let WREADY=Promise.resolve();
 async function applyRestore(){
   const r=BACK._restore;if(!r||!r.at||STAFF||ME.rest===r.at)return;
   await WREADY;let n=0;
-  for(const [pid,ink] of Object.entries(r.ink||{})){const rem=unpackInk(ink);if(rem.length>inkLen(W[pid])){W[pid]={ink:rem,sentAt:0,sentLen:-1};n++;}}
+  for(const [pid,ink] of Object.entries(r.ink||{})){const rem=unpackInk(ink);if(rem.length>inkLen(W[pid])){W[pid]={ink:rem,sentAt:0,sentLen:-1};TOUCHED.add(pid);n++;}}
   ME.rest=r.at;save(K.me,ME);saveWork(true);render();liveTouch();
   setNet(n?"ได้งานคืนแล้ว "+n+" หน้า":"งานในเครื่องครบอยู่แล้ว");setTimeout(()=>setNet(""),6000);
 }
@@ -928,7 +928,8 @@ function newHints(){
 
 /* the student: live/<class>/<uid> = {n: name, pg: page index, at, ink: {p01: [stroke, …]}}; strokes only added go up one by one,
    anything else (undo, clear, a move) sends the whole page again */
-const LIVE={};                             // pid -> what Firebase has for that page (a signature per stroke)
+const LIVE={},TOUCHED=new Set();   // TOUCHED = pages she changed in this tab: only those may replace what Firebase has (View 2026-11-26: a reload on an empty local copy wiped the Firebase copy)
+const LIVE_={};                             // pid -> what Firebase has for that page (a signature per stroke)
 const sigOf=s=>s.p.length+":"+s.p[0]+":"+s.p[1]+(s.e?"e":"");
 let liveT=null,liveBusy=false,liveAgain=false,livePg=-1;
 function liveTouch(){if(!FB||STAFF)return;clearTimeout(liveT);liveT=setTimeout(livePush,120);}
@@ -938,6 +939,7 @@ async function livePush(){
   const add=!!had&&had.length<=sig.length&&had.every((v,k)=>v===sig[k]);
   if(add&&had.length===sig.length&&livePg===i)return;
   const patch={n:ME.name||"",pg:i,at:{".sv":"timestamp"}};
+  if(!TOUCHED.has(pid)){livePg=i;try{await fetch(fbUrl("/"+FBA.uid,await fbToken()),{method:"PATCH",body:JSON.stringify(patch)});}catch(e){}return;}
   if(add)for(let k=had.length;k<ink.length;k++)patch["ink/"+pid+"/"+k]=packInk([ink[k]])[0];
   else patch["ink/"+pid]=ink.length?packInk(ink):null;
   liveBusy=true;
@@ -1062,6 +1064,13 @@ async function restoreTo(){
   const u=FOC&&FOC.u!==KEYU?FOC.u:null;if(!u){lNet("กดชื่อน้องก่อน");return;}
   const name=nm(u),us=Object.keys(TREE).filter(v=>v===u||(name&&nm(v)===name&&!TREE[v].show)),best={};
   for(const v of us)for(const [pid,ink] of Object.entries((TREE[v]&&TREE[v].ink)||{})){const a=arr(ink).filter(Boolean);if(a.length>(best[pid]||[]).length)best[pid]=a;}
+  // and the Sheet backup (each page as last saved, 3 s after the pen stopped): a page there with more strokes wins
+  if(SHEET){lNet("กำลังดึงงานจากชีทสำรอง…");
+    const get=()=>post({action:"cget",cls:CLASS,pw:PW,since:0});let j=null;
+    try{j=await get();}catch(e){if(e.message==="pw"){const p=prompt("รหัสของชีทสำรอง (Apps Script):");if(p){PW=p.trim();sessionStorage.setItem("scitem-sheet-pw",PW);try{j=await get();}catch(e2){}}}}
+    if(j&&j.rows)for(const r of j.rows){if(String(r.name).trim().toLowerCase()!==name)continue;
+      try{const a=arr(JSON.parse(r.data).ink).filter(Boolean);if(a.length>(best[r.id]||[]).length)best[r.id]=a;}catch(e){}}
+    else lNet("ดึงชีทสำรองไม่ได้ ใช้แค่งานบนจอนี้");}
   const n=Object.keys(best).length;if(!n){lNet("ไม่มีงานของน้องบนจอนี้");return;}
   if(!confirm("คืนงาน "+n+" หน้าให้ "+((TREE[u]&&TREE[u].n)||"น้อง")+"? (หน้าที่ในเครื่องน้องมีอยู่แล้วและครบกว่า จะไม่ถูกทับ)"))return;
   try{const r=await fetch(fbUrl("",await fbToken(),"back"),{method:"PATCH",body:JSON.stringify({[u+"/_restore"]:{at:{".sv":"timestamp"},ink:best}})});
@@ -1410,7 +1419,7 @@ let SIZE=+load("scitem-sc-size-"+SCREEN,1)||1;
   set(SIZES.includes(SIZE)?SIZE:1);
 })();
 function changed(){
-  if(TEACHER)pushRed();else if(SHOW)save(K.show,SHOWINK);else{saveWork();render();liveTouch();autoSave();}
+  if(TEACHER)pushRed();else if(SHOW)save(K.show,SHOWINK);else{TOUCHED.add(P(idx));saveWork();render();liveTouch();autoSave();}
 }
 let curS=null,lasso=null,drag=null,pinch=null,SEL=null;
 const fingersDown=new Set();               // touch pointers on the sheet: a second finger means pinch, not ink
