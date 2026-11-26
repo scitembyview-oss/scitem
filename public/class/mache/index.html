@@ -315,6 +315,7 @@ body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:v
     <button class="b i" id="fFollow" aria-pressed="true" title="เปิดหน้าที่น้องอยู่ตลอด"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg><span>ตามน้อง</span></button>
     <button class="b" id="fRevA" hidden title="ส่งผลชุด A ให้น้องเห็น">เปิดผลชุด A</button>
     <button class="b" id="fAB" hidden>ตาราง A/B</button>
+    <button class="b" id="fRest" title="ส่งงานทุกหน้าของน้องจากจอนี้กลับไปที่เครื่องน้อง">คืนงานให้น้อง</button>
   </div>
   <div id="fNames"></div>
   <div id="fDots"></div>
@@ -355,6 +356,32 @@ const save=(k,v)=>{const t=JSON.stringify(v,round4);
   try{localStorage.setItem(k,t);return true}catch(e){}
   if(freeRoom())try{localStorage.setItem(k,t);return true}catch(e){}
   try{for(const x of [K.sent,K.show,K.red])if(x!==k)localStorage.removeItem(x);localStorage.setItem(k,t);return true}catch(e){return false}};
+
+/* View 2026-11-26 (mache, 98 pages): Safari's localStorage (about 5 MB) filled up, the work stopped saving without a word,
+   and a reload brought back an old copy. The student's pages now live in IndexedDB (far bigger); localStorage is only a spare copy. */
+const IDB=(()=>{let p=null;
+  const db=()=>p||(p=new Promise((res,rej)=>{const r=indexedDB.open("scitem-sc",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}));
+  const run=(mode,f)=>db().then(d=>new Promise((res,rej)=>{const t=d.transaction("kv",mode),q=f(t.objectStore("kv"));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error);}));
+  return {get:k=>run("readonly",o=>o.get(k)),set:(k,v)=>run("readwrite",o=>o.put(v,k))};})();
+let IDBOK=false,workT=null;
+const inkLen=w=>(w&&w.ink&&w.ink.length)||0;
+function mergeW(a,b){const o=Object.assign({},a||{});for(const [pid,w] of Object.entries(b||{}))if(!o[pid]||inkLen(w)>inkLen(o[pid]))o[pid]=w;return o;}
+function saveWork(now){clearTimeout(workT);if(now)return saveWork1();workT=setTimeout(saveWork1,300);}
+function saveWork1(){clearTimeout(workT);workT=null;
+  IDB.set(K.work,JSON.parse(JSON.stringify(W,round4))).then(()=>{IDBOK=true;}).catch(e=>setNet("เซฟลงเครื่องไม่ได้ ("+(e&&e.message||e)+") แต่ที่เขียนยังส่งถึงครูอยู่ อย่าปิดหน้านี้"));
+  try{localStorage.setItem(K.work,JSON.stringify(W,round4));}catch(e){if(IDBOK)try{localStorage.removeItem(K.work);}catch(e2){}}
+}
+addEventListener("pagehide",()=>{if(workT)saveWork1();});
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&workT)saveWork1();});
+let WREADY=Promise.resolve();
+// the teacher's "คืนงานให้น้อง" on #live: back/<class>/<uid>/_restore = {at, ink:{pid: packed ink}}; a page comes back if it has more strokes
+async function applyRestore(){
+  const r=BACK._restore;if(!r||!r.at||STAFF||ME.rest===r.at)return;
+  await WREADY;let n=0;
+  for(const [pid,ink] of Object.entries(r.ink||{})){const rem=unpackInk(ink);if(rem.length>inkLen(W[pid])){W[pid]={ink:rem,sentAt:0,sentLen:-1};n++;}}
+  ME.rest=r.at;save(K.me,ME);saveWork(true);render();liveTouch();
+  setNet(n?"ได้งานคืนแล้ว "+n+" หน้า":"งานในเครื่องครบอยู่แล้ว");setTimeout(()=>setNet(""),6000);
+}
 
 /* ---------- gate: the student types her name; both teacher screens need the teacher code (it opens the answer key) ---------- */
 const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
@@ -436,7 +463,7 @@ async function flush(){
     const rec=out[id];
     try{await post({action:"cput",cls:CLASS,name:ME.name||"",id,data:fitRec(rec)});
       if(out[id]===rec){delete out[id];save(K.out,out);}
-      if(W[id]&&W[id].sentAt===rec.at){W[id].okAt=rec.at;save(K.work,W);}}
+      if(W[id]&&W[id].sentAt===rec.at){W[id].okAt=rec.at;saveWork();}}
     catch(e){failed++;lastErr=e.message;}
   }
   flushing=false;
@@ -446,7 +473,7 @@ async function flush(){
 function sendPage(){
   const w=mine(),rec={ink:packInk(w.ink),at:Date.now()};
   w.sentAt=rec.at;w.sentLen=inkSig(w.ink);
-  if(!save(K.work,W))setNet("เก็บสำรองในเครื่องไม่ได้ แต่ที่เขียนยังส่งถึงครูอยู่");
+  saveWork(true);
   if(SHEET){outq()[P(idx)]=rec;save(K.out,OUTQ);flush();}
   else{const sent=load(K.sent,{});rec.name=ME.name||"";sent[P(idx)]=rec;save(K.sent,sent);}
   render();
@@ -741,7 +768,7 @@ function startAns(){
   (async()=>{try{await fbToken();}catch(e){setTimeout(startAns,8000);return;}
     if(SHOW){const reg=()=>fbToken().then(tok=>fetch(fbUrl("/"+FBA.uid,tok),{method:"PATCH",body:JSON.stringify({show:1,n:"",at:{".sv":"timestamp"}})})).catch(()=>{});
       reg();setInterval(reg,120000);}
-    fbStream("/"+FBA.uid,"back",(path,data)=>{BACK=pathSet(BACK,path,data);ansStatus();newHints();if(GAME&&!SHOW)score(path==="/");},t=>{});})();
+    fbStream("/"+FBA.uid,"back",(path,data)=>{BACK=pathSet(BACK,path,data);ansStatus();newHints();if(GAME&&!SHOW)score(path==="/");if(/^\/?(_restore|$)/.test(path))applyRestore();},t=>{});})();
   if(GAME&&!SHOW){$("coins").onclick=()=>openSum();score(true);}
 }
 /* game: the card's state, the coins (first try of each drill question), the end-of-lesson summary */
@@ -1030,6 +1057,17 @@ function drawLive(){
 }
 // the same name twice (an older sign-in of the same student): show only the newest
 const nm=u=>String((TREE[u]&&TREE[u].n)||"").trim().toLowerCase();
+// View 2026-11-26: put a student's work back on her iPad: every card with her name, the page with the most strokes wins
+async function restoreTo(){
+  const u=FOC&&FOC.u!==KEYU?FOC.u:null;if(!u){lNet("กดชื่อน้องก่อน");return;}
+  const name=nm(u),us=Object.keys(TREE).filter(v=>v===u||(name&&nm(v)===name&&!TREE[v].show)),best={};
+  for(const v of us)for(const [pid,ink] of Object.entries((TREE[v]&&TREE[v].ink)||{})){const a=arr(ink).filter(Boolean);if(a.length>(best[pid]||[]).length)best[pid]=a;}
+  const n=Object.keys(best).length;if(!n){lNet("ไม่มีงานของน้องบนจอนี้");return;}
+  if(!confirm("คืนงาน "+n+" หน้าให้ "+((TREE[u]&&TREE[u].n)||"น้อง")+"? (หน้าที่ในเครื่องน้องมีอยู่แล้วและครบกว่า จะไม่ถูกทับ)"))return;
+  try{const r=await fetch(fbUrl("",await fbToken(),"back"),{method:"PATCH",body:JSON.stringify({[u+"/_restore"]:{at:{".sv":"timestamp"},ink:best}})});
+    if(!r.ok)throw new Error("HTTP "+r.status);lNet("ส่งงานคืนแล้ว "+n+" หน้า (เครื่องน้องรับเองถ้าเปิดหน้าไว้ หรือเปิดลิงก์ใหม่)");}
+  catch(e){lNet("ส่งคืนไม่ได้ ("+e.message+")");}
+}
 const dupOf=u=>!!nm(u)&&Object.keys(TREE).some(v=>v!==u&&nm(v)===nm(u)&&((+TREE[v].at||0)>(+TREE[u].at||0)));
 function names(){                          // a chip per student on the hidden screen; tap = see her sheet
   const box=$("fNames"),list=Object.values(CARDS).filter(c=>!dupOf(c.u)).sort((a,b)=>(a.name.textContent).localeCompare(b.name.textContent,"th"));
@@ -1174,6 +1212,7 @@ function startLive(){
     catch(e){lNet("ล้างไม่ได้ ("+e.message+")");}
   };
   $("fWait").onclick=nextWaiting;
+  $("fRest").onclick=restoreTo;
   if(GAME&&QORDER.some(q=>secOf(q)==="A")){$("fRevA").hidden=false;$("fAB").hidden=false;$("fRevA").onclick=revealA;$("fAB").onclick=openAB;}
   $("rev").addEventListener("input",e=>{const c=e.target.closest(".rq");if(c&&FOC)HINTS[FOC.u+"|"+c.dataset.q]=e.target.value;});
   $("rev").addEventListener("focusout",()=>setTimeout(()=>{if(revLater)drawRev();},0));
@@ -1225,6 +1264,7 @@ function start(){
     idx=0;
   }else{
     $("who").textContent=ME.name||"";W=load(K.work,{});
+    WREADY=IDB.get(K.work).then(v=>{if(v){IDBOK=true;W=mergeW(v,W);render();}}).catch(()=>{});
     idx=Math.min(ME.idx||0,N-1);
     if(SHEET){setInterval(()=>{if(!document.hidden)flush();},6000);addEventListener("online",flush);flush();}
     setInterval(()=>{if(!document.hidden)pullRed();},8000);
@@ -1370,7 +1410,7 @@ let SIZE=+load("scitem-sc-size-"+SCREEN,1)||1;
   set(SIZES.includes(SIZE)?SIZE:1);
 })();
 function changed(){
-  if(TEACHER)pushRed();else if(SHOW)save(K.show,SHOWINK);else{save(K.work,W);render();liveTouch();autoSave();}
+  if(TEACHER)pushRed();else if(SHOW)save(K.show,SHOWINK);else{saveWork();render();liveTouch();autoSave();}
 }
 let curS=null,lasso=null,drag=null,pinch=null,SEL=null;
 const fingersDown=new Set();               // touch pointers on the sheet: a second finger means pinch, not ink
