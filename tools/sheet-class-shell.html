@@ -400,6 +400,22 @@ const save=(k,v)=>{const t=JSON.stringify(v,round4);
   try{localStorage.setItem(k,t);return true}catch(e){}
   if(freeRoom())try{localStorage.setItem(k,t);return true}catch(e){}
   try{for(const x of [K.sent,K.show,K.red])if(x!==k)localStorage.removeItem(x);localStorage.setItem(k,t);return true}catch(e){return false}};
+/* View 2026-11-26 (mache, 98 pages): Safari's localStorage (about 5 MB) filled up, the work stopped saving and a reload brought back
+   an old copy. The student's pages now live in IndexedDB (far bigger); localStorage is only a spare copy while it has room. */
+const IDB=(()=>{let p=null;
+  const db=()=>p||(p=new Promise((res,rej)=>{const r=indexedDB.open("scitem-sc",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}));
+  const run=(mode,f)=>db().then(d=>new Promise((res,rej)=>{const t=d.transaction("kv",mode),q=f(t.objectStore("kv"));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error);}));
+  return {get:k=>run("readonly",o=>o.get(k)),set:(k,v)=>run("readwrite",o=>o.put(v,k))};})();
+let IDBOK=false,workT=null,WREADY=Promise.resolve(),INKREADY=false;   // INKREADY: her pages are back from IndexedDB + Firebase
+const inkLen=w=>(w&&w.ink&&w.ink.length)||0;
+function mergeW(a,b){const o=Object.assign({},a||{});for(const [pid,w] of Object.entries(b||{}))if(!o[pid]||inkLen(w)>inkLen(o[pid]))o[pid]=w;return o;}
+function saveWork(now){clearTimeout(workT);if(now)return saveWork1();workT=setTimeout(saveWork1,300);}
+function saveWork1(){clearTimeout(workT);workT=null;
+  IDB.set(K.work,JSON.parse(JSON.stringify(W,round4))).then(()=>{IDBOK=true;}).catch(e=>setNet("เซฟลงเครื่องไม่ได้ ("+(e&&e.message||e)+") แต่ที่เขียนยังส่งถึงครูอยู่ อย่าปิดหน้านี้"));
+  try{localStorage.setItem(K.work,JSON.stringify(W,round4));}catch(e){try{localStorage.removeItem(K.work);}catch(e2){}}
+}
+addEventListener("pagehide",()=>{if(workT)saveWork1();});
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&workT)saveWork1();});
 
 /* ---------- gate: the student types her name; both teacher screens need the teacher code (it opens the answer key) ---------- */
 const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
@@ -481,7 +497,7 @@ async function flush(){
     const rec=out[id];
     try{await post({action:"cput",cls:CLASS,name:ME.name||"",id,data:fitRec(rec)});
       if(out[id]===rec){delete out[id];save(K.out,out);}
-      if(W[id]&&W[id].sentAt===rec.at){W[id].okAt=rec.at;save(K.work,W);}}
+      if(W[id]&&W[id].sentAt===rec.at){W[id].okAt=rec.at;saveWork();}}
     catch(e){failed++;lastErr=e.message;}
   }
   flushing=false;
@@ -491,7 +507,7 @@ async function flush(){
 function sendPage(){
   const w=mine(),rec={ink:packInk(w.ink),at:Date.now()};
   w.sentAt=rec.at;w.sentLen=inkSig(w.ink);
-  if(!save(K.work,W))setNet("เก็บสำรองในเครื่องไม่ได้ แต่ที่เขียนยังส่งถึงครูอยู่");
+  saveWork(true);
   if(SHEET){outq()[P(idx)]=rec;save(K.out,OUTQ);flush();}
   else{const sent=load(K.sent,{});rec.name=ME.name||"";sent[P(idx)]=rec;save(K.sent,sent);}
   render();
@@ -797,7 +813,7 @@ function startAns(){
   (async()=>{try{await fbToken();}catch(e){setTimeout(startAns,8000);return;}
     if(SHOW){const reg=()=>fbToken().then(tok=>fetch(fbUrl("/"+FBA.uid,tok),{method:"PATCH",body:JSON.stringify({show:1,n:"",at:{".sv":"timestamp"}})})).catch(()=>{});
       reg();setInterval(reg,120000);}
-    fbStream("/"+FBA.uid,"back",(path,data)=>{BACK=pathSet(BACK,path,data);if(QUEST)qBack(path);if(path==="/"||/^\/?_ink/.test(path))mergeInk(BACK._ink);ansStatus();newHints();if(GAME&&!SHOW)score(path==="/");},t=>{});})();
+    fbStream("/"+FBA.uid,"back",(path,data)=>{BACK=pathSet(BACK,path,data);if(QUEST)qBack(path);if(path==="/"||/^\/?_ink/.test(path))inkBack();ansStatus();newHints();if(GAME&&!SHOW)score(path==="/");},t=>{});})();
   if(GAME&&!SHOW){$("coins").onclick=()=>openSum();score(true);}
 }
 /* game: the card's state, the coins (first try of each drill question), the end-of-lesson summary */
@@ -1227,17 +1243,23 @@ let liveT=null,liveBusy=false,liveAgain=false,livePg=-1;
 const TOUCHED={};
 /* View 2026-11-19: ink lost on the student's iPad (storage full, reload) comes back from Firebase: first her own live record,
    else #live (the teacher's screen, which can read it) copies it to back/<class>/<uid>/_ink when she asks (live/<uid>/want) */
+// View 2026-11-27: a page comes back when Firebase has more strokes than this iPad (not only when the page is empty),
+// but never over a page she changed in this tab
 function mergeInk(obj){
   let n=0;
-  for(const [pid,raw] of Object.entries(obj||{})){const ink=unpackInk(raw);if(!ink.length)continue;
-    const w=W[pid];if(w&&w.ink&&w.ink.length)continue;
+  for(const [pid,raw] of Object.entries(obj||{})){const ink=unpackInk(raw);if(!ink.length||TOUCHED[pid])continue;
+    if(ink.length<=inkLen(W[pid]))continue;
     W[pid]={ink,sentAt:0,sentLen:-1};delete LIVE[pid];n++;}
-  if(n){save(K.work,W);render();
+  if(n){saveWork(true);render();
     (async()=>{try{const patch={};for(const [pid,raw] of Object.entries(obj||{}))if(LIVE[pid]===undefined&&W[pid]&&W[pid].ink.length){patch["ink/"+pid]=packInk(W[pid].ink);}
       if(!Object.keys(patch).length)return;const r=await fetch(fbUrl("/"+FBA.uid,await fbToken()),{method:"PATCH",body:JSON.stringify(patch)});
       if(r.ok)for(const k of Object.keys(patch)){const pid=k.slice(4);if(W[pid])LIVE[pid]=W[pid].ink.map(sigOf);}}catch(e){}})();}
   return n;
 }
+// back/<class>/<uid>/_ink (sent by #live: "คืนงานให้น้อง" or her own record when she asked): taken once per _inkAt
+function inkBack(){const at=BACK._inkAt;if(!BACK._ink||STAFF||(at&&ME.inkAt===at))return;
+  WREADY.then(()=>{if(at&&ME.inkAt===at)return;const n=mergeInk(BACK._ink);if(at){ME.inkAt=at;save(K.me,ME);}
+    if(n){setNet("ได้งานคืนแล้ว "+n+" หน้า");setTimeout(()=>setNet(""),6000);}});}
 async function restoreInk(){
   if(STAFF||!FB)return;
   try{const tok=await fbToken(),r=await fetch(fbUrl("/"+FBA.uid+"/ink",tok));if(r.ok){mergeInk(await r.json());return;}}catch(e){}
@@ -1245,13 +1267,16 @@ async function restoreInk(){
 }
 function liveTouch(){if(!FB||STAFF)return;clearTimeout(liveT);liveT=setTimeout(livePush,120);}
 async function livePush(){
+  if(!INKREADY){clearTimeout(liveT);liveT=setTimeout(livePush,400);return;}   // nothing goes up before her pages are back
   if(liveBusy){liveAgain=true;return;}
   const i=idx,pid=P(i),ink=mine().ink.filter(s=>!curS||s!==curS.s),sig=ink.map(sigOf),had=LIVE[pid];
   const add=!!had&&had.length<=sig.length&&had.every((v,k)=>v===sig[k]);
   if(add&&had.length===sig.length&&livePg===i)return;
   const patch={n:ME.name||"",pg:i,at:{".sv":"timestamp"}};
   // View 2026-11-19: after a reload with the iPad's storage full the page came back empty, and visiting it sent "empty" over the copy on #live
-  const skip=!had&&!ink.length&&!TOUCHED[pid];
+  // View 2026-11-26/27: only a page she changed in this tab may replace what Firebase has (a reload on an old or empty local copy
+  // wiped the Firebase copy); other pages only say which page she is on
+  const skip=!TOUCHED[pid];
   if(skip){}else if(add)for(let k=had.length;k<ink.length;k++)patch["ink/"+pid+"/"+k]=packInk([ink[k]])[0];
   else patch["ink/"+pid]=ink.length?packInk(ink):null;
   liveBusy=true;
@@ -1281,30 +1306,35 @@ function dirty(path){
   if(!rafOn){rafOn=true;setTimeout(()=>requestAnimationFrame(drawLive),Math.max(0,150-(Date.now()-liveLast)));}
 }
 let liveLast=0;
-// View 2026-11-19: a page wiped on Firebase shows what "กู้ลายมือจากชีท" put in back/<uid>/_ink until her iPad sends it again
+// View 2026-11-19: a page wiped on Firebase shows what "คืนงานให้น้อง" put in back/<uid>/_ink until her iPad sends it again
 const inkRaw=(u,pid)=>{const t=TREE[u]&&TREE[u].ink&&TREE[u].ink[pid],k=BTREE[u]&&BTREE[u]._ink&&BTREE[u]._ink[pid];return arr(t).length?t:k||t;};
 const inkOf=(u,i)=>{const o=inkRaw(u,P(i));if(!o)return [];
   return unpackInk(o);};
 /* View 2026-11-19: ink lost on a student's iPad and then wiped on Firebase too comes back from the Sheet (each page autosaves there) */
+// View 2026-11-26/27 "คืนงานให้น้อง": every card with her name on Firebase (an older sign-in too) + the Sheet backup;
+// the page with the most strokes wins; her iPad takes a page only if it has more strokes than what she has
 async function inkFromSheet(btn){
-  if(!FOC||!SHEET)return;const u=FOC.u,name=(TREE[u]&&TREE[u].n)||"";
+  if(!FOC||FOC.u===KEYU){lNet("กดชื่อน้องก่อน");return;}const u=FOC.u,name=nm(u);
   if(!name){lNet("ไม่รู้ชื่อน้องคนนี้");return;}
-  btn.disabled=true;btn.textContent="กำลังโหลดจากชีท…";
+  btn.disabled=true;btn.textContent="กำลังรวบรวมงาน…";
   try{
-    let j;try{j=await post({action:"cget",cls:CLASS,pw:PW,since:0});}
-    catch(e){if(e.message!=="pw")throw e;const p=prompt("รหัสครูในชีท (Apps Script):");if(!p)throw e;PW=p.trim();sessionStorage.setItem("scitem-sheet-pw",PW);j=await post({action:"cget",cls:CLASS,pw:PW,since:0});}
-    const best={};for(const r of j.rows||[]){if(r.name!==name)continue;if(!best[r.id]||r.at>best[r.id].at)best[r.id]=r;}
-    const now=(TREE[u]&&TREE[u].ink)||{},ink={};let n=0;
-    for(const [id,r] of Object.entries(best)){let d;try{d=JSON.parse(r.data);}catch(e){continue;}
-      const fromSheet=arr(d.ink),onLive=arr(now[id]);
-      if(fromSheet.length&&fromSheet.length>onLive.length){ink[id]=fromSheet;n++;}}
-    if(!n){lNet("ชีทไม่มีหน้าไหนที่ลายมือมากกว่าที่น้องมีอยู่ ("+name+")");return;}
-    const at=Date.now();
-    const r=await fetch(fbUrl("/"+u,await fbToken(),"back"),{method:"PATCH",body:JSON.stringify({_ink:ink,_inkAt:at})});
+    const best={};const take=(id,a)=>{a=arr(a).filter(Boolean);if(a.length&&a.length>(best[id]||[]).length)best[id]=a;};
+    for(const v of Object.keys(TREE))if(v===u||(nm(v)===name&&!TREE[v].show))for(const [id,a] of Object.entries((TREE[v]&&TREE[v].ink)||{}))take(id,a);
+    let fromSheet=0;
+    if(SHEET){let j=null;
+      try{try{j=await post({action:"cget",cls:CLASS,pw:PW,since:0});}
+        catch(e){if(e.message!=="pw")throw e;const p=prompt("รหัสครูในชีท (Apps Script):");if(!p)throw e;PW=p.trim();sessionStorage.setItem("scitem-sheet-pw",PW);j=await post({action:"cget",cls:CLASS,pw:PW,since:0});}}
+      catch(e){lNet("ดึงชีทสำรองไม่ได้ ("+e.message+") ใช้แค่งานบนจอนี้");}
+      for(const r of (j&&j.rows)||[]){if(String(r.name).trim().toLowerCase()!==name)continue;
+        let d;try{d=JSON.parse(r.data);}catch(e){continue;}const before=(best[r.id]||[]).length;take(r.id,d.ink);if((best[r.id]||[]).length>before)fromSheet++;}}
+    const n=Object.keys(best).length;
+    if(!n){lNet("ไม่มีงานของ "+((TREE[u]&&TREE[u].n)||"น้อง")+" ให้คืน");return;}
+    if(!confirm("คืนงาน "+n+" หน้าให้ "+((TREE[u]&&TREE[u].n)||"น้อง")+"? (หน้าที่ในเครื่องน้องครบกว่าอยู่แล้วจะไม่ถูกทับ)"))return;
+    const r=await fetch(fbUrl("/"+u,await fbToken(),"back"),{method:"PATCH",body:JSON.stringify({_ink:best,_inkAt:Date.now()})});
     if(!r.ok)throw new Error("HTTP "+r.status);
-    lNet("ส่งคืน "+n+" หน้าให้ "+name+" แล้ว (หน้า "+Object.keys(ink).map(x=>+x.slice(1)).sort((a,b)=>a-b).join(", ")+") ถ้าน้องเปิดหน้าอยู่ จะขึ้นเอง");
-  }catch(e){lNet("กู้จากชีทไม่ได้ ("+e.message+")");}
-  finally{btn.disabled=false;btn.textContent="กู้ลายมือจากชีท";}
+    lNet("ส่งงานคืนแล้ว "+n+" หน้า"+(fromSheet?" (จากชีทสำรอง "+fromSheet+" หน้า)":"")+" เครื่องน้องรับเองถ้าเปิดหน้าไว้ หรือให้น้องเปิดลิงก์ใหม่");
+  }catch(e){lNet("คืนงานไม่ได้ ("+e.message+")");}
+  finally{btn.disabled=false;btn.textContent="คืนงานให้น้อง";}
 }
 const INKDONE={};
 async function serveInk(){
@@ -1550,8 +1580,8 @@ function startLive(){
     catch(e){lNet("ล้างไม่ได้ ("+e.message+")");}
   };
   $("fWait").onclick=nextWaiting;
-  {const b=document.createElement("button");b.className="b";b.id="fInkBack";b.type="button";b.textContent="กู้ลายมือจากชีท";
-    b.title="ส่งลายมือที่สำรองไว้ใน Google Sheet คืนให้น้องคนนี้ (หน้าที่น้องยังมีลายมืออยู่จะไม่ถูกแตะ)";
+  {const b=document.createElement("button");b.className="b";b.id="fInkBack";b.type="button";b.textContent="คืนงานให้น้อง";
+    b.title="รวมงานของน้องคนนี้ (จอนี้ + ชีทสำรอง) แล้วส่งกลับเครื่องน้อง หน้าที่ในเครื่องน้องครบกว่าจะไม่ถูกทับ";
     $("fWait").after(b);b.onclick=()=>inkFromSheet(b);}
   if(GAME&&QORDER.some(q=>secOf(q)==="A")){$("fRevA").hidden=false;$("fAB").hidden=false;$("fRevA").onclick=revealA;$("fAB").onclick=EXAM?openScores:openAB;}
   if(EXAM){$("fRevA").textContent="เปิดผลสอบ";$("fRevA").title="ส่งผลสอบให้น้องเห็น";$("fAB").textContent="คะแนนรวม";
@@ -1606,7 +1636,9 @@ function start(){
     if(TEACHER)refresh();
     idx=0;
   }else{
-    $("who").textContent=ME.name||"";W=load(K.work,{});restoreInk();
+    $("who").textContent=ME.name||"";W=load(K.work,{});
+    WREADY=IDB.get(K.work).then(v=>{if(v){IDBOK=true;W=mergeW(v,W);render();}}).catch(()=>{});
+    WREADY.then(restoreInk).finally(()=>{INKREADY=true;});
     idx=Math.min(ME.idx||0,N-1);
     if(SHEET){setInterval(()=>{if(!document.hidden)flush();},6000);addEventListener("online",flush);flush();}
     setInterval(()=>{if(!document.hidden)pullRed();},8000);
@@ -1754,7 +1786,7 @@ let SIZE=+load("scitem-sc-size-"+SCREEN,1)||1;
   set(SIZES.includes(SIZE)?SIZE:1);
 })();
 function changed(){
-  if(TEACHER)pushRed();else if(SHOW)save(K.show,SHOWINK);else{TOUCHED[P(idx)]=1;save(K.work,W);render();liveTouch();autoSave();}
+  if(TEACHER)pushRed();else if(SHOW)save(K.show,SHOWINK);else{TOUCHED[P(idx)]=1;saveWork();render();liveTouch();autoSave();}
 }
 let curS=null,lasso=null,drag=null,pinch=null,SEL=null;
 const fingersDown=new Set();               // touch pointers on the sheet: a second finger means pinch, not ink
