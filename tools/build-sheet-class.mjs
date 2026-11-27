@@ -116,7 +116,8 @@ const sheet = local ? null : /CLASS_SHEET_URL\s*=\s*'([^']*)'/.exec(readFileSync
 if (!local && !sheet) throw new Error('CLASS_SHEET_URL is empty in src/data/catalog.ts (or build with --local)');
 const cfg = { id, title, pages: sp.length, sheet, fb: local ? null : firebase(), ...(ansFile ? { qs } : {}), ...(ansAll.exam && !ansAll.skills ? { game: { skills: [], level: {}, exam: { pass: ansAll.exam.pass || 0, mins: ansAll.exam.mins || 0 } } } : {}),
   ...(ansAll.skills ? { game: { skills: ansAll.skills, level: ansAll.level || {}, ...(ansAll.neg ? { neg: 1 } : {}), ...(ansAll.manual ? { manual: 1 } : {}), ...(ansAll.regrade ? { regrade: ansAll.regrade } : {}) } } : {}),
-  ...(ansAll.quest ? { quest: ansAll.quest } : {}),   // a quest class: stages the teacher moves through, the data bar, coins 2/1/0 (see GAME QUEST in the shell)
+  ...(ansAll.quest ? { quest: ansAll.quest } : {}),
+  ...(ansAll.toc ? { toc: ansAll.toc } : {}),   // a contents page: {page, rows: [{t, pg, x0, x1, y0, y1}]} (public: titles and page numbers only)   // a quest class: stages the teacher moves through, the data bar, coins 2/1/0 (see GAME QUEST in the shell)
   ...(existsSync(join(out, 'anims.js')) ? { anims: Date.now() % 1e8 } : {}) };
 const shell = readFileSync(new URL('./sheet-class-shell.html', import.meta.url), 'utf8');
 writeFileSync(join(out, 'index.html'), shell.replace(/\/\*__CFG__\*\/\{[^\n]*?\}(?=;)/, JSON.stringify(cfg)).replace('<title>Scitem Class</title>', `<title>${title}</title>`));
