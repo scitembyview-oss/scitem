@@ -357,6 +357,7 @@ body.teacher #bar h1::after{content:" · จอครู (ซ่อน)";color:v
     <button class="b i" id="fPrev" aria-label="Previous page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
     <button class="b i" id="fNext" aria-label="Next page"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
     <button class="b i" id="fFollow" aria-pressed="true" title="เปิดหน้าที่น้องอยู่ตลอด"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg><span>ตามน้อง</span></button>
+    <button class="b" id="fCoin" hidden title="บวก/ลบเหรียญของน้องคนนี้">แก้เหรียญ</button>
     <button class="b" id="fRevA" hidden title="ส่งผลชุด A ให้น้องเห็น">เปิดผลชุด A</button>
     <button class="b" id="fAB" hidden>ตาราง A/B</button>
   </div>
@@ -430,14 +431,15 @@ async function openKey(code){
 }
 let ME=load(K.me,{}),PW="",KEYPAGES=null,KEYANS={},KEYMAP=null,KEYQ={},KEYH={},KEYHINT={},KEYSOL={};
 if(STAFF){$("gTitle").textContent=LIVE_SCREEN?"จอครูดูสด (ซ่อน)":TEACHER?"จอครู (ซ่อน)":"จอครู (แชร์ให้น้องดู)";$("gNameL").hidden=true;$("gCodeL").hidden=false;$("gGo").textContent="เข้า";}
+if(SHOW){let c="";try{c=localStorage.getItem("scitem-show-code")||"";}catch(e){}if(c){$("gCode").value=c;setTimeout(()=>$("gateForm").requestSubmit(),0);}}
 else{$("gTitle").textContent=CFG.title;if(ME.name)$("gName").value=ME.name;}
 $("gateForm").addEventListener("submit",async e=>{
   e.preventDefault();$("gErr").textContent="";
   if(STAFF){
     const code=$("gCode").value.trim();$("gGo").disabled=true;
     try{const k=await openKey(code);if(TEACHER||LIVE_SCREEN)KEYPAGES=k.pages;KEYANS=k.answers||{};KEYMAP=k.kmap||null;KEYQ=k.kq||{};KEYH=k.kh||{};KEYHINT=k.hints||{};KEYSOL=k.sol||{};}
-    catch(err){$("gErr").textContent="รหัสไม่ถูก";$("gGo").disabled=false;return;}
-    PW=sessionStorage.getItem("scitem-sheet-pw")||code;TPW=code;
+    catch(err){if(SHOW)try{localStorage.removeItem("scitem-show-code");}catch(e){}$("gErr").textContent="รหัสไม่ถูก";$("gGo").disabled=false;return;}
+    PW=sessionStorage.getItem("scitem-sheet-pw")||code;TPW=code;if(SHOW)try{localStorage.setItem("scitem-show-code",code);}catch(e){}
     if(LIVE_SCREEN){
       if(!FB){$("gErr").textContent="ห้องนี้ยังไม่ได้ต่อ Firebase";$("gGo").disabled=false;return;}
       // the Firebase password of teacher@scitem.net is meant to be the teacher code; if not, ask for it
@@ -848,7 +850,7 @@ function score(quiet){
     if(d&&d.k&&!d.first&&d.sbet&&b&&b.for===d.k){d.first={ok:!!b.ok,bet:d.sbet,k:d.k};fresh=id;}
     else if(d&&d.k&&!d.first&&d.sbet&&(GAME.regrade||[]).includes(id)){d.first={ok:true,bet:d.sbet,k:d.k};fresh=id;}}   // sent but never marked
   const list=QORDER.filter(id=>MYANS[id]&&MYANS[id].first).map(id=>[id,MYANS[id].first]).sort((a,b)=>a[1].k-b[1].k);
-  let c=10,s=0;
+  let c=10+(+((BACK._coin&&BACK._coin.add)||0)),s=0;
   // GAME.regrade: drill questions whose first try counts as right (View 2026-11-08: a key/marking slip on heat5 13–15)
   const RG=new Set(GAME.regrade||[]);
   for(const [id,f] of list){const x=f.bet*BOSSX(id);if(f.ok||RG.has(id)){s++;f.gain=x+(s>=3?1:0);}else{s=0;f.gain=-x;}c=GAME.neg?c+f.gain:Math.max(0,c+f.gain);}
@@ -1361,9 +1363,9 @@ clearTimeout(markT);markT=setTimeout(autoMark1,250);}
 async function autoMark1(){
   if(!GAME||!BLOADED)return;const body={};
   for(const u of Object.keys(TREE)){if(!TREE[u]||TREE[u].show)continue;
-    for(const q of waiting(u)){const g=secOf(q),an=TREE[u].ans[q];if(!(g==="D"||g==="B")||!allChoice(q)||!KEYANS[q])continue;
+    for(const q of waiting(u)){const g=secOf(q),an=TREE[u].ans[q];if(!(g==="D"||g==="B")||!QINFO[q].parts.every(p=>p.c||p.nu)||!KEYANS[q])continue;
       const tag=u+"|"+q+"|"+an.k;if(AUTO.has(tag))continue;AUTO.add(tag);
-      body[u+"/"+q]={ok:markOf(q,an),hint:"",for:an.k,at:{".sv":"timestamp"},auto:1};}}
+      const okA=markOf(q,an);if(!okA&&!allChoice(q))continue;body[u+"/"+q]={ok:okA,hint:"",for:an.k,at:{".sv":"timestamp"},auto:1};}}
   if(!Object.keys(body).length)return;
   try{const r=await fetch(fbUrl("",await fbToken(),"back"),{method:"PATCH",body:JSON.stringify(body)});if(!r.ok)throw new Error("HTTP "+r.status);}
   catch(e){for(const k of Object.keys(body)){const [u,q]=k.split("/");AUTO.delete(u+"|"+q+"|"+body[k].for);}lNet("ตรวจอัตโนมัติไม่ได้ ("+e.message+")");}
@@ -1596,6 +1598,13 @@ function startLive(){
     else if(e.target.closest("h3")){FOC.i=QINFO[c.dataset.q].pg;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);}
   });
   $("fBack").onclick=()=>{$("focus").hidden=true;FOC=null;GRID=true;dirty("");};
+  $("fCoin").hidden=!GAME;
+  $("fCoin").onclick=async()=>{const u=FOC&&FOC.u;if(!u||u===KEYU){alert("เลือกน้องก่อน แล้วกดแก้เหรียญ");return;}
+    const d=TREE[u]||{},cur=d.sc??10,old=+((BTREE[u]&&BTREE[u]._coin&&BTREE[u]._coin.add)||0);
+    const t=prompt("แก้เหรียญของ "+(d.n||"น้อง")+" (ตอนนี้ "+cur+" เหรียญ) ใส่จำนวนที่จะเพิ่ม เช่น 3 หรือลบ เช่น -2");if(t==null)return;
+    const n=parseInt(String(t).replace(/[−–]/g,"-").replace(/[\s+]/g,""),10);if(!n){alert("ใส่ตัวเลข เช่น 3 หรือ -2");return;}
+    try{const r=await fetch(fbUrl("/"+u+"/_coin",await fbToken(),"back"),{method:"PUT",body:JSON.stringify({add:old+n,at:{".sv":"timestamp"}})});if(!r.ok)throw new Error("HTTP "+r.status);
+      lNet("แก้เหรียญ "+(d.n||"")+" "+(n>0?"+":"")+n+" แล้ว");}catch(e){alert("แก้เหรียญไม่ได้ ("+e.message+")");}};
   $("fTitle").textContent=CFG.title;
   $("fPrev").onclick=()=>{if(FOC&&FOC.i>0){FOC.i--;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);}};
   $("fNext").onclick=()=>{if(FOC&&FOC.i<NP()-1){FOC.i++;FOC.follow=false;$("fFollow").setAttribute("aria-pressed","false");drawFocus();drawRev(true);}};
